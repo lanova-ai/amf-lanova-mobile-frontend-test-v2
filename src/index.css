@@ -1,0 +1,348 @@
+@import 'leaflet/dist/leaflet.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* AskMyFarm Mobile - Professional Slate/Emerald AgTech Theme */
+    /* Main Background: #0f172a (Slate 900) */
+    /* Card Background: #1e293b (Slate 800) */
+    /* Primary Brand: #10b981 (Emerald 500) */
+    /* Brand Accent: #f59e0b (Amber 500 - for "My" text) */
+    /* Primary Text: #e2e8f0 (Slate 200) */
+    /* Muted Text: #94a3b8 (Slate 400) */
+    
+    --background: 222 47% 11%;  /* #0f172a - Slate 900 main background */
+    --foreground: 210 40% 93%;  /* #e2e8f0 - Slate 200 primary text */
+
+    --card: 222 47% 17%;  /* #1e293b - Slate 800 card background */
+    --card-foreground: 210 40% 93%;  /* #e2e8f0 - Slate 200 */
+
+    --popover: 222 47% 17%;  /* #1e293b - Slate 800 */
+    --popover-foreground: 210 40% 93%;
+
+    --primary: 160 84% 39%;  /* #10b981 - Emerald 500 (PRIMARY BRAND) */
+    --primary-foreground: 0 0% 100%;  /* White text on emerald */
+
+    --secondary: 38 92% 50%;  /* #f59e0b - Amber 500 (BRAND ACCENT) */
+    --secondary-foreground: 222 47% 11%;  /* Dark text on amber */
+
+    --muted: 222 47% 20%;  /* Muted backgrounds (slightly lighter than card) */
+    --muted-foreground: 215 20% 65%;  /* #94a3b8 - Slate 400 muted text */
+
+    --accent: 222 47% 20%;  /* Accent backgrounds */
+    --accent-foreground: 210 40% 93%;  /* #e2e8f0 */
+
+    --destructive: 0 84% 60%;  /* #ef4444 red-500 - Error/Delete */
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 217 33% 25%;  /* Subtle borders (Slate 700) */
+    --input: 222 47% 17%;  /* #1e293b - Input backgrounds */
+    --ring: 160 84% 39%;  /* #10b981 - Emerald focus ring */
+
+    --radius: 0.5rem;
+    
+    /* Custom gradients with Emerald theme */
+    --gradient-hero: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+    --gradient-card: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+    --shadow-elevated: 0 4px 24px -4px rgba(0, 0, 0, 0.5);
+    --shadow-card: 0 2px 12px -2px rgba(0, 0, 0, 0.3);
+
+    /* Sidebar colors */
+    --sidebar-background: 222 47% 11%;  /* #0f172a - Slate 900 */
+    --sidebar-foreground: 210 40% 93%;  /* #e2e8f0 - Slate 200 */
+    --sidebar-primary: 160 84% 39%;  /* #10b981 - Emerald 500 */
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 222 47% 17%;  /* #1e293b - Slate 800 */
+    --sidebar-accent-foreground: 210 40% 93%;
+    --sidebar-border: 217 33% 25%;  /* Slate 700 */
+    --sidebar-ring: 160 84% 39%;  /* #10b981 - Emerald 500 */
+  }
+
+  /* Keep light mode for future use (but mobile-ui is dark-first) */
+  .light {
+    --background: 0 0% 100%;
+    --foreground: 142 30% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 142 30% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 142 30% 15%;
+    --primary: 142 70% 35%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 40 80% 55%;
+    --secondary-foreground: 142 30% 15%;
+    --muted: 142 20% 96%;
+    --muted-foreground: 142 15% 45%;
+    --accent: 142 60% 92%;
+    --accent-foreground: 142 70% 25%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 142 20% 90%;
+    --input: 142 20% 90%;
+    --ring: 142 70% 35%;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body {
+    background-color: #0f172a; /* farm-dark */
+    color: #e2e8f0; /* farm-text */
+    overflow-x: hidden; /* Prevent horizontal scroll */
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari, and Opera */
+  }
+
+  #root {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+
+  #root::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari, and Opera */
+  }
+}
+
+/* Custom animations */
+.animate-slide-in-left {
+  animation: slide-in-left 0.3s ease-out;
+}
+
+@keyframes slide-in-left {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Custom utilities */
+.active\:scale-98:active {
+  transform: scale(0.98);
+}
+
+/* ===================================
+   UNIVERSAL PAGE BACKGROUNDS
+   =================================== */
+/* Subtle gradient for all pages */
+.page-background {
+  background-color: #0f172a; /* farm-dark */
+}
+
+/* Stronger gradient for hero/welcome pages */
+.page-background-hero {
+  background-color: #0f172a; /* farm-dark */
+}
+
+/* ===================================
+   UNIVERSAL TYPOGRAPHY
+   =================================== */
+/* Page titles - large, bold headings */
+.page-title {
+  @apply text-3xl font-bold text-farm-text mb-3;
+}
+
+/* Page subtitles - descriptive text under titles */
+.page-subtitle {
+  @apply text-lg text-farm-muted max-w-sm mx-auto leading-relaxed;
+}
+
+/* Section headings */
+.section-heading {
+  @apply text-xl font-semibold text-farm-text mb-4;
+}
+
+/* Card titles */
+.card-title {
+  @apply text-base font-semibold text-farm-text mb-1;
+}
+
+/* Body text - standard paragraph text */
+.body-text {
+  @apply text-sm text-muted-foreground leading-relaxed;
+}
+
+/* Label text - for form labels, metadata */
+.label-text {
+  @apply text-xs font-medium text-muted-foreground uppercase tracking-wide;
+}
+
+/* ===================================
+   UNIVERSAL ICON CONTAINERS
+   =================================== */
+/* Large brand icon (like app logo) */
+.icon-brand {
+  @apply inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-primary;
+}
+
+.icon-brand-emoji {
+  @apply text-4xl;
+}
+
+/* Medium icon container (for feature highlights) */
+.icon-feature {
+  @apply w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center;
+}
+
+.icon-feature-svg {
+  @apply w-6 h-6 text-primary;
+}
+
+/* Small icon container (for list items, cards) */
+.icon-small {
+  @apply w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0;
+}
+
+.icon-small-svg {
+  @apply w-5 h-5 text-primary;
+}
+
+/* Tiny icon (for inline icons, badges) */
+.icon-tiny {
+  @apply w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0;
+}
+
+.icon-tiny-svg {
+  @apply w-4 h-4 text-primary;
+}
+
+/* Icon with accent background (for status, alerts) */
+.icon-accent {
+  @apply w-10 h-10 rounded-lg bg-accent flex items-center justify-center flex-shrink-0;
+}
+
+/* ===================================
+   UNIVERSAL CARD STYLES
+   =================================== */
+/* Standard card with border */
+.card-standard {
+  @apply bg-card border rounded-lg p-4 hover:bg-accent transition-all;
+}
+
+/* Clickable card */
+.card-interactive {
+  @apply bg-farm-card border border-farm-accent/20 rounded-lg p-4 hover:bg-farm-accent/10 transition-all cursor-pointer active:scale-98;
+}
+
+/* Feature card (like on Welcome page) */
+.card-feature {
+  @apply bg-farm-card border border-farm-accent/20 rounded-lg p-4 flex items-start gap-3;
+}
+
+/* Hide scrollbars while maintaining scroll functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari, and Opera */
+}
+
+/* Custom Leaflet Popup Styling */
+.leaflet-popup-content-wrapper {
+  background: hsl(var(--card)) !important;
+  box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.5), 0 0 0 1px hsl(var(--border)) !important;
+  padding: 0 !important;
+  border-radius: 0.75rem !important;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+  min-width: 200px !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+.leaflet-popup-tip-container {
+  display: none !important;
+}
+
+.custom-popup .leaflet-popup-close-button {
+  color: hsl(var(--foreground)) !important;
+  font-size: 20px !important;
+  padding: 4px 8px !important;
+  right: 4px !important;
+  top: 4px !important;
+  opacity: 0.7 !important;
+  transition: opacity 0.2s !important;
+}
+
+.custom-popup .leaflet-popup-close-button:hover {
+  opacity: 1 !important;
+  background: hsl(var(--accent)) !important;
+  border-radius: 0.375rem !important;
+}
+
+/* Ensure dialogs appear above map */
+[data-radix-portal] {
+  z-index: 10000 !important;
+}
+
+/* Specifically target dialog overlays and content */
+[data-radix-dialog-overlay] {
+  z-index: 10000 !important;
+}
+
+[data-radix-dialog-content] {
+  z-index: 10001 !important;
+}
+
+/* Ensure AlertDialog also appears above map */
+[data-radix-alert-dialog-overlay] {
+  z-index: 10000 !important;
+}
+
+[data-radix-alert-dialog-content] {
+  z-index: 10001 !important;
+}
+
+/* Ensure Select dropdowns appear properly */
+[data-radix-select-content] {
+  z-index: 10000 !important;
+}
+
+[data-radix-select-viewport] {
+  z-index: 10000 !important;
+}
+
+/* PWA Install Prompt Animation */
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out forwards;
+}

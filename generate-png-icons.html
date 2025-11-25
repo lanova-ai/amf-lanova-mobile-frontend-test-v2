@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Generate PWA Icons</title>
+</head>
+<body>
+  <h1>Generating PWA Icons...</h1>
+  <p id="status">Starting...</p>
+  <canvas id="canvas" style="display:none;"></canvas>
+
+  <script>
+    const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const status = document.getElementById('status');
+
+    async function generateIcon(size) {
+      canvas.width = size;
+      canvas.height = size;
+
+      // Background
+      ctx.fillStyle = '#10b981';
+      ctx.beginPath();
+      ctx.roundRect(0, 0, size, size, size * 0.15);
+      ctx.fill();
+
+      // Wheat emoji
+      ctx.font = `${size * 0.6}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('🌾', size / 2, size / 2);
+
+      // Convert to blob and download
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `icon-${size}x${size}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      status.textContent = `Generated icon-${size}x${size}.png`;
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    async function generateAll() {
+      for (const size of sizes) {
+        await generateIcon(size);
+      }
+      status.textContent = '✅ All icons generated! Save them to mobile-ui/public/icons/';
+    }
+
+    generateAll();
+  </script>
+</body>
+</html>
+

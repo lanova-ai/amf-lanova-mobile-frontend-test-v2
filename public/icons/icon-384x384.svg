@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="384" height="384" viewBox="0 0 384 384" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="384" height="384" fill="#10b981" rx="57.599999999999994"/>
+  
+  <!-- Wheat emoji as text (simple placeholder) -->
+  <text 
+    x="50%" 
+    y="50%" 
+    font-size="230.39999999999998" 
+    text-anchor="middle" 
+    dominant-baseline="central"
+    font-family="system-ui, -apple-system, sans-serif"
+  >🌾</text>
+</svg>
