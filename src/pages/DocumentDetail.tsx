@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { documentsAPI, Document, fieldsAPI } from "@/lib/api";
+import { documentsAPI, Document, fieldsAPI, fieldPlansAPI } from "@/lib/api";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -21,6 +21,8 @@ import {
   Check,
   X,
   Calendar as CalendarIcon,
+  FileSpreadsheet,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,6 +38,14 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { format } from "date-fns";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -51,6 +61,11 @@ export default function DocumentDetail() {
   const [loading, setLoading] = useState(true);
   const [reprocessing, setReprocessing] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [creatingFieldPlan, setCreatingFieldPlan] = useState(false);
+  
+  // Field plan creation result modal
+  const [showFieldPlanResult, setShowFieldPlanResult] = useState(false);
+  const [fieldPlanResult, setFieldPlanResult] = useState<any>(null);
   
   const [isEditingField, setIsEditingField] = useState(false);
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
@@ -390,6 +405,61 @@ export default function DocumentDetail() {
     if (document?.file_url) {
       window.open(document.file_url, '_blank');
     }
+  };
+
+  const handleCreateFieldPlan = async () => {
+    if (!id) return;
+    
+    try {
+      setCreatingFieldPlan(true);
+      toast.info("Analyzing document for field planning... This may take up to 3 minutes.", { duration: 5000 });
+      
+      const result = await fieldPlansAPI.createFieldPlanFromDocument(id);
+      
+      if (result.success && result.plans_created && result.plans_created.length > 0) {
+        // Store result and show modal
+        setFieldPlanResult({
+          is_bulk_plan: result.plans_created.length > 1,
+          total_plans_created: result.plans_created.length,
+          created_plans: result.plans_created,
+          // For single plan, extract details
+          field_plan_id: result.plans_created[0]?.id,
+          field_name: result.plans_created[0]?.field_name,
+          plan_name: result.plans_created[0]?.plan_name,
+          plan_year: result.plans_created[0]?.plan_year,
+          total_passes: result.plans_created[0]?.total_passes || 0,
+        });
+        setShowFieldPlanResult(true);
+        toast.success(`Created ${result.plans_created.length} field plan(s)!`);
+        
+        // Refresh document to update field_plan_id link
+        await loadDocument();
+      } else {
+        toast.error(result.message || "Could not create field plan from this document");
+      }
+    } catch (error: any) {
+      console.error("Failed to create field plan:", error);
+      toast.error(error.message || "Failed to create field plan from document");
+    } finally {
+      setCreatingFieldPlan(false);
+    }
+  };
+
+  // Check if document can potentially be used for field plan creation
+  const canCreateFieldPlan = () => {
+    if (!document) return false;
+    
+    // Only allow for completed documents
+    if (document.processing_status !== 'COMPLETED') return false;
+    
+    // Allow for photos and PDFs (common field plan formats)
+    const allowedTypes = ['photo', 'image', 'pdf', 'report', 'invoice', 'receipt'];
+    if (!allowedTypes.includes(document.document_type || '')) return false;
+    
+    // Check if already linked to a field plan
+    if (document.field_plan_id) return false;
+    
+    return true;
   };
 
   const getStatusIcon = (status: string) => {
@@ -907,6 +977,32 @@ export default function DocumentDetail() {
 
         {/* Actions */}
         <div className="space-y-2">
+          {/* Create Field Plan Button - Primary Action */}
+          {canCreateFieldPlan() && (
+            <Button
+              onClick={handleCreateFieldPlan}
+              disabled={creatingFieldPlan}
+              className="w-full bg-farm-accent hover:bg-farm-accent/90 text-farm-dark"
+            >
+              {creatingFieldPlan ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating Plan...</>
+              ) : (
+                <><Sparkles className="mr-2 h-4 w-4" /> Create Field Plan</>
+              )}
+            </Button>
+          )}
+          
+          {/* Show linked field plan if exists */}
+          {document?.field_plan_id && (
+            <Button
+              onClick={() => navigate(`/field-plans/${document.field_plan_id}`)}
+              className="w-full bg-green-600 hover:bg-green-700 text-white"
+            >
+              <FileSpreadsheet className="mr-2 h-4 w-4" />
+              View Linked Field Plan
+            </Button>
+          )}
+          
           <Button
             onClick={handleDownload}
             className="w-full"
@@ -930,6 +1026,108 @@ export default function DocumentDetail() {
           </Button>
         </div>
       </main>
+
+      {/* Field Plan Creation Result Dialog */}
+      <Dialog open={showFieldPlanResult} onOpenChange={setShowFieldPlanResult}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="text-2xl">🌾</span>
+              {fieldPlanResult?.is_bulk_plan 
+                ? `${fieldPlanResult.total_plans_created} Field Plans Created!`
+                : 'Field Plan Created Successfully!'
+              }
+            </DialogTitle>
+            <DialogDescription>
+              {fieldPlanResult?.is_bulk_plan 
+                ? `Your document has been converted into ${fieldPlanResult.total_plans_created} field plans`
+                : 'Your document has been converted into a structured field plan'
+              }
+            </DialogDescription>
+          </DialogHeader>
+          
+          {fieldPlanResult && (
+            <div className="space-y-3">
+              {/* Multi-field plans */}
+              {fieldPlanResult.is_bulk_plan && fieldPlanResult.created_plans ? (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-farm-muted">Created Plans</p>
+                  <div className="space-y-2">
+                    {fieldPlanResult.created_plans.map((plan: any, idx: number) => (
+                      <div 
+                        key={idx} 
+                        className="bg-card border rounded-lg p-3 space-y-2 cursor-pointer hover:bg-accent/50 transition-colors"
+                        onClick={() => {
+                          setShowFieldPlanResult(false);
+                          navigate(`/field-plans/${plan.id}`);
+                        }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg">🌾</span>
+                            <span className="font-medium">{plan.plan_name || plan.field_name || 'Field Plan'}</span>
+                          </div>
+                        </div>
+                        {plan.plan_year && (
+                          <div className="text-xs text-farm-muted">
+                            Year: {plan.plan_year}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                /* Single field plan */
+                <div 
+                  className="bg-card border rounded-lg p-4 space-y-2 cursor-pointer hover:bg-accent/50 transition-colors"
+                  onClick={() => {
+                    setShowFieldPlanResult(false);
+                    if (fieldPlanResult.field_plan_id) {
+                      navigate(`/field-plans/${fieldPlanResult.field_plan_id}`);
+                    }
+                  }}
+                >
+                  {fieldPlanResult.plan_name && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-farm-muted">Plan</span>
+                      <span className="font-medium">{fieldPlanResult.plan_name}</span>
+                    </div>
+                  )}
+                  {fieldPlanResult.field_name && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-farm-muted">Field</span>
+                      <span className="font-medium">{fieldPlanResult.field_name}</span>
+                    </div>
+                  )}
+                  {fieldPlanResult.plan_year && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-farm-muted">Year</span>
+                      <span className="font-medium">{fieldPlanResult.plan_year}</span>
+                    </div>
+                  )}
+                  {fieldPlanResult.total_passes > 0 && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-farm-muted">Passes</span>
+                      <span className="font-medium">{fieldPlanResult.total_passes}</span>
+                    </div>
+                  )}
+                  <p className="text-xs text-primary mt-2">Click to view plan details →</p>
+                </div>
+              )}
+            </div>
+          )}
+          
+          <DialogFooter className="flex gap-2">
+            <Button onClick={() => navigate('/field-plans')} className="flex-1">
+              View All Plans
+            </Button>
+            <Button variant="outline" onClick={() => setShowFieldPlanResult(false)} className="flex-1">
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1564,6 +1564,63 @@ export const fieldPlansAPI = {
       method: 'DELETE',
     });
   },
+
+  // ============================================
+  // PHOTO/DOCUMENT IMPORT
+  // ============================================
+
+  // Analyze a document for field planning content (preview before creating)
+  // Analyze a document for field planning content (preview before creating)
+  // Uses longer timeout - AI processing can take time
+  analyzeDocumentForFieldPlan: async (documentId: string) => {
+    return apiFetch<{
+      success: boolean;
+      content_type: string;
+      confidence: number;
+      plan_name?: string;
+      field_name?: string;
+      crop?: string;
+      year?: number;
+      passes?: any[];
+      variable_rate_zones?: any[];
+      field_matching?: any;
+      extraction_notes?: string;
+      reason?: string;
+    }>(`/api/v1/field-plans/import/photo/analyze`, {
+      method: 'POST',
+      body: (() => {
+        const formData = new FormData();
+        formData.append('document_id', documentId);
+        return formData;
+      })(),
+    }, 120000); // 120 seconds - AI analysis can take time
+  },
+
+  // Create field plan from an already-analyzed document
+  // Uses longer timeout (180s) - 2-step AI process: structured insights + field planning analysis
+  createFieldPlanFromDocument: async (documentId: string, planName?: string) => {
+    const formData = new FormData();
+    formData.append('document_id', documentId);
+    if (planName) {
+      formData.append('plan_name', planName);
+    }
+
+    return apiFetch<{
+      success: boolean;
+      document_id: string;
+      plans_created: { 
+        id: string; 
+        plan_name?: string; 
+        field_name?: string;
+        plan_year?: number;
+        total_passes?: number;
+      }[];
+      message: string;
+    }>(`/api/v1/field-plans/import/photo/create`, {
+      method: 'POST',
+      body: formData,
+    }, 180000); // 180 seconds (3 minutes) - same as voice note field plan creation
+  },
 };
 
 // Planning Seasons API
