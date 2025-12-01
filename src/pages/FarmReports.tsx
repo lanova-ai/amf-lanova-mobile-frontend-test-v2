@@ -354,6 +354,12 @@ export default function FarmReports() {
   const loadTimeline = async (retryCount = 0, maxRetries = 2) => {
     if (!selectedOperationId) return;
     
+    // Prevent concurrent calls - only allow if not already loading (unless it's a retry)
+    if (timelineLoading && retryCount === 0) {
+      console.log("Timeline already loading, skipping duplicate call");
+      return;
+    }
+    
     try {
       setTimelineLoading(true);
       const timeline = await fieldOperationsAPI.getOperationTimeline(selectedOperationId, timelineYear);
@@ -363,19 +369,31 @@ export default function FarmReports() {
       
       // Handle 503 (timeout/busy) with automatic retry
       if (error?.status === 503 && retryCount < maxRetries) {
-        const delay = Math.pow(2, retryCount) * 3000; // 3s, 6s backoff
-        console.log(`Timeline generation timed out, retrying in ${delay/1000}s... (attempt ${retryCount + 1}/${maxRetries})`);
-        toast.info(`AI is processing large data. Retrying in ${delay/1000}s... (attempt ${retryCount + 1}/${maxRetries})`, { duration: delay });
+        const delay = Math.pow(2, retryCount) * 5000; // 5s, 10s backoff (longer for large ops)
+        const orgFields = jdFields.filter(f => f.operation_id === selectedOperationId);
+        const fieldCount = orgFields.length;
+        console.log(`Timeline generation timed out (${fieldCount} fields), retrying in ${delay/1000}s... (attempt ${retryCount + 1}/${maxRetries})`);
+        toast.info(
+          `Processing ${fieldCount} fields in chunks... Retry ${retryCount + 1}/${maxRetries} in ${delay/1000}s`,
+          { duration: delay }
+        );
         
         await new Promise(resolve => setTimeout(resolve, delay));
         return loadTimeline(retryCount + 1, maxRetries);
       }
       
+      // Always clear timeline on error to avoid showing stale/broken data
+      setTimelineSummary(null);
+      
       if (error?.status === 404) {
-        setTimelineSummary(null);
+        // No timeline exists yet - this is expected, don't show error
       } else if (error?.status === 503) {
-        toast.error("Timeline generation timed out. Please try again in a few minutes.", { duration: 5000 });
-        setTimelineSummary(null);
+        const orgFields = jdFields.filter(f => f.operation_id === selectedOperationId);
+        const fieldCount = orgFields.length;
+        toast.error(
+          `Timeline generation timed out for ${fieldCount} fields. The AI is busy - please try again in a minute.`,
+          { duration: 6000 }
+        );
       } else {
         toast.error("Failed to load annual timeline");
       }
@@ -499,16 +517,13 @@ export default function FarmReports() {
             setPollIntervalId(null);
           }
           
-          // Show success message
+          // Show success message - user can click "View Timeline" to generate
           toast.success(
             `✅ Sync complete!\n\n` +
             `${status.current}/${status.total} fields synced successfully.\n\n` +
-            `Loading timeline...`,
+            `Click "View Timeline" to generate the summary.`,
             { duration: 5000 }
           );
-          
-          // Load the timeline with retry logic
-          await loadTimeline();
           
           // Reset state
           setSyncingAllFields(false);
@@ -1278,7 +1293,26 @@ export default function FarmReports() {
             ) : timelineLoading ? (
               <div className="py-8 text-center space-y-3">
                 <LoadingSpinner size="lg" className="mx-auto text-farm-accent" />
-                <p className="text-sm text-farm-muted">Loading annual timeline...</p>
+                {(() => {
+                  const orgFields = jdFields.filter(f => f.operation_id === selectedOperationId);
+                  const fieldCount = orgFields.length;
+                  if (fieldCount > 30) {
+                    return (
+                      <>
+                        <p className="text-sm text-farm-muted">Processing {fieldCount} fields...</p>
+                        <p className="text-xs text-farm-muted/70">Large operations may take 1-2 minutes</p>
+                      </>
+                    );
+                  } else if (fieldCount > 15) {
+                    return (
+                      <>
+                        <p className="text-sm text-farm-muted">Generating timeline for {fieldCount} fields...</p>
+                        <p className="text-xs text-farm-muted/70">This may take 30-60 seconds</p>
+                      </>
+                    );
+                  }
+                  return <p className="text-sm text-farm-muted">Loading annual timeline...</p>;
+                })()}
               </div>
             ) : timelineSummary ? (
               <div className="space-y-4 pt-2">

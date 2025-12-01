@@ -2472,17 +2472,20 @@ export const fieldOperationsAPI = {
   },
 
   // Get operation timeline summary (farm-wide)
-  // Uses 90-second timeout for initial generation (large operations with many fields)
+  // Uses 5-minute timeout for initial generation (large operations use chunked processing)
+  // - Small ops (<15 fields): ~30-60s
+  // - Large ops (30+ fields): 2-4 minutes (chunked processing)
   // Subsequent calls are instant (cached in DB)
   getOperationTimeline: async (operationId: string, year: number): Promise<OperationTimelineSummary> => {
-    return apiFetch(`/api/v1/operations/${operationId}/timeline-summary?year=${year}`, {}, 90000);
+    return apiFetch(`/api/v1/operations/${operationId}/timeline-summary?year=${year}`, {}, 300000); // 5 minutes
   },
 
   // Regenerate operation timeline summary
+  // Uses 5-minute timeout for large operations with chunked processing
   regenerateOperationTimeline: async (operationId: string, year: number): Promise<OperationTimelineSummary> => {
     return apiFetch(`/api/v1/operations/${operationId}/timeline-summary/${year}/regenerate`, {
       method: 'POST'
-    });
+    }, 300000); // 5 minutes
   },
 
   // Sync all fields for an operation for a specific year
