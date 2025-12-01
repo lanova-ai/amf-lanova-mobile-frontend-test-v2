@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation, useSearchParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { fieldsAPI, fieldOperationsAPI, FieldOperationYearlySummary, OperationTimelineSummary, userAPI, Field } from "@/lib/api";
@@ -68,7 +68,10 @@ export default function FarmReports() {
   const [syncProgress, setSyncProgress] = useState<{current: number; total: number; percentage: number} | null>(null);
   const [pollIntervalId, setPollIntervalId] = useState<NodeJS.Timeout | null>(null);
   const [checkingSyncStatus, setCheckingSyncStatus] = useState(false);
-  const [syncingOperationName, setSyncingOperationName] = useState<string | null>(null); // Track which org is syncing
+  
+  // Ref to track syncing state across org switches (avoids stale closure in useEffect)
+  // This persists across organization changes so we can show "still running in background" warnings
+  const syncingRef = useRef<{ operationId: string | null; operationName: string | null }>({ operationId: null, operationName: null });
 
   // Load JD connection status on mount
   useEffect(() => {
@@ -86,12 +89,13 @@ export default function FarmReports() {
       // First, check if sync is in progress (this will set the sync state if needed)
       // Do this BEFORE clearing, so we don't show "No Timeline" flash
       const checkAndClear = async () => {
-        // Show warning if switching away from an active sync
-        if (syncingAllFields && syncingOperationName) {
+        // Show warning if switching away from an active sync (use ref to avoid stale closure)
+        const syncingInfo = syncingRef.current;
+        if (syncingInfo.operationId && syncingInfo.operationName && syncingInfo.operationId !== selectedOperationId) {
           toast.info(
-            `ℹ️ Sync for "${syncingOperationName}" is still running in the background.\n\n` +
+            `ℹ️ Sync for "${syncingInfo.operationName}" is still running in the background.\n\n` +
             `You can switch back to check progress anytime.`,
-            { duration: 5000 }
+            { duration: 6000 }
           );
         }
         
@@ -114,7 +118,7 @@ export default function FarmReports() {
             setPollIntervalId(null);
           }
           
-          // Reset sync state (but keep syncingOperationName for reference)
+          // Reset sync state (but keep syncingRef for background warning)
           setSyncingAllFields(false);
           setSyncProgress(null);
         }
@@ -450,7 +454,7 @@ export default function FarmReports() {
       // Reset state
       setSyncingAllFields(false);
       setSyncProgress(null);
-      setSyncingOperationName(null);
+      syncingRef.current = { operationId: null, operationName: null };
       
     } catch (error: any) {
       console.error("Failed to cancel sync:", error);
@@ -509,7 +513,7 @@ export default function FarmReports() {
           // Reset state
           setSyncingAllFields(false);
           setSyncProgress(null);
-          setSyncingOperationName(null);
+          syncingRef.current = { operationId: null, operationName: null };
           
           return true; // Indicate completion
         }
@@ -532,7 +536,7 @@ export default function FarmReports() {
           // Reset state
           setSyncingAllFields(false);
           setSyncProgress(null);
-          setSyncingOperationName(null);
+          syncingRef.current = { operationId: null, operationName: null };
           
           return true; // Stop polling
         }
@@ -548,7 +552,7 @@ export default function FarmReports() {
           // Toast already shown by handleCancelSync, just reset state
           setSyncingAllFields(false);
           setSyncProgress(null);
-          setSyncingOperationName(null);
+          syncingRef.current = { operationId: null, operationName: null };
           
           return true; // Stop polling
         }
@@ -574,7 +578,7 @@ export default function FarmReports() {
           
           setSyncingAllFields(false);
           setSyncProgress(null);
-          setSyncingOperationName(null);
+          syncingRef.current = { operationId: null, operationName: null };
           
           return true; // ✅ Stop polling
         }
@@ -603,7 +607,7 @@ export default function FarmReports() {
         );
         
         setSyncingAllFields(false);
-        setSyncingOperationName(null);
+        syncingRef.current = { operationId: null, operationName: null };
         return;
       }
       
@@ -635,7 +639,7 @@ export default function FarmReports() {
     try {
       setSyncingAllFields(true);
       const orgName = organizations.find(org => org.id === selectedOperationId)?.name || 'your organization';
-      setSyncingOperationName(orgName); // Track which org is syncing
+      syncingRef.current = { operationId: selectedOperationId, operationName: orgName }; // Track which org is syncing
       
       // ✅ Call the sync-all-fields endpoint with timeout handling
       // Note: force_refresh=true will clear existing yearly summaries before syncing
@@ -673,7 +677,7 @@ export default function FarmReports() {
       // Reset state on error
       setSyncingAllFields(false);
       setSyncProgress(null);
-      setSyncingOperationName(null);
+      syncingRef.current = { operationId: null, operationName: null };
     }
   };
 
