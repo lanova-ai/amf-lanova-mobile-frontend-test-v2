@@ -620,11 +620,35 @@ export default function FarmReports() {
     setPollIntervalId(intervalId);
   };
 
-  const handleSyncAllFieldsClick = () => {
-    // If already syncing, don't allow another sync
+  const handleSyncAllFieldsClick = async () => {
+    // If already syncing (local state), don't allow another sync
     if (syncingAllFields) {
       toast.warning("Sync is already in progress. Please wait for it to complete.", { duration: 4000 });
       return;
+    }
+    
+    // Double-check with backend in case we switched away and back
+    try {
+      const status = await fieldOperationsAPI.getSyncStatus(selectedOperationId, timelineYear);
+      if (status.status === 'in_progress' && status.current < status.total) {
+        // Resume tracking this sync
+        setSyncingAllFields(true);
+        setSyncProgress({
+          current: status.current,
+          total: status.total,
+          percentage: status.percentage
+        });
+        startSyncPolling();
+        
+        toast.warning(
+          `Sync is already in progress (${status.current}/${status.total} fields).\n\nResuming progress tracking...`,
+          { duration: 4000 }
+        );
+        return;
+      }
+    } catch (error) {
+      // If status check fails, proceed with confirmation (backend will handle duplicates)
+      console.error("Failed to check sync status:", error);
     }
     
     // Show confirmation modal
