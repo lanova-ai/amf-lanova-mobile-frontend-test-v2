@@ -1140,7 +1140,7 @@ export default function FarmReports() {
                 </Button>
                 
                 <Button 
-                  onClick={loadTimeline} 
+                  onClick={() => loadTimeline()} 
                   disabled={!selectedOperationId || timelineLoading || !jdSyncEnabled}
                   className="flex-1 border-farm-accent/20 text-farm-accent hover:bg-farm-accent/10"
                   variant="outline"
