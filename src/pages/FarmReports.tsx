@@ -337,7 +337,7 @@ export default function FarmReports() {
     }
   };
 
-  const loadTimeline = async () => {
+  const loadTimeline = async (retryCount = 0, maxRetries = 2) => {
     if (!selectedOperationId) return;
     
     try {
@@ -346,7 +346,21 @@ export default function FarmReports() {
       setTimelineSummary(timeline);
     } catch (error: any) {
       console.error("Failed to load timeline:", error);
+      
+      // Handle 503 (timeout/busy) with automatic retry
+      if (error?.status === 503 && retryCount < maxRetries) {
+        const delay = Math.pow(2, retryCount) * 3000; // 3s, 6s backoff
+        console.log(`Timeline generation timed out, retrying in ${delay/1000}s... (attempt ${retryCount + 1}/${maxRetries})`);
+        toast.info(`AI is processing large data. Retrying in ${delay/1000}s... (attempt ${retryCount + 1}/${maxRetries})`, { duration: delay });
+        
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return loadTimeline(retryCount + 1, maxRetries);
+      }
+      
       if (error?.status === 404) {
+        setTimelineSummary(null);
+      } else if (error?.status === 503) {
+        toast.error("Timeline generation timed out. Please try again in a few minutes.", { duration: 5000 });
         setTimelineSummary(null);
       } else {
         toast.error("Failed to load annual timeline");
@@ -478,14 +492,8 @@ export default function FarmReports() {
             { duration: 5000 }
           );
           
-          // Load the timeline
-          try {
-            const timeline = await fieldOperationsAPI.getOperationTimeline(selectedOperationId, timelineYear);
-            setTimelineSummary(timeline);
-          } catch (timelineError) {
-            console.error("Failed to load timeline:", timelineError);
-            toast.error("Sync completed but failed to load timeline. Please refresh.", { duration: 5000 });
-          }
+          // Load the timeline with retry logic
+          await loadTimeline();
           
           // Reset state
           setSyncingAllFields(false);

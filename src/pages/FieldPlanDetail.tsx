@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Pencil, Trash2, Plus, X, Calendar as CalendarIcon, TrendingUp, CheckCircle2, Circle, ChevronDown, ChevronUp, MoreVertical, Sprout, Droplets, FlaskConical, Bug, Wheat, Tractor, Wrench, Upload, FileText, Image as ImageIcon, Eye, Send, Download, Layers, RotateCcw, Check } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, Plus, X, Calendar as CalendarIcon, TrendingUp, CheckCircle2, Circle, ChevronDown, ChevronUp, MoreVertical, Sprout, Droplets, Wheat, Tractor, Wrench, FileText, Eye, Download, RotateCcw, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { fieldPlansAPI, documentsAPI, Document, managementZonesAPI, fieldsAPI } from "@/lib/api";
-import DocumentUploadModal from "@/components/DocumentUploadModal";
+import { fieldPlansAPI, fieldsAPI, fieldOperationsAPI, ActivityPassesResponse } from "@/lib/api";
 import { useManagementZones } from "@/hooks/useManagementZones";
 import { ManagementZonesLayer } from "@/components/ManagementZonesLayer";
 import { MapContainer, TileLayer, Polygon } from "react-leaflet";
@@ -162,16 +161,16 @@ const FieldPlanDetail = () => {
   const [statusPopoverOpen, setStatusPopoverOpen] = useState<string | null>(null);
   const [selectedPassStatus, setSelectedPassStatus] = useState<string>('completed');
   
-  // Document upload state
-  const [showUploadModal, setShowUploadModal] = useState(false);
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [loadingDocuments, setLoadingDocuments] = useState(false);
-  
   // Prescription state (latest prescription per pass)
   const [passPrescriptions, setPassPrescriptions] = useState<Record<string, any>>({});
   
   // Delete prescription confirmation
   const [prescriptionToDelete, setPrescriptionToDelete] = useState<{ passId: string; prescriptionId: string } | null>(null);
+
+  // JD Ops Activity Passes
+  const [activityPasses, setActivityPasses] = useState<ActivityPassesResponse | null>(null);
+  const [loadingActivityPasses, setLoadingActivityPasses] = useState(false);
+  const [showActivityPasses, setShowActivityPasses] = useState(false);
 
   useEffect(() => {
     loadPlan();
@@ -187,12 +186,6 @@ const FieldPlanDetail = () => {
     }
   };
   
-  useEffect(() => {
-    if (id) {
-      loadDocuments();
-    }
-  }, [id]);
-  
   // Load prescriptions for all passes that have them
   useEffect(() => {
     if (plan?.passes) {
@@ -203,6 +196,77 @@ const FieldPlanDetail = () => {
       });
     }
   }, [plan?.passes]);
+
+  // Load JD Ops activity passes when field_id and plan_year are available
+  useEffect(() => {
+    if (plan?.field_id && plan?.plan_year) {
+      loadActivityPasses();
+    }
+  }, [plan?.field_id, plan?.plan_year]);
+
+  /**
+   * Get the effective year for JD Ops activity display.
+   * 
+   * Agricultural season logic:
+   * - Future years (plan year > current year): Use previous year's data (most recent complete season)
+   * - Before March: Show previous year's data (last season's harvest/activity is most relevant)
+   * - March onwards: Show current year's data (new planting season started)
+   * 
+   * This handles the transition period where farmers are still reviewing
+   * last season's data in Jan-Feb before the new planting season begins.
+   */
+  const getEffectiveActivityYear = (planYear: number): number => {
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1; // 1-12 (January = 1)
+    const currentYear = now.getFullYear();
+    
+    // If plan year is in the future, show the most recent complete season
+    // (current year - 1 if before March, otherwise current year)
+    if (planYear > currentYear) {
+      return currentMonth < 3 ? currentYear - 1 : currentYear;
+    }
+    
+    // If plan is for current year but we're before March,
+    // the previous year's data is more relevant (last season)
+    if (planYear === currentYear && currentMonth < 3) {
+      return currentYear - 1;
+    }
+    
+    return planYear;
+  };
+
+  const loadActivityPasses = async () => {
+    if (!plan?.field_id || !plan?.plan_year) return;
+    
+    const effectiveYear = getEffectiveActivityYear(plan.plan_year);
+    
+    try {
+      setLoadingActivityPasses(true);
+      
+      // Try to load activity for the effective year
+      let response = await fieldOperationsAPI.getActivityPasses(plan.field_id, effectiveYear);
+      
+      // If no data found, try previous years as fallback (up to 2 years back)
+      if (!response.has_jd_data) {
+        for (let yearOffset = 1; yearOffset <= 2; yearOffset++) {
+          const fallbackYear = effectiveYear - yearOffset;
+          console.log(`No JD Ops data for ${effectiveYear}, trying ${fallbackYear}`);
+          response = await fieldOperationsAPI.getActivityPasses(plan.field_id, fallbackYear);
+          if (response.has_jd_data) {
+            break;
+          }
+        }
+      }
+      
+      setActivityPasses(response);
+    } catch (error) {
+      console.error("Failed to load JD Ops activity:", error);
+      // Silently fail - JD Ops data is optional
+      setActivityPasses(null);
+    } finally {
+      setLoadingActivityPasses(false);
+    }
+  };
 
   const loadPlan = async () => {
     try {
@@ -216,24 +280,6 @@ const FieldPlanDetail = () => {
     } finally {
       setLoading(false);
     }
-  };
-  
-  const loadDocuments = async () => {
-    if (!id) return;
-    try {
-      setLoadingDocuments(true);
-      const result = await documentsAPI.getFieldPlanDocuments(id);
-      setDocuments(result.documents || []);
-    } catch (error) {
-      console.error("Failed to load documents:", error);
-    } finally {
-      setLoadingDocuments(false);
-    }
-  };
-  
-  const handleUploadComplete = (documentId: string) => {
-    // Reload documents after upload
-    loadDocuments();
   };
   
   const loadPrescription = async (passId: string) => {
@@ -336,11 +382,11 @@ const FieldPlanDetail = () => {
       case 'fertilizer':
         return <Droplets className={className} />; // Liquid/granular application
       case 'herbicide':
-        return <FlaskConical className={className} />; // Chemical jug
+        return <Droplets className={className} />; // Spray application
       case 'insecticide':
-        return <Bug className={className} />; // Insect control
+        return <Droplets className={className} />; // Spray application
       case 'fungicide':
-        return <FlaskConical className={className} />; // Chemical jug
+        return <Droplets className={className} />; // Spray application
       case 'cultivation':
         return <Tractor className={className} />; // Cultivation/tillage
       case 'harvest':
@@ -349,6 +395,30 @@ const FieldPlanDetail = () => {
         return <Tractor className={className} />; // Soil working
       default:
         return <Wrench className={className} />; // Custom/other
+    }
+  };
+
+  // Icon helper for JD Ops activity passes (uses same icons as field plan passes)
+  const getActivityPassIcon = (passType: string) => {
+    const className = "h-5 w-5 text-farm-accent";
+    switch (passType.toLowerCase()) {
+      case 'planting':
+      case 'seeding':
+        return <Sprout className={className} />;
+      case 'spraying':
+      case 'application':
+      case 'herbicide':
+      case 'fungicide':
+      case 'insecticide':
+      case 'fertilizer':
+        return <Droplets className={className} />;
+      case 'tillage':
+      case 'cultivation':
+        return <Tractor className={className} />;
+      case 'harvest':
+        return <Wheat className={className} />;
+      default:
+        return <Wrench className={className} />;
     }
   };
 
@@ -1662,51 +1732,107 @@ const FieldPlanDetail = () => {
           )}
         </div>
 
-        {/* Documents Section */}
-        {plan && (
-          <div className="mt-6 card-elegant">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-farm-text">Documents</h2>
-              <button
-                onClick={() => setShowUploadModal(true)}
-                className="flex items-center gap-2 px-3 py-1.5 bg-farm-accent/10 text-farm-accent rounded-lg hover:bg-farm-accent/20 transition-colors text-sm font-medium"
-              >
-                <Upload className="h-4 w-4" />
-                Upload
-              </button>
-            </div>
-            
-            {loadingDocuments ? (
-              <div className="text-center text-farm-muted py-8">Loading documents...</div>
-            ) : documents.length === 0 ? (
-              <div className="text-center text-farm-muted py-8">
-                No documents uploaded yet
+        {/* Previous Season Summary (from JD Ops) */}
+        {plan && plan.field_id && (
+          <>
+          <div className="mt-6 border-t border-dashed border-farm-accent/30" />
+          
+          <div className="mt-6 bg-farm-card border border-farm-accent/20 rounded-lg overflow-hidden">
+            <button
+              onClick={() => setShowActivityPasses(!showActivityPasses)}
+              className="w-full flex items-center justify-between p-4 hover:bg-farm-accent/5 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-farm-accent" />
+                <h2 className="text-lg font-semibold text-farm-text">
+                  {activityPasses?.has_jd_data 
+                    ? `Previous Season Summary (${activityPasses.year})`
+                    : 'Previous Season Summary'
+                  }
+                </h2>
+                {activityPasses?.has_jd_data && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-500 border border-green-500/20">
+                    JD Ops
+                  </span>
+                )}
               </div>
-            ) : (
-              <div className="space-y-2">
-                {documents.map((doc) => (
-                  <div
-                    key={doc.id}
-                    className="flex items-center gap-3 p-3 bg-farm-dark/50 rounded-lg border border-farm-accent/20 hover:border-farm-accent/50 transition-colors cursor-pointer"
-                    onClick={() => navigate(`/documents/${doc.id}`)}
-                  >
-                    <div className="flex-shrink-0">
-                      {doc.document_type === 'photo' ? (
-                        <ImageIcon className="h-5 w-5 text-farm-accent" />
-                      ) : (
-                        <FileText className="h-5 w-5 text-farm-accent" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{doc.title || doc.original_filename}</p>
-                      <p className="text-xs text-farm-muted capitalize">{doc.document_type}</p>
-                    </div>
-                    <Eye className="h-4 w-4 text-farm-muted flex-shrink-0" />
+              {showActivityPasses ? (
+                <ChevronUp className="h-5 w-5 text-farm-muted" />
+              ) : (
+                <ChevronDown className="h-5 w-5 text-farm-muted" />
+              )}
+            </button>
+            
+            {showActivityPasses && (
+              <div className="px-4 pb-4">
+                {loadingActivityPasses ? (
+                  <div className="py-6 text-center">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-farm-accent mx-auto"></div>
+                    <p className="text-sm text-farm-muted mt-2">Loading summary...</p>
                   </div>
-                ))}
+                ) : activityPasses?.has_jd_data && activityPasses.passes.length > 0 ? (
+                  <div className="space-y-3">
+                    {activityPasses.passes.map((pass, idx) => (
+                      <div 
+                        key={idx}
+                        className="bg-farm-dark/50 rounded-lg p-3 border border-farm-accent/10"
+                      >
+                        <div className="flex items-start gap-3">
+                          {getActivityPassIcon(pass.pass_type)}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <h3 className="font-semibold text-sm text-farm-text">{pass.title}</h3>
+                              {pass.dates.length > 0 && (
+                                <span className="text-xs text-farm-muted">
+                                  {pass.dates.length === 1 
+                                    ? pass.dates[0] 
+                                    : `${pass.dates[0]} - ${pass.dates[pass.dates.length - 1]}`
+                                  }
+                                </span>
+                              )}
+                            </div>
+                            {pass.details.length > 0 && (
+                              <ul className="mt-1.5 space-y-0.5">
+                                {pass.details.map((detail, dIdx) => (
+                                  <li key={dIdx} className="text-xs text-farm-muted flex items-start gap-1.5">
+                                    <span className="text-farm-accent mt-0.5">•</span>
+                                    <span>{detail}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {/* View Full Report Link */}
+                    <button
+                      onClick={() => navigate(`/farm-reports?field=${plan.field_id}&year=${activityPasses?.year || plan.plan_year}`)}
+                      className="w-full text-center text-sm text-farm-accent hover:underline py-2 flex items-center justify-center gap-1 border-t border-farm-accent/10 pt-3"
+                    >
+                      View Full JD Ops Report
+                      <ExternalLink className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="py-6 text-center space-y-3">
+                    <p className="text-sm text-farm-muted">
+                      No JD Ops data available for this field
+                    </p>
+                    <button
+                      onClick={() => navigate(`/farm-reports?field=${plan.field_id}`)}
+                      className="text-sm text-farm-accent hover:underline flex items-center justify-center gap-1 mx-auto"
+                    >
+                      View JD Ops Reports
+                      <ExternalLink className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
+          </>
         )}
       </main>
 
@@ -2137,18 +2263,6 @@ const FieldPlanDetail = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      
-      {/* Document Upload Modal */}
-      {plan && (
-        <DocumentUploadModal
-          open={showUploadModal}
-          onClose={() => setShowUploadModal(false)}
-          onUploadComplete={handleUploadComplete}
-          additionalMetadata={{
-            field_plan_id: plan.id,
-          }}
-        />
-      )}
     </div>
   );
 };

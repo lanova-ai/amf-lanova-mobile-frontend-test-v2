@@ -23,6 +23,7 @@ import {
   Calendar as CalendarIcon,
   FileSpreadsheet,
   Sparkles,
+  Share2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -977,12 +978,38 @@ export default function DocumentDetail() {
 
         {/* Actions */}
         <div className="space-y-2">
-          {/* Create Field Plan Button - Primary Action */}
+          {/* (a) Reprocess */}
+          <Button
+            onClick={handleReprocess}
+            disabled={reprocessing}
+            className="w-full"
+            variant="outline"
+          >
+            {reprocessing ? (
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Reprocessing...</>
+            ) : (
+              <><RefreshCw className="mr-2 h-4 w-4" /> Reprocess</>
+            )}
+          </Button>
+          
+          {/* (b) Share */}
+          <Button
+            onClick={() => navigate(`/documents/${id}/share`)}
+            className="w-full"
+            variant="outline"
+            disabled={document?.processing_status !== 'COMPLETED'}
+          >
+            <Share2 className="mr-2 h-4 w-4" />
+            Share Document
+          </Button>
+          
+          {/* (c) Create Field Plan */}
           {canCreateFieldPlan() && (
             <Button
               onClick={handleCreateFieldPlan}
               disabled={creatingFieldPlan}
-              className="w-full bg-farm-accent hover:bg-farm-accent/90 text-farm-dark"
+              className="w-full"
+              variant="outline"
             >
               {creatingFieldPlan ? (
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating Plan...</>
@@ -1003,6 +1030,7 @@ export default function DocumentDetail() {
             </Button>
           )}
           
+          {/* (d) Download */}
           <Button
             onClick={handleDownload}
             className="w-full"
@@ -1010,19 +1038,6 @@ export default function DocumentDetail() {
           >
             <Download className="mr-2 h-4 w-4" />
             Download
-          </Button>
-          
-          <Button
-            onClick={handleReprocess}
-            disabled={reprocessing}
-            className="w-full"
-            variant="outline"
-          >
-            {reprocessing ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Reprocessing...</>
-            ) : (
-              <><RefreshCw className="mr-2 h-4 w-4" /> Reprocess</>
-            )}
           </Button>
         </div>
       </main>

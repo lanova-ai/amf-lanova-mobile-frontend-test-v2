@@ -409,10 +409,32 @@ export default function Documents() {
   const loadSharedTimelines = async () => {
     try {
       setLoadingShared(true);
-      const response = await shareTimelinesAPI.getShareHistory();
-      setSharedTimelines(response.shares || []);
+      
+      // Load both timeline shares and document shares
+      const [timelineResponse, documentResponse] = await Promise.all([
+        shareTimelinesAPI.getShareHistory().catch(() => ({ shares: [] })),
+        documentsAPI.getShareHistory().catch(() => ({ shares: [] }))
+      ]);
+      
+      // Add share_type to timeline shares for identification
+      const timelineShares = (timelineResponse.shares || []).map((s: any) => ({
+        ...s,
+        share_type: 'timeline'
+      }));
+      
+      // Document shares already have share_type: 'document' from backend
+      const documentShares = documentResponse.shares || [];
+      
+      // Merge and sort by date (newest first)
+      const allShares = [...timelineShares, ...documentShares].sort((a, b) => {
+        const dateA = new Date(a.shared_at || a.created_at || 0);
+        const dateB = new Date(b.shared_at || b.created_at || 0);
+        return dateB.getTime() - dateA.getTime();
+      });
+      
+      setSharedTimelines(allShares);
     } catch (error) {
-      console.error("Failed to load shared timelines:", error);
+      console.error("Failed to load shared items:", error);
       // Don't show error toast - just means no shares exist yet
     } finally {
       setLoadingShared(false);
@@ -1007,7 +1029,11 @@ export default function Documents() {
   const handleEditTitle = (item: any, type: 'summary' | 'share') => {
     setEditingItem(item);
     setEditItemType(type);
-    setEditedTitle(item.custom_title || "");
+    // Use appropriate title field based on share type
+    const currentTitle = item.share_type === 'document' 
+      ? (item.document_title || "") 
+      : (item.custom_title || "");
+    setEditedTitle(currentTitle);
     setShowEditTitleModal(true);
   };
 
@@ -1046,40 +1072,53 @@ export default function Documents() {
         setEditItemType(null);
         toast.success("Summary title updated!");
       } else if (editItemType === 'share') {
-        // For shared timelines, we need to find the underlying summary
-        // Shared timelines reference summaries by field/year/time_period
-        // If there are multiple summaries, we'll update the first one found
-        // TODO: Consider adding summary_id to share records for precise updates
-        if (!editingItem.field_id || !editingItem.year) {
-          toast.error("Cannot update: Missing field or year information");
-          return;
+        // Handle both document and timeline shares
+        if (editingItem.share_type === 'document') {
+          // For document shares, update the document's title
+          if (!editingItem.document_id) {
+            toast.error("Cannot update: Missing document information");
+            return;
+          }
+          
+          await documentsAPI.updateDocument(editingItem.document_id, { title: editedTitle });
+          
+          // Update local state
+          setSharedTimelines(prev => prev.map(sh => 
+            sh.id === editingItem.id
+              ? { ...sh, document_title: editedTitle }
+              : sh
+          ));
+          
+          toast.success("Document title updated!");
+        } else {
+          // For timeline shares, update via timeline API
+          if (!editingItem.field_id || !editingItem.year) {
+            toast.error("Cannot update: Missing field or year information");
+            return;
+          }
+          
+          await shareTimelinesAPI.updateTimelineTitle(
+            editingItem.field_id,
+            editingItem.year,
+            editingItem.time_period || 'full_season',
+            editedTitle
+          );
+          
+          // Update local state
+          setSharedTimelines(prev => prev.map(sh => 
+            sh.id === editingItem.id
+              ? { ...sh, custom_title: editedTitle }
+              : sh
+          ));
+          
+          toast.success("Timeline title updated!");
         }
         
-        // ✅ Update share title via API - using field/year/time_period
-        // Note: This will update all summaries for this field/year/time_period
-        // If multiple summaries exist, they will all be updated (backward compatibility)
-        const response = await shareTimelinesAPI.updateTimelineTitle(
-          editingItem.field_id,
-          editingItem.year,
-          editingItem.time_period || 'full_season',
-          editedTitle
-        );
-        
-        console.log("✅ API Response:", response);
-        
-        // ✅ Only update local state if API call succeeded
-        setSharedTimelines(prev => prev.map(sh => 
-          sh.id === editingItem.id
-            ? { ...sh, custom_title: editedTitle }
-            : sh
-        ));
-        
-        // ✅ Only close modal and show success if API succeeded
+        // Close modal
         setShowEditTitleModal(false);
         setEditingItem(null);
         setEditedTitle("");
         setEditItemType(null);
-        toast.success("Share title updated!");
       }
     } catch (error: any) {
       console.error("❌ Failed to update title:", error);
@@ -1112,12 +1151,17 @@ export default function Documents() {
         setSummaries(prev => prev.filter(s => s.id !== itemToDelete.item.id));
         toast.success("Summary deleted successfully!");
       } else if (itemToDelete.type === 'share') {
-        // ✅ Delete share from backend
-        await shareTimelinesAPI.deleteSharedTimeline(itemToDelete.item.id);
+        // ✅ Delete share from backend - handle both document and timeline shares
+        if (itemToDelete.item.share_type === 'document') {
+          await documentsAPI.deleteShare(itemToDelete.item.id);
+          toast.success("Document share deleted successfully!");
+        } else {
+          await shareTimelinesAPI.deleteSharedTimeline(itemToDelete.item.id);
+          toast.success("Timeline share deleted successfully!");
+        }
         
         // Update local state
         setSharedTimelines(prev => prev.filter(sh => sh.id !== itemToDelete.item.id));
-        toast.success("Shared timeline deleted successfully!");
       }
     } catch (error: any) {
       console.error("Failed to delete item:", error);
@@ -1280,7 +1324,7 @@ export default function Documents() {
                   : 'text-farm-muted hover:text-farm-text'
               }`}
             >
-              Summary
+              Timeline
             </button>
             <button
               onClick={() => setViewMode('shared')}
@@ -1506,11 +1550,10 @@ export default function Documents() {
                         )}
                         <DropdownMenuItem onClick={(e) => {
                           e.stopPropagation();
-                          if (doc.field_id) {
-                            const year = doc.document_date ? new Date(doc.document_date).getFullYear() : new Date().getFullYear();
-                            navigate(`/documents/share-timeline?field_id=${doc.field_id}&year=${year}&document_id=${doc.id}`);
+                          if (doc.processing_status === 'COMPLETED') {
+                            navigate(`/documents/${doc.id}/share`);
                           } else {
-                            toast.info("Please assign this document to a field first to share it");
+                            toast.info("Please wait for document processing to complete before sharing");
                           }
                         }}>
                           <Share2 className="mr-2 h-4 w-4" />
@@ -2128,19 +2171,43 @@ export default function Documents() {
                 {/* Share Header */}
                 <div className="card">
                   <div className="space-y-2">
+                    {/* Badge + Title */}
+                    <div className="flex items-center gap-2">
+                      {selectedShare.share_type === 'document' ? (
+                        <span className="text-xs px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded">Document</span>
+                      ) : (
+                        <span className="text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded">Timeline</span>
+                      )}
+                    </div>
                     <h2 className="text-xl font-bold">
-                      {selectedShare.field_name} {selectedShare.farm_name && `(${selectedShare.farm_name})`}
+                      {selectedShare.share_type === 'document' 
+                        ? (selectedShare.document_title || "Shared Document")
+                        : `${selectedShare.field_name} ${selectedShare.farm_name ? `(${selectedShare.farm_name})` : ''}`
+                      }
                     </h2>
                     <div className="flex items-center gap-2 text-sm text-farm-muted flex-wrap">
-                      <span>Year: {selectedShare.year}</span>
-                      <span>•</span>
+                      {selectedShare.share_type === 'document' ? (
+                        <>
+                          <span>{selectedShare.document_type}</span>
+                          <span>•</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Year: {selectedShare.year}</span>
+                          <span>•</span>
+                        </>
+                      )}
                       <span>{selectedShare.communication_method === 'sms' ? '📱 SMS' : '✉️ Email'}</span>
                       <span>•</span>
-                      <span>Shared {new Date(selectedShare.created_at).toLocaleDateString()}</span>
+                      <span>Shared {new Date(selectedShare.shared_at || selectedShare.created_at).toLocaleDateString()}</span>
                     </div>
                     <div className="text-sm">
                       <span className="text-farm-muted">Recipients:</span>{' '}
-                      <span className="font-medium">{selectedShare.recipient_names}</span>
+                      <span className="font-medium">
+                        {Array.isArray(selectedShare.recipient_names) 
+                          ? selectedShare.recipient_names.join(', ') 
+                          : selectedShare.recipient_names}
+                      </span>
                     </div>
                     {selectedShare.view_count > 0 && (
                       <div className="text-xs text-farm-muted">
@@ -2149,6 +2216,18 @@ export default function Documents() {
                           <> • Last viewed {new Date(selectedShare.last_viewed_at).toLocaleDateString()}</>
                         )}
                       </div>
+                    )}
+                    {/* View Document button for document shares */}
+                    {selectedShare.share_type === 'document' && selectedShare.document_id && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate(`/documents/${selectedShare.document_id}`)}
+                        className="mt-2"
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        View Document
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -2171,14 +2250,14 @@ export default function Documents() {
                   </div>
                 </div>
 
-                {/* Timeline Summary Content */}
-                {loadingShareTimeline ? (
+                {/* Timeline Summary Content - Only for timeline shares */}
+                {selectedShare.share_type === 'timeline' && loadingShareTimeline ? (
                   <div className="card">
                     <div className="flex items-center justify-center py-8">
                       <Loader2 className="w-6 h-6 animate-spin text-primary" />
                     </div>
                   </div>
-                ) : selectedShareTimeline ? (
+                ) : selectedShare.share_type === 'timeline' && selectedShareTimeline ? (
                   <>
                     {/* Complete Summary */}
                     {selectedShareTimeline.summary_text && (
@@ -2251,6 +2330,12 @@ export default function Documents() {
                   <div className="space-y-3">
                 {sharedTimelines
                   .filter(share => {
+                    // For document shares, filter by field if document has one
+                    if (share.share_type === 'document') {
+                      if (filterField !== "all" && share.field_name && share.field_id !== filterField) return false;
+                      return true;
+                    }
+                    // For timeline shares, filter by year and field
                     if (filterYear !== "all" && share.year !== parseInt(filterYear)) return false;
                     if (filterField !== "all" && share.field_id !== filterField) return false;
                     return true;
@@ -2275,7 +2360,7 @@ export default function Documents() {
                             setSelectedShare(share);
                           }}>
                             <Eye className="mr-2 h-4 w-4" />
-                            View Details
+                            View Share Details
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={(e) => {
                             e.stopPropagation();
@@ -2300,15 +2385,36 @@ export default function Documents() {
                     
                     <div className="flex items-start justify-between gap-3 pr-8">
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-sm mb-1">
-                          {share.custom_title || "Untitled Summary"}
-                        </h3>
+                        {/* Title - different for document vs timeline */}
+                        <div className="flex items-center gap-2 mb-1">
+                          {share.share_type === 'document' ? (
+                            <span className="text-xs px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded">Doc</span>
+                          ) : (
+                            <span className="text-xs px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded">Timeline</span>
+                          )}
+                          <h3 className="font-semibold text-sm">
+                            {share.share_type === 'document' 
+                              ? (share.document_title || "Untitled Document")
+                              : (share.custom_title || "Untitled Summary")
+                            }
+                          </h3>
+                        </div>
                         <div className="flex items-center gap-2 text-xs text-farm-muted flex-wrap">
-                          <span>Year: {share.year}</span>
-                          <span>•</span>
+                          {share.share_type === 'timeline' && share.year && (
+                            <>
+                              <span>Year: {share.year}</span>
+                              <span>•</span>
+                            </>
+                          )}
+                          {share.share_type === 'document' && share.document_type && (
+                            <>
+                              <span>{share.document_type}</span>
+                              <span>•</span>
+                            </>
+                          )}
                           <span>{share.communication_method === 'sms' ? '📱 SMS' : '✉️ Email'}</span>
                           <span>•</span>
-                          <span>{new Date(share.created_at).toLocaleDateString()}</span>
+                          <span>{new Date(share.shared_at || share.created_at).toLocaleDateString()}</span>
                           {share.view_count > 0 && (
                             <>
                               <span>•</span>
@@ -2318,7 +2424,7 @@ export default function Documents() {
                         </div>
                         {share.recipient_names && (
                           <p className="text-sm text-farm-muted mt-2 line-clamp-1">
-                            To: {share.recipient_names}
+                            To: {Array.isArray(share.recipient_names) ? share.recipient_names.join(', ') : share.recipient_names}
                           </p>
                         )}
                       </div>
@@ -2385,11 +2491,11 @@ export default function Documents() {
 
       {/* Edit Title Modal */}
       <Dialog open={showEditTitleModal} onOpenChange={setShowEditTitleModal}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Edit Title</DialogTitle>
             <DialogDescription>
-              Enter a custom title for this {editItemType === 'summary' ? 'summary' : 'shared timeline'}
+              Enter a custom title for this {editItemType === 'summary' ? 'summary' : 'shared item'}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
@@ -2412,6 +2518,7 @@ export default function Documents() {
             <Button 
               onClick={handleSaveTitle}
               disabled={savingTitle || !editedTitle.trim()}
+              className="bg-farm-accent hover:bg-farm-accent/90 text-farm-dark"
             >
               {savingTitle ? (
                 <>

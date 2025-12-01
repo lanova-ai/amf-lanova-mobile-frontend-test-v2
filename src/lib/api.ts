@@ -1351,6 +1351,73 @@ export const documentsAPI = {
       }
     );
   },
+
+  // Generate share message preview for a single document
+  generateSharePreview: async (documentId: string, params: {
+    recipient_name: string;
+    recipient_type: string;
+    communication_method: 'sms' | 'email';
+    user_context?: string;
+  }): Promise<{
+    subject?: string;
+    body: string;
+    share_link: string;
+    share_token: string;
+    metadata: Record<string, any>;
+  }> => {
+    return apiFetch(`/api/v1/documents/${documentId}/share/preview`, {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  },
+
+  // Share a document with contacts
+  shareDocument: async (documentId: string, params: {
+    contact_ids: string[];
+    communication_method: 'sms' | 'email';
+    message: { subject?: string; body: string };
+  }): Promise<{
+    share_id: string;
+    share_link: string;
+    delivery_results: Array<{ contact_id: string; contact_name: string; status: string; error?: string; reason?: string }>;
+    success_count: number;
+    total_count: number;
+  }> => {
+    return apiFetch(`/api/v1/documents/${documentId}/share`, {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  },
+
+  // Get document share history
+  getShareHistory: async (): Promise<{
+    shares: Array<{
+      id: string;
+      document_id: string;
+      document_title: string;
+      document_type: string;
+      field_name: string | null;
+      share_link: string;
+      communication_method: string;
+      message_subject: string | null;
+      message_body: string | null;
+      recipient_names: string[];
+      view_count: number;
+      last_viewed_at: string | null;
+      shared_at: string;
+      share_type: 'document';
+    }>;
+    total: number;
+  }> => {
+    return apiFetch('/api/v1/documents/shares/history');
+  },
+
+  // Delete a document share
+  deleteShare: async (shareId: string): Promise<{ message: string; id: string }> => {
+    return apiFetch(`/api/v1/documents/shares/${shareId}`, {
+      method: 'DELETE',
+    });
+  },
 };
 
 // ================================
@@ -2464,7 +2531,33 @@ export const fieldOperationsAPI = {
   getRecentSummaries: async (limit: number = 3): Promise<FieldOperationYearlySummary[]> => {
     return apiFetch(`/api/v1/field-operations/recent-summaries?limit=${limit}`);
   },
+
+  // Get condensed activity passes for a field/year (for Field Plan Detail page)
+  getActivityPasses: async (fieldId: string, year: number): Promise<ActivityPassesResponse> => {
+    return apiFetch(`/api/v1/fields/${fieldId}/operations/activity-passes?year=${year}`);
+  },
 };
+
+// Activity Passes interfaces
+export interface ActivityPass {
+  pass_type: string;
+  icon: string;
+  title: string;
+  dates: string[];
+  summary: string;
+  details: string[];
+  has_data: boolean;
+}
+
+export interface ActivityPassesResponse {
+  field_id: string;
+  field_name: string;
+  year: number;
+  total_operations: number;
+  passes: ActivityPass[];
+  has_jd_data: boolean;
+  summary_text?: string;  // Pre-computed season summary for display
+}
 
 // ============================================================================
 // Scouting Notes API

@@ -37,6 +37,7 @@ import FieldPlanSummaryDetail from "./pages/FieldPlanSummaryDetail";
 import ShareFieldPlanSummary from "./pages/ShareFieldPlanSummary";
 import SharePlans from "./pages/SharePlans";
 import ShareTimeline from "./pages/ShareTimeline";
+import ShareDocument from "./pages/ShareDocument";
 import GeneratePrescription from "./pages/GeneratePrescription";
 import Documents from "./pages/Documents";
 import DocumentDetail from "./pages/DocumentDetail";
@@ -147,6 +148,7 @@ const App = () => (
             <Route path="/recordings" element={<ProtectedRoute><Layout><Recordings /></Layout></ProtectedRoute>} />
               <Route path="/documents" element={<ProtectedRoute><Layout><Documents /></Layout></ProtectedRoute>} />
               <Route path="/documents/:id" element={<ProtectedRoute><DocumentDetail /></ProtectedRoute>} />
+              <Route path="/documents/:id/share" element={<ProtectedRoute><ShareDocument /></ProtectedRoute>} />
             {/* <Route path="/tasks" element={<ProtectedRoute><Layout><Tasks /></Layout></ProtectedRoute>} /> */}
             {/* FIELD NOTES - Temporarily commented out (replaced by Scouting Notes) */}
             {/* <Route path="/field-notes" element={<ProtectedRoute><Layout><FieldNotesList /></Layout></ProtectedRoute>} /> */}
