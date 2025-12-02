@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { publicAPI, DocumentPublicView } from "@/lib/api";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { FileText, MapPin, Calendar, File, FileImage, Download, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -205,44 +205,35 @@ const SharedDocumentPage = () => {
 
         {/* AI Summary */}
         {document.ai_summary && (
-          <Card className="bg-farm-card border-farm-accent/20">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2 text-farm-text">
-                <FileText className="h-4 w-4 text-farm-accent" />
-                AI Summary
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="prose prose-sm max-w-none dark:prose-invert
-                prose-headings:font-semibold prose-headings:text-farm-accent prose-headings:mt-4 prose-headings:mb-2
-                prose-p:text-sm prose-p:text-farm-text prose-p:leading-relaxed prose-p:my-3
-                prose-strong:text-farm-accent prose-strong:font-semibold
-                prose-ul:my-2 prose-ul:ml-5 prose-ul:list-disc
-                prose-ol:my-2 prose-ol:ml-5 prose-ol:list-decimal
-                prose-li:text-sm prose-li:text-farm-text prose-li:my-1 prose-li:leading-relaxed prose-li:marker:text-farm-accent
-                [&_strong]:text-farm-accent [&_strong]:font-semibold
-                [&_ul]:list-disc [&_ul]:ml-5
-                [&_ol]:list-decimal [&_ol]:ml-5
-                [&_ul+p]:mt-5">
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm, remarkBreaks]}
-                  rehypePlugins={[rehypeRaw]}
-                >
-                  {document.ai_summary}
-                </ReactMarkdown>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="bg-farm-card border border-farm-accent/20 rounded-lg p-4">
+            <h3 className="font-semibold mb-3">AI Summary</h3>
+            <div className="prose prose-sm max-w-none dark:prose-invert
+              prose-headings:font-semibold prose-headings:text-farm-accent prose-headings:mt-4 prose-headings:mb-2
+              prose-p:text-sm prose-p:text-muted-foreground prose-p:leading-relaxed prose-p:my-2
+              prose-strong:text-farm-accent prose-strong:font-semibold
+              prose-ul:my-2 prose-ul:ml-5 prose-ul:list-disc
+              prose-ol:my-2 prose-ol:ml-5 prose-ol:list-decimal
+              prose-li:text-sm prose-li:text-muted-foreground prose-li:my-1 prose-li:leading-relaxed prose-li:marker:text-farm-accent
+              [&_strong]:text-farm-accent [&_strong]:font-semibold
+              [&_ul]:list-disc [&_ul]:ml-5
+              [&_ol]:list-decimal [&_ol]:ml-5
+              [&_ul+p]:mt-4">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm, remarkBreaks]}
+                rehypePlugins={[rehypeRaw]}
+              >
+                {document.ai_summary}
+              </ReactMarkdown>
+            </div>
+          </div>
         )}
 
         {/* No Summary */}
         {!document.ai_summary && !document.preview_url && (
-          <Card className="bg-farm-card border-farm-accent/20">
-            <CardContent className="py-12 text-center">
-              <FileText className="h-12 w-12 text-farm-muted mx-auto mb-4" />
-              <p className="text-farm-muted">No summary available for this document.</p>
-            </CardContent>
-          </Card>
+          <div className="bg-farm-card border border-farm-accent/20 rounded-lg p-4 py-12 text-center">
+            <FileText className="h-12 w-12 text-farm-muted mx-auto mb-4" />
+            <p className="text-sm text-muted-foreground">No summary available for this document.</p>
+          </div>
         )}
 
         {/* Footer - Branding */}

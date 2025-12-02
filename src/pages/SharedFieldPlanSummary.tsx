@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { publicAPI, FieldPlanSummaryPublicView } from "@/lib/api";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sprout, MapPin, Calendar, FileText, Package, Leaf, ArrowLeft } from "lucide-react";
+import { Sprout, MapPin, Calendar, FileText, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import ReactMarkdown from "react-markdown";
@@ -134,89 +133,69 @@ const SharedFieldPlanSummaryPage = () => {
       <div className="max-w-4xl mx-auto px-4 py-4 space-y-4">
         {/* Summary Text */}
         {summary.summary_text && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <FileText className="h-4 w-4 text-blue-500" />
-                Summary
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="prose prose-sm max-w-none text-farm-muted">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {summary.summary_text}
-                </ReactMarkdown>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="bg-card border rounded-lg p-4">
+            <h3 className="font-semibold mb-3">Summary</h3>
+            <div className="prose prose-sm max-w-none text-muted-foreground">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {summary.summary_text}
+              </ReactMarkdown>
+            </div>
+          </div>
         )}
 
         {/* Product Totals */}
         {summary.product_totals && summary.product_totals.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Package className="h-4 w-4 text-green-500" />
-                Products ({summary.product_totals.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {summary.product_totals.map((product: any, index: number) => (
-                  <div
-                    key={index}
-                    className="border-l-4 border-green-500/30 pl-3 py-2"
-                  >
-                    <div className="font-medium text-sm mb-1">
-                      {product.product_name || product.name || 'Unknown Product'}
+          <div className="bg-card border rounded-lg p-4">
+            <h3 className="font-semibold mb-3">Products ({summary.product_totals.length})</h3>
+            <div className="space-y-3">
+              {summary.product_totals.map((product: any, index: number) => (
+                <div
+                  key={index}
+                  className="border-l-4 border-green-500/30 pl-3 py-2"
+                >
+                  <div className="font-medium text-sm mb-1">
+                    {product.product_name || product.name || 'Unknown Product'}
+                  </div>
+                  
+                  <div className="text-sm space-y-2">
+                    <div className="font-medium text-green-600">
+                      {Number(product.total_quantity || product.quantity || 0).toFixed(1)} {product.quantity_unit || product.unit || 'units'}
                     </div>
                     
-                    <div className="text-sm space-y-2">
-                      <div className="font-medium text-green-600">
-                        {Number(product.total_quantity || product.quantity || 0).toFixed(1)} {product.quantity_unit || product.unit || 'units'}
+                    {product.used_in_fields && product.used_in_fields.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {product.used_in_fields.map((fieldName: string, fidx: number) => (
+                          <span
+                            key={fidx}
+                            className="inline-block px-2 py-0.5 bg-green-500/10 text-xs rounded text-green-600"
+                          >
+                            {fieldName}
+                          </span>
+                        ))}
                       </div>
-                      
-                      {product.used_in_fields && product.used_in_fields.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {product.used_in_fields.map((fieldName: string, fidx: number) => (
-                            <span
-                              key={fidx}
-                              className="inline-block px-2 py-0.5 bg-green-500/10 text-xs rounded text-green-600"
-                            >
-                              {fieldName}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                    )}
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
 
         {/* Fields & Plans */}
         {summary.plans && summary.plans.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Leaf className="h-4 w-4 text-green-500" />
-                Field Plans ({summary.plans.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {summary.plans.map((plan) => (
-                  <div
-                    key={plan.id}
-                    className="border-l-4 border-blue-500/30 pl-3 py-2"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-medium text-sm">
-                          {plan.field_name || 'Unknown Field'}
-                        </div>
+          <div className="bg-card border rounded-lg p-4">
+            <h3 className="font-semibold mb-3">Field Plans ({summary.plans.length})</h3>
+            <div className="space-y-3">
+              {summary.plans.map((plan) => (
+                <div
+                  key={plan.id}
+                  className="border-l-4 border-blue-500/30 pl-3 py-2"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium text-sm">
+                        {plan.field_name || 'Unknown Field'}
+                      </div>
                         {plan.farm_name && (
                           <div className="text-xs text-farm-muted">{plan.farm_name}</div>
                         )}
@@ -226,13 +205,12 @@ const SharedFieldPlanSummaryPage = () => {
                       )}
                     </div>
                     {plan.plan_name && (
-                      <div className="text-xs text-farm-muted mt-1">{plan.plan_name}</div>
+                      <div className="text-xs text-muted-foreground mt-1">{plan.plan_name}</div>
                     )}
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
+            </div>
         )}
 
         {/* Footer - Branding */}

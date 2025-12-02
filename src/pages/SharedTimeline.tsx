@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { publicAPI, TimelinePublicView } from "@/lib/api";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, MapPin, Calendar, FileText, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -167,74 +167,55 @@ const SharedTimelinePage = () => {
 
         {/* Complete Summary */}
         {timeline.summary_text && (
-          <Card className="bg-farm-card border-farm-accent/20">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2 text-farm-accent">
-                <FileText className="h-4 w-4" />
-                Complete Summary
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-farm-text leading-relaxed">{timeline.summary_text}</p>
-            </CardContent>
-          </Card>
+          <div className="bg-farm-card border border-farm-accent/20 rounded-lg p-4">
+            <h3 className="font-semibold mb-2">Complete Summary</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{timeline.summary_text}</p>
+          </div>
         )}
 
         {/* Key Observations */}
         {timeline.key_observations && timeline.key_observations.length > 0 && (
-          <Card className="bg-farm-card border-farm-accent/20">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base text-farm-accent">Key Observations</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-3">
-                {timeline.key_observations.map((obs, index) => (
-                  <li key={index} className="flex gap-3">
-                    <span className="text-farm-accent mt-1">•</span>
-                    <span className="text-farm-text leading-relaxed">{obs}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
+          <div className="bg-farm-card border border-farm-accent/20 rounded-lg p-4">
+            <h3 className="font-semibold mb-3">Key Observations</h3>
+            <ul className="space-y-2">
+              {timeline.key_observations.map((obs, index) => (
+                <li key={index} className="flex items-start gap-2">
+                  <span className="text-primary mt-0.5">•</span>
+                  <span className="text-sm text-muted-foreground flex-1">{obs}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
 
         {/* Trends */}
         {timeline.trends && timeline.trends.length > 0 && (
-          <Card className="bg-farm-card border-farm-accent/20">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base text-farm-accent">Trends</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-3">
-                {timeline.trends.map((trend, index) => (
-                  <li key={index} className="flex gap-3">
-                    <span className="text-farm-accent mt-1">•</span>
-                    <span className="text-farm-text leading-relaxed">{trend}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
+          <div className="bg-farm-card border border-farm-accent/20 rounded-lg p-4">
+            <h3 className="font-semibold mb-3">Trends</h3>
+            <ul className="space-y-2">
+              {timeline.trends.map((trend, index) => (
+                <li key={index} className="flex items-start gap-2">
+                  <span className="text-blue-600 mt-0.5">📈</span>
+                  <span className="text-sm text-muted-foreground flex-1">{trend}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
 
         {/* Recommendations */}
         {timeline.recommendations && timeline.recommendations.length > 0 && (
-          <Card className="bg-farm-card border-farm-accent/20">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base text-farm-accent">Recommendations</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-3">
-                {timeline.recommendations.map((rec, index) => (
-                  <li key={index} className="flex gap-3">
-                    <span className="text-farm-accent mt-1">•</span>
-                    <span className="text-farm-text leading-relaxed">{rec}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
+          <div className="bg-farm-card border border-farm-accent/20 rounded-lg p-4">
+            <h3 className="font-semibold mb-3">Recommendations</h3>
+            <ul className="space-y-2">
+              {timeline.recommendations.map((rec, index) => (
+                <li key={index} className="flex items-start gap-2">
+                  <span className="text-farm-accent mt-0.5">✓</span>
+                  <span className="text-sm text-muted-foreground flex-1">{rec}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
 
         {/* Footer - Branding */}

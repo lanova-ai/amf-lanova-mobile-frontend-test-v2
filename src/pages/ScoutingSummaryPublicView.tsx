@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { shareScoutingSummariesAPI, ScoutingSummaryPublicView } from "@/lib/api";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Leaf, MapPin, Calendar, AlertTriangle, CheckCircle2, Info, Navigation, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -161,64 +160,54 @@ const ScoutingSummaryPublicViewPage = () => {
       <div className="max-w-4xl mx-auto px-4 py-4 space-y-4">
         {/* Location Map - First for visual context */}
         {summary.latitude && summary.longitude && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Navigation className="h-4 w-4 text-green-500" />
-                Scouting Location
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {/* Embedded Hybrid Map */}
-              <div className="rounded-lg overflow-hidden border aspect-video">
-                <iframe
-                  src={`https://maps.google.com/maps?q=${summary.latitude},${summary.longitude}&t=h&z=17&output=embed`}
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0 }}
-                  allowFullScreen
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  title="Scouting Location Map"
-                />
-              </div>
-              {summary.location_description && (
-                <p className="text-sm text-farm-muted">
-                  📍 {summary.location_description}
-                </p>
-              )}
-              <p className="text-xs text-farm-muted">
-                Coordinates: {summary.latitude?.toFixed(6)}, {summary.longitude?.toFixed(6)}
+          <div className="bg-card border rounded-lg p-4 space-y-3">
+            <h3 className="font-semibold flex items-center gap-2">
+              <Navigation className="h-4 w-4 text-green-500" />
+              Scouting Location
+            </h3>
+            {/* Embedded Hybrid Map */}
+            <div className="rounded-lg overflow-hidden border aspect-video">
+              <iframe
+                src={`https://maps.google.com/maps?q=${summary.latitude},${summary.longitude}&t=h&z=17&output=embed`}
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="Scouting Location Map"
+              />
+            </div>
+            {summary.location_description && (
+              <p className="text-sm text-muted-foreground">
+                📍 {summary.location_description}
               </p>
-            </CardContent>
-          </Card>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Coordinates: {summary.latitude?.toFixed(6)}, {summary.longitude?.toFixed(6)}
+            </p>
+          </div>
         )}
 
         {/* Summary */}
         {summary.ai_summary && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Summary</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-farm-muted leading-relaxed">
-                {summary.ai_summary}
-              </p>
-            </CardContent>
-          </Card>
+          <div className="bg-card border rounded-lg p-4">
+            <h3 className="font-semibold mb-2">Summary</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {summary.ai_summary}
+            </p>
+          </div>
         )}
 
         {/* Issues Detected */}
         {summary.issues_detected && summary.issues_detected.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Issues Detected</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <div className="bg-card border rounded-lg p-4">
+            <h3 className="font-semibold mb-3">Issues Detected</h3>
+            <div className="space-y-3">
               {summary.issues_detected.map((issue, index) => (
                 <div
                   key={index}
-                  className="flex gap-3 p-4 rounded-lg border bg-card"
+                  className="flex gap-3 p-3 rounded-lg border bg-background"
                 >
                   <div className="mt-1">
                     {getSeverityIcon(issue.severity)}
@@ -232,119 +221,101 @@ const ScoutingSummaryPublicViewPage = () => {
                         <Badge variant="outline">{issue.type}</Badge>
                       )}
                     </div>
-                    <p className="font-medium">{issue.description}</p>
+                    <p className="text-sm font-medium">{issue.description}</p>
                     {issue.location && (
-                      <p className="text-sm text-farm-muted">
+                      <p className="text-sm text-muted-foreground">
                         Location: {issue.location}
                       </p>
                     )}
                     {issue.evidence_source && (
-                      <p className="text-xs text-farm-muted">
+                      <p className="text-xs text-muted-foreground">
                         Source: {issue.evidence_source}
                       </p>
                     )}
                   </div>
                 </div>
               ))}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
         {/* Recommendations */}
         {summary.recommendations && summary.recommendations.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Recommendations</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-3">
-                {summary.recommendations.map((recommendation, index) => (
-                  <li key={index} className="flex gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-farm-muted">
-                      {recommendation}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
+          <div className="bg-card border rounded-lg p-4">
+            <h3 className="font-semibold mb-3">Recommendations</h3>
+            <ul className="space-y-2">
+              {summary.recommendations.map((recommendation, index) => (
+                <li key={index} className="flex items-start gap-2">
+                  <span className="text-farm-accent mt-0.5">✓</span>
+                  <span className="text-sm text-muted-foreground flex-1">
+                    {recommendation}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
 
         {/* Location Description (only if no coordinates) */}
         {!summary.latitude && summary.location_description && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Location Details</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-farm-muted">
-                {summary.location_description}
-              </p>
-            </CardContent>
-          </Card>
+          <div className="bg-card border rounded-lg p-4">
+            <h3 className="font-semibold mb-2">Location Details</h3>
+            <p className="text-sm text-muted-foreground">
+              {summary.location_description}
+            </p>
+          </div>
         )}
 
         {/* Overall Assessment */}
         {summary.overall_assessment && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Overall Assessment</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-farm-muted">
-                {summary.overall_assessment}
-              </p>
-            </CardContent>
-          </Card>
+          <div className="bg-card border rounded-lg p-4">
+            <h3 className="font-semibold mb-2">Overall Assessment</h3>
+            <p className="text-sm text-muted-foreground">
+              {summary.overall_assessment}
+            </p>
+          </div>
         )}
 
         {/* Photos */}
         {summary.photos && summary.photos.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Field Photos</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {summary.photos.map((photoUrl, index) => (
-                  <div key={index} className="aspect-square rounded-lg overflow-hidden border">
-                    <img
-                      src={photoUrl}
-                      alt={`Field photo ${index + 1}`}
-                      className="w-full h-full object-cover hover:scale-105 transition-transform cursor-pointer"
-                      onClick={() => window.open(photoUrl, '_blank')}
-                    />
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          <div className="bg-card border rounded-lg p-4">
+            <h3 className="font-semibold mb-3">Field Photos</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {summary.photos.map((photoUrl, index) => (
+                <div key={index} className="aspect-square rounded-lg overflow-hidden border">
+                  <img
+                    src={photoUrl}
+                    alt={`Field photo ${index + 1}`}
+                    className="w-full h-full object-cover hover:scale-105 transition-transform cursor-pointer"
+                    onClick={() => window.open(photoUrl, '_blank')}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
         )}
 
         {/* Voice Recordings */}
         {summary.voice_recordings && summary.voice_recordings.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Voice Observations</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
+          <div className="bg-card border rounded-lg p-4">
+            <h3 className="font-semibold mb-3">Voice Observations</h3>
+            <div className="space-y-3">
               {summary.voice_recordings.map((voiceUrl, index) => (
-                <div key={index} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
+                <div key={index} className="flex items-center gap-3 p-3 rounded-lg border bg-background">
                   <div className="flex-shrink-0">
-                    <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center">
-                      <span className="text-green-500 font-semibold">{index + 1}</span>
+                    <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center">
+                      <span className="text-green-500 text-sm font-semibold">{index + 1}</span>
                     </div>
                   </div>
-                  <audio controls className="flex-1">
+                  <audio controls className="flex-1 h-8">
                     <source src={voiceUrl} type="audio/webm" />
                     <source src={voiceUrl} type="audio/mpeg" />
                     Your browser does not support audio playback.
                   </audio>
                 </div>
               ))}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
         {/* Footer - Branding */}

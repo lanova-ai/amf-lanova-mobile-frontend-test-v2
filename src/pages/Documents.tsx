@@ -2473,7 +2473,7 @@ export default function Documents() {
 
       {/* Delete Document Confirmation Dialog */}
       <AlertDialog open={documentToDelete !== null} onOpenChange={(open) => !open && setDocumentToDelete(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-sm mx-auto">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Document</AlertDialogTitle>
             <AlertDialogDescription>
@@ -2535,7 +2535,7 @@ export default function Documents() {
 
       {/* Delete Summary/Share Confirmation Dialog */}
       <AlertDialog open={itemToDelete !== null} onOpenChange={(open) => !open && setItemToDelete(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-sm mx-auto">
           <AlertDialogHeader>
             <AlertDialogTitle>
               Delete {itemToDelete?.type === 'summary' ? 'Summary' : 'Shared Timeline'}?
