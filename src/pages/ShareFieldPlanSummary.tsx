@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Send, RefreshCw, Edit, Mail, MessageSquare, Loader2, UserPlus } from "lucide-react";
+import { ArrowLeft, Send, Edit, Mail, MessageSquare, Loader2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -171,8 +171,6 @@ export default function ShareFieldPlanSummary() {
     }
   };
 
-  const selectedContactData = contacts.find(c => c.id === selectedContact);
-
   if (loadingSummary) {
     return (
       <div className="min-h-screen flex items-center justify-center page-background">
@@ -312,19 +310,16 @@ export default function ShareFieldPlanSummary() {
           <Button
             onClick={handleGenerateMessage}
             disabled={!selectedContact || !userContext.trim() || isGenerating}
-            className="w-full"
+            className="w-full bg-farm-accent hover:bg-farm-accent/90 text-farm-dark"
             size="lg"
           >
             {isGenerating ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generating Message...
+                Generating...
               </>
             ) : (
-              <>
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Generate Message
-              </>
+              "Generate Message"
             )}
           </Button>
 
@@ -344,10 +339,10 @@ export default function ShareFieldPlanSummary() {
                 </Button>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {communicationMethod === "email" && (
-                  <div className="space-y-2">
-                    <Label>Subject</Label>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-farm-muted uppercase tracking-wide">Subject</Label>
                     {isEditing ? (
                       <Input
                         value={editedSubject}
@@ -355,24 +350,24 @@ export default function ShareFieldPlanSummary() {
                         className="font-medium"
                       />
                     ) : (
-                      <div className="p-3 bg-muted rounded-lg font-medium">
+                      <div className="font-medium">
                         {editedSubject || generatedMessage.subject}
                       </div>
                     )}
                   </div>
                 )}
 
-                <div className="space-y-2">
-                  <Label>Message</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-farm-muted uppercase tracking-wide">Message</Label>
                   {isEditing ? (
                     <Textarea
                       value={editedBody}
                       onChange={(e) => setEditedBody(e.target.value)}
                       rows={12}
-                      className="resize-none font-mono text-sm"
+                      className="resize-none text-sm"
                     />
                   ) : (
-                    <div className="p-4 bg-muted rounded-lg whitespace-pre-wrap text-sm">
+                    <div className="whitespace-pre-wrap text-sm">
                       {editedBody || generatedMessage.body}
                     </div>
                   )}
@@ -383,7 +378,7 @@ export default function ShareFieldPlanSummary() {
               <Button
                 onClick={handleSendMessage}
                 disabled={isSending}
-                className="w-full"
+                className="w-full bg-farm-accent hover:bg-farm-accent/90 text-farm-dark"
                 size="lg"
               >
                 {isSending ? (

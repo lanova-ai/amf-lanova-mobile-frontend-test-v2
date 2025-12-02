@@ -286,19 +286,26 @@ const ScoutingSummaryPublicViewPage = () => {
           </Card>
         )}
 
-        {/* Footer */}
-        <div className="text-center text-sm text-farm-muted pt-8 pb-4">
-          <p>This report was generated using AskMyFarm AI</p>
-          <p className="mt-2">
-            <a
-              href="https://www.askmyfarm.us"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-green-500 hover:text-green-600 transition-colors"
-            >
-              Learn more about AskMyFarm
-            </a>
-          </p>
+        {/* Footer - Branding */}
+        <div className="text-center py-8 border-t mt-6">
+          <a 
+            href="https://askmyfarm.us" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="inline-flex flex-col items-center gap-3 hover:opacity-80 transition-opacity"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-4xl">🌾</span>
+              <span className="text-2xl font-bold">
+                <span className="text-primary">Ask</span>
+                <span className="text-farm-gold">My</span>
+                <span className="text-primary">Farm</span>
+              </span>
+            </div>
+            <span className="text-sm text-farm-muted">
+              AI-powered farm management • askmyfarm.us
+            </span>
+          </a>
         </div>
       </div>
     </div>

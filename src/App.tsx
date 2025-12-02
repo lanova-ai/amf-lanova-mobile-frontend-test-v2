@@ -61,6 +61,9 @@ import ScoutingNoteCreate from "./pages/ScoutingNoteCreate";
 import ScoutingSummaryDetail from "./pages/ScoutingSummaryDetail";
 import ShareScoutingSummary from "./pages/ShareScoutingSummary";
 import ScoutingSummaryPublicView from "./pages/ScoutingSummaryPublicView";
+import SharedFieldPlanSummary from "./pages/SharedFieldPlanSummary";
+import SharedTimeline from "./pages/SharedTimeline";
+import SharedDocument from "./pages/SharedDocument";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
@@ -190,6 +193,9 @@ const App = () => (
             {/* Public Routes (no authentication) */}
             <Route path="/briefings/:shareToken" element={<BriefingView />} />
             <Route path="/shared/scouting/:shareToken" element={<ScoutingSummaryPublicView />} />
+            <Route path="/shared/summary/:shareToken" element={<SharedFieldPlanSummary />} />
+            <Route path="/shared/timeline/:shareToken" element={<SharedTimeline />} />
+            <Route path="/shared/document/:shareToken" element={<SharedDocument />} />
             <Route path="/founding-farmers/apply" element={<FoundingFarmerApply />} />
             <Route path="/founding-farmers/signup" element={<FoundingFarmerSignup />} />
             <Route path="/terms" element={<Terms />} />

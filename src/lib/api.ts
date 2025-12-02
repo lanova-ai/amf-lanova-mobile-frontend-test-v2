@@ -2168,6 +2168,102 @@ export const shareTimelinesAPI = {
       method: 'DELETE'
     });
   },
+  
+  // Get public timeline summary (no auth required)
+  getPublicSummary: async (shareToken: string): Promise<TimelinePublicView> => {
+    const url = `${env.API_BASE_URL}/api/v1/share-timelines/public/${shareToken}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to load timeline summary');
+    }
+    return response.json();
+  },
+};
+
+// Public view types for shared content
+export interface TimelinePublicView {
+  field_name: string | null;
+  farm_name: string | null;
+  year: number | null;
+  time_period: string | null;
+  custom_title: string | null;
+  summary_text: string | null;
+  key_observations: string[];
+  trends: string[];
+  recommendations: string[];
+  total_documents: number;
+  shared_by: string;
+  shared_at: string | null;
+}
+
+export interface FieldPlanSummaryPublicView {
+  summary_name: string;
+  year: number;
+  total_plans: number;
+  total_fields: number;
+  summary_text: string | null;
+  product_totals: any[];
+  plans: Array<{
+    id: string;
+    plan_name: string | null;
+    year: number;
+    crop: string | null;
+    field_name: string | null;
+    farm_name: string | null;
+  }>;
+  shared_by: string;
+  shared_at: string | null;
+}
+
+export interface DocumentPublicView {
+  document_name: string | null;
+  document_type: string | null;
+  file_size: number | null;
+  field_name: string | null;
+  farm_name: string | null;
+  ai_summary: string | null;
+  document_date: string | null;
+  preview_url: string | null;
+  download_url: string | null;
+  shared_by: string;
+  shared_at: string | null;
+}
+
+// Public APIs (no auth required)
+export const publicAPI = {
+  // Get public field plan summary
+  getFieldPlanSummary: async (shareToken: string): Promise<FieldPlanSummaryPublicView> => {
+    const url = `${env.API_BASE_URL}/api/v1/field-plans/summary/public/${shareToken}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to load field plan summary');
+    }
+    return response.json();
+  },
+  
+  // Get public timeline summary
+  getTimelineSummary: async (shareToken: string): Promise<TimelinePublicView> => {
+    const url = `${env.API_BASE_URL}/api/v1/share-timelines/public/${shareToken}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to load timeline summary');
+    }
+    return response.json();
+  },
+  
+  // Get public document summary
+  getDocumentSummary: async (shareToken: string): Promise<DocumentPublicView> => {
+    const url = `${env.API_BASE_URL}/api/v1/documents/public/${shareToken}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to load document');
+    }
+    return response.json();
+  },
 };
 
 // ============================================

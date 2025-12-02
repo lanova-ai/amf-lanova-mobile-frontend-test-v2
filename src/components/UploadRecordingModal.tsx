@@ -108,8 +108,8 @@ export function UploadRecordingModal({ open, onClose, onUploadSuccess }: UploadR
               <div className="space-y-6">
                 <div className="text-center space-y-4">
                   <div className="flex justify-center">
-                    <div className="w-24 h-24 bg-gradient-to-br from-primary to-primary/70 rounded-full flex items-center justify-center shadow-lg shadow-primary/30">
-                      <FileAudio className="w-12 h-12 text-white" />
+                    <div className="w-24 h-24 bg-gradient-to-br from-farm-accent to-farm-accent/70 rounded-full flex items-center justify-center shadow-lg shadow-farm-accent/30">
+                      <FileAudio className="w-12 h-12 text-farm-dark" />
                     </div>
                   </div>
                   <div>
@@ -126,10 +126,10 @@ export function UploadRecordingModal({ open, onClose, onUploadSuccess }: UploadR
                 </div>
 
                 {/* Enhanced Button */}
-                <div className="bg-gradient-to-r from-primary/10 to-primary/5 border-2 border-primary/30 rounded-xl p-4 hover:shadow-lg hover:shadow-primary/20 transition-all">
+                <div className="bg-gradient-to-r from-farm-accent/10 to-farm-accent/5 border-2 border-farm-accent/30 rounded-xl p-4 hover:shadow-lg hover:shadow-farm-accent/20 transition-all">
                   <Button
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-full h-14 text-base font-semibold shadow-md"
+                    className="w-full h-14 text-base font-semibold shadow-md bg-farm-accent hover:bg-farm-accent/90 text-farm-dark"
                     size="lg"
                   >
                     <Upload className="w-6 h-6 mr-2" />
@@ -149,7 +149,7 @@ export function UploadRecordingModal({ open, onClose, onUploadSuccess }: UploadR
           ) : (
             <>
               {/* Enhanced Selected File Preview */}
-              <div className="bg-gradient-to-r from-primary/10 to-primary/5 border-2 border-primary/30 rounded-xl p-8 flex flex-col items-center justify-center overflow-hidden min-w-0 relative">
+              <div className="bg-gradient-to-r from-farm-accent/10 to-farm-accent/5 border-2 border-farm-accent/30 rounded-xl p-8 flex flex-col items-center justify-center overflow-hidden min-w-0 relative">
                 {!uploading && (
                   <button
                     onClick={() => setSelectedFile(null)}
@@ -158,8 +158,8 @@ export function UploadRecordingModal({ open, onClose, onUploadSuccess }: UploadR
                     <X className="w-5 h-5" />
                   </button>
                 )}
-                <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center mb-2 flex-shrink-0">
-                  <FileAudio className="w-6 h-6 text-primary" />
+                <div className="w-12 h-12 bg-farm-accent/20 rounded-lg flex items-center justify-center mb-2 flex-shrink-0">
+                  <FileAudio className="w-6 h-6 text-farm-accent" />
                 </div>
                 <div className="w-full min-w-0 px-2 max-w-full">
                   <h3 
@@ -179,14 +179,14 @@ export function UploadRecordingModal({ open, onClose, onUploadSuccess }: UploadR
                 <Button
                   onClick={handleCancel}
                   variant="outline"
-                  className="flex-1 h-12"
+                  className="flex-1 h-12 border-farm-accent/20 text-farm-accent hover:bg-farm-accent/10"
                   disabled={uploading}
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={handleUpload}
-                  className="flex-1 h-12 text-base font-semibold shadow-md"
+                  className="flex-1 h-12 text-base font-semibold shadow-md bg-farm-accent hover:bg-farm-accent/90 text-farm-dark"
                   disabled={uploading}
                 >
                   {uploading ? (
