@@ -52,7 +52,7 @@ const SharedTimelinePage = () => {
       <div className="min-h-screen bg-gradient-to-b from-background to-background/80 flex items-center justify-center p-6">
         <div className="text-center space-y-4 max-w-md">
           <Clock className="h-16 w-16 text-blue-500 mx-auto" />
-          <h1 className="text-2xl font-bold">Timeline Not Found</h1>
+          <h1 className="text-lg font-semibold">Timeline Not Found</h1>
           <p className="text-farm-muted">{error}</p>
         </div>
       </div>
@@ -110,14 +110,14 @@ const SharedTimelinePage = () => {
 
       {/* Header */}
       <div className="bg-card border-b">
-        <div className="max-w-4xl mx-auto px-6 py-8">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-3 bg-blue-500/10 rounded-lg">
-              <Clock className="h-6 w-6 text-blue-500" />
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 bg-blue-500/10 rounded-lg">
+              <Clock className="h-5 w-5 text-blue-500" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">{title}</h1>
-              <p className="text-sm text-farm-muted">
+              <h1 className="text-lg font-semibold">{title}</h1>
+              <p className="text-xs text-farm-muted">
                 Shared by {timeline.shared_by}
                 {formattedDate && ` on ${formattedDate}`}
               </p>
@@ -125,7 +125,7 @@ const SharedTimelinePage = () => {
           </div>
 
           {/* Timeline Info */}
-          <div className="flex flex-wrap gap-4 text-sm">
+          <div className="flex flex-wrap gap-3 text-xs">
             {timeline.field_name && (
               <div className="flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-farm-muted" />
@@ -149,7 +149,7 @@ const SharedTimelinePage = () => {
       </div>
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
+      <div className="max-w-4xl mx-auto px-4 py-4 space-y-4">
         {/* Document Stats */}
         {timeline.total_documents > 0 && (
           <Card className="bg-farm-card border-farm-accent/20">
@@ -169,8 +169,8 @@ const SharedTimelinePage = () => {
         {timeline.summary_text && (
           <Card className="bg-farm-card border-farm-accent/20">
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center gap-2 text-farm-accent">
-                <FileText className="h-5 w-5" />
+              <CardTitle className="text-base flex items-center gap-2 text-farm-accent">
+                <FileText className="h-4 w-4" />
                 Complete Summary
               </CardTitle>
             </CardHeader>
@@ -184,7 +184,7 @@ const SharedTimelinePage = () => {
         {timeline.key_observations && timeline.key_observations.length > 0 && (
           <Card className="bg-farm-card border-farm-accent/20">
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg text-farm-accent">Key Observations</CardTitle>
+              <CardTitle className="text-base text-farm-accent">Key Observations</CardTitle>
             </CardHeader>
             <CardContent>
               <ul className="space-y-3">
@@ -203,7 +203,7 @@ const SharedTimelinePage = () => {
         {timeline.trends && timeline.trends.length > 0 && (
           <Card className="bg-farm-card border-farm-accent/20">
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg text-farm-accent">Trends</CardTitle>
+              <CardTitle className="text-base text-farm-accent">Trends</CardTitle>
             </CardHeader>
             <CardContent>
               <ul className="space-y-3">
@@ -222,7 +222,7 @@ const SharedTimelinePage = () => {
         {timeline.recommendations && timeline.recommendations.length > 0 && (
           <Card className="bg-farm-card border-farm-accent/20">
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg text-farm-accent">Recommendations</CardTitle>
+              <CardTitle className="text-base text-farm-accent">Recommendations</CardTitle>
             </CardHeader>
             <CardContent>
               <ul className="space-y-3">
@@ -246,8 +246,8 @@ const SharedTimelinePage = () => {
             className="inline-flex flex-col items-center gap-3 hover:opacity-80 transition-opacity"
           >
             <div className="flex items-center gap-3">
-              <span className="text-4xl">🌾</span>
-              <span className="text-2xl font-bold">
+              <span className="text-2xl">🌾</span>
+              <span className="text-lg font-bold">
                 <span className="text-primary">Ask</span>
                 <span className="text-farm-gold">My</span>
                 <span className="text-primary">Farm</span>

@@ -75,7 +75,7 @@ const SharedDocumentPage = () => {
       <div className="min-h-screen bg-gradient-to-b from-background to-background/80 flex items-center justify-center p-6">
         <div className="text-center space-y-4 max-w-md">
           <FileText className="h-16 w-16 text-blue-500 mx-auto" />
-          <h1 className="text-2xl font-bold">Document Not Found</h1>
+          <h1 className="text-lg font-semibold">Document Not Found</h1>
           <p className="text-farm-muted">{error}</p>
         </div>
       </div>
@@ -127,14 +127,14 @@ const SharedDocumentPage = () => {
 
       {/* Header */}
       <div className="bg-card border-b">
-        <div className="max-w-4xl mx-auto px-6 py-8">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-3 bg-blue-500/10 rounded-lg">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 bg-blue-500/10 rounded-lg">
               {getDocumentIcon(document.document_type)}
             </div>
             <div>
-              <h1 className="text-2xl font-bold">{document.document_name || 'Document'}</h1>
-              <p className="text-sm text-farm-muted">
+              <h1 className="text-lg font-semibold">{document.document_name || 'Document'}</h1>
+              <p className="text-xs text-farm-muted">
                 Shared by {document.shared_by}
                 {formattedDate && ` on ${formattedDate}`}
               </p>
@@ -189,7 +189,7 @@ const SharedDocumentPage = () => {
       </div>
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
+      <div className="max-w-4xl mx-auto px-4 py-4 space-y-4">
         {/* Preview Image */}
         {document.preview_url && (document.document_type === 'photo' || document.document_type === 'image') && (
           <Card className="bg-farm-card border-farm-accent/20 overflow-hidden">
@@ -207,8 +207,8 @@ const SharedDocumentPage = () => {
         {document.ai_summary && (
           <Card className="bg-farm-card border-farm-accent/20">
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center gap-2 text-farm-text">
-                <FileText className="h-5 w-5 text-farm-accent" />
+              <CardTitle className="text-base flex items-center gap-2 text-farm-text">
+                <FileText className="h-4 w-4 text-farm-accent" />
                 AI Summary
               </CardTitle>
             </CardHeader>
@@ -254,8 +254,8 @@ const SharedDocumentPage = () => {
             className="inline-flex flex-col items-center gap-3 hover:opacity-80 transition-opacity"
           >
             <div className="flex items-center gap-3">
-              <span className="text-4xl">🌾</span>
-              <span className="text-2xl font-bold">
+              <span className="text-2xl">🌾</span>
+              <span className="text-lg font-bold">
                 <span className="text-primary">Ask</span>
                 <span className="text-farm-gold">My</span>
                 <span className="text-primary">Farm</span>

@@ -1524,14 +1524,14 @@ export default function Documents() {
                   onClick={() => isSelectionMode ? toggleDocumentSelection(doc.id) : navigate(`/documents/${doc.id}`)}
                 >
                   {/* Three-dot menu - Top Right */}
-                  <div className="absolute top-2 right-2 z-10">
-                    <DropdownMenu>
+                  <div className="absolute top-2 right-2 z-20">
+                    <DropdownMenu modal={false}>
                       <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <button className="p-0.5 hover:bg-accent/50 rounded transition-colors">
+                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-accent/50">
                           <MoreVertical className="h-3.5 w-3.5 text-farm-muted" />
-                        </button>
+                        </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                      <DropdownMenuContent align="end" className="z-50">
                         <DropdownMenuItem onClick={(e) => {
                           e.stopPropagation();
                           navigate(`/documents/${doc.id}`);
@@ -1950,14 +1950,14 @@ export default function Documents() {
                     onClick={() => handleViewSummaryDetail(summary)}
                   >
                     {/* Three-dot menu - Top Right */}
-                    <div className="absolute top-2 right-2 z-10">
-                      <DropdownMenu>
+                    <div className="absolute top-2 right-2 z-20">
+                      <DropdownMenu modal={false}>
                         <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <button className="p-0.5 hover:bg-accent/50 rounded transition-colors">
+                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-accent/50">
                             <MoreVertical className="h-3.5 w-3.5 text-farm-muted" />
-                          </button>
+                          </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                        <DropdownMenuContent align="end" className="z-50">
                           <DropdownMenuItem onClick={(e) => {
                             e.stopPropagation();
                             handleViewSummaryDetail(summary);
@@ -2347,14 +2347,14 @@ export default function Documents() {
                     onClick={() => setSelectedShare(share)}
                   >
                     {/* Three-dot menu - Top Right */}
-                    <div className="absolute top-2 right-2 z-10">
-                      <DropdownMenu>
+                    <div className="absolute top-2 right-2 z-20">
+                      <DropdownMenu modal={false}>
                         <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <button className="p-0.5 hover:bg-accent/50 rounded transition-colors">
+                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-accent/50">
                             <MoreVertical className="h-3.5 w-3.5 text-farm-muted" />
-                          </button>
+                          </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                        <DropdownMenuContent align="end" className="z-50">
                           <DropdownMenuItem onClick={(e) => {
                             e.stopPropagation();
                             setSelectedShare(share);

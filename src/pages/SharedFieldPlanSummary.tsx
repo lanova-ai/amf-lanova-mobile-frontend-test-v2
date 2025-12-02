@@ -54,7 +54,7 @@ const SharedFieldPlanSummaryPage = () => {
       <div className="min-h-screen bg-gradient-to-b from-background to-background/80 flex items-center justify-center p-6">
         <div className="text-center space-y-4 max-w-md">
           <Sprout className="h-16 w-16 text-green-500 mx-auto" />
-          <h1 className="text-2xl font-bold">Field Plan Summary Not Found</h1>
+          <h1 className="text-lg font-semibold">Field Plan Summary Not Found</h1>
           <p className="text-farm-muted">{error}</p>
         </div>
       </div>
@@ -98,14 +98,14 @@ const SharedFieldPlanSummaryPage = () => {
 
       {/* Header */}
       <div className="bg-card border-b">
-        <div className="max-w-4xl mx-auto px-6 py-8">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-3 bg-green-500/10 rounded-lg">
-              <Sprout className="h-6 w-6 text-green-500" />
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 bg-green-500/10 rounded-lg">
+              <Sprout className="h-5 w-5 text-green-500" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">{summary.summary_name}</h1>
-              <p className="text-sm text-farm-muted">
+              <h1 className="text-lg font-semibold">{summary.summary_name}</h1>
+              <p className="text-xs text-farm-muted">
                 Shared by {summary.shared_by}
                 {formattedDate && ` on ${formattedDate}`}
               </p>
@@ -131,13 +131,13 @@ const SharedFieldPlanSummaryPage = () => {
       </div>
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
+      <div className="max-w-4xl mx-auto px-4 py-4 space-y-4">
         {/* Summary Text */}
         {summary.summary_text && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <FileText className="h-5 w-5 text-blue-500" />
+              <CardTitle className="text-base flex items-center gap-2">
+                <FileText className="h-4 w-4 text-blue-500" />
                 Summary
               </CardTitle>
             </CardHeader>
@@ -155,8 +155,8 @@ const SharedFieldPlanSummaryPage = () => {
         {summary.product_totals && summary.product_totals.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Package className="h-5 w-5 text-green-500" />
+              <CardTitle className="text-base flex items-center gap-2">
+                <Package className="h-4 w-4 text-green-500" />
                 Products ({summary.product_totals.length})
               </CardTitle>
             </CardHeader>
@@ -200,8 +200,8 @@ const SharedFieldPlanSummaryPage = () => {
         {summary.plans && summary.plans.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Leaf className="h-5 w-5 text-green-500" />
+              <CardTitle className="text-base flex items-center gap-2">
+                <Leaf className="h-4 w-4 text-green-500" />
                 Field Plans ({summary.plans.length})
               </CardTitle>
             </CardHeader>
@@ -244,8 +244,8 @@ const SharedFieldPlanSummaryPage = () => {
             className="inline-flex flex-col items-center gap-3 hover:opacity-80 transition-opacity"
           >
             <div className="flex items-center gap-3">
-              <span className="text-4xl">🌾</span>
-              <span className="text-2xl font-bold">
+              <span className="text-2xl">🌾</span>
+              <span className="text-lg font-bold">
                 <span className="text-primary">Ask</span>
                 <span className="text-farm-gold">My</span>
                 <span className="text-primary">Farm</span>

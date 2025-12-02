@@ -78,7 +78,7 @@ const ScoutingSummaryPublicViewPage = () => {
       <div className="min-h-screen bg-gradient-to-b from-background to-background/80 flex items-center justify-center p-6">
         <div className="text-center space-y-4 max-w-md">
           <Leaf className="h-16 w-16 text-green-500 mx-auto" />
-          <h1 className="text-2xl font-bold">Scouting Summary Not Found</h1>
+          <h1 className="text-lg font-semibold">Scouting Summary Not Found</h1>
           <p className="text-farm-muted">{error}</p>
         </div>
       </div>
@@ -122,21 +122,21 @@ const ScoutingSummaryPublicViewPage = () => {
 
       {/* Header */}
       <div className="bg-card border-b">
-        <div className="max-w-4xl mx-auto px-6 py-8">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-3 bg-green-500/10 rounded-lg">
-              <Leaf className="h-6 w-6 text-green-500" />
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 bg-green-500/10 rounded-lg">
+              <Leaf className="h-5 w-5 text-green-500" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">Field Scouting Report</h1>
-              <p className="text-sm text-farm-muted">
+              <h1 className="text-lg font-semibold">Field Scouting Report</h1>
+              <p className="text-xs text-farm-muted">
                 Shared by {summary.shared_by}
               </p>
             </div>
           </div>
 
           {/* Field Info */}
-          <div className="flex flex-wrap gap-4 text-sm items-center">
+          <div className="flex flex-wrap gap-3 text-xs items-center">
             {summary.field_name && (
               <div className="flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-farm-muted" />
@@ -158,13 +158,13 @@ const ScoutingSummaryPublicViewPage = () => {
       </div>
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
+      <div className="max-w-4xl mx-auto px-4 py-4 space-y-4">
         {/* Location Map - First for visual context */}
         {summary.latitude && summary.longitude && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Navigation className="h-5 w-5 text-green-500" />
+              <CardTitle className="text-base flex items-center gap-2">
+                <Navigation className="h-4 w-4 text-green-500" />
                 Scouting Location
               </CardTitle>
             </CardHeader>
@@ -198,7 +198,7 @@ const ScoutingSummaryPublicViewPage = () => {
         {summary.ai_summary && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Summary</CardTitle>
+              <CardTitle className="text-base">Summary</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-farm-muted leading-relaxed">
@@ -212,7 +212,7 @@ const ScoutingSummaryPublicViewPage = () => {
         {summary.issues_detected && summary.issues_detected.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Issues Detected</CardTitle>
+              <CardTitle className="text-base">Issues Detected</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {summary.issues_detected.map((issue, index) => (
@@ -254,7 +254,7 @@ const ScoutingSummaryPublicViewPage = () => {
         {summary.recommendations && summary.recommendations.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Recommendations</CardTitle>
+              <CardTitle className="text-base">Recommendations</CardTitle>
             </CardHeader>
             <CardContent>
               <ul className="space-y-3">
@@ -275,7 +275,7 @@ const ScoutingSummaryPublicViewPage = () => {
         {!summary.latitude && summary.location_description && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Location Details</CardTitle>
+              <CardTitle className="text-base">Location Details</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-farm-muted">
@@ -289,7 +289,7 @@ const ScoutingSummaryPublicViewPage = () => {
         {summary.overall_assessment && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Overall Assessment</CardTitle>
+              <CardTitle className="text-base">Overall Assessment</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-farm-muted">
@@ -303,7 +303,7 @@ const ScoutingSummaryPublicViewPage = () => {
         {summary.photos && summary.photos.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Field Photos</CardTitle>
+              <CardTitle className="text-base">Field Photos</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -326,7 +326,7 @@ const ScoutingSummaryPublicViewPage = () => {
         {summary.voice_recordings && summary.voice_recordings.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Voice Observations</CardTitle>
+              <CardTitle className="text-base">Voice Observations</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {summary.voice_recordings.map((voiceUrl, index) => (
@@ -356,8 +356,8 @@ const ScoutingSummaryPublicViewPage = () => {
             className="inline-flex flex-col items-center gap-3 hover:opacity-80 transition-opacity"
           >
             <div className="flex items-center gap-3">
-              <span className="text-4xl">🌾</span>
-              <span className="text-2xl font-bold">
+              <span className="text-2xl">🌾</span>
+              <span className="text-lg font-bold">
                 <span className="text-primary">Ask</span>
                 <span className="text-farm-gold">My</span>
                 <span className="text-primary">Farm</span>
