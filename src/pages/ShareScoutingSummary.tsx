@@ -294,9 +294,13 @@ export default function ShareScoutingSummary() {
               <div className="flex gap-2">
                 <Button
                   type="button"
-                  variant={communicationMethod === "email" ? "default" : "outline"}
+                  variant="outline"
                   onClick={() => setCommunicationMethod("email")}
-                  className="flex-1"
+                  className={`flex-1 ${
+                    communicationMethod === "email" 
+                      ? "bg-farm-accent hover:bg-farm-accent/90 text-farm-dark border-farm-accent" 
+                      : "border-farm-accent/20 text-farm-accent hover:bg-farm-accent/10"
+                  }`}
                   disabled={selectedContactData && !selectedContactData.email}
                 >
                   <Mail className="w-4 h-4 mr-2" />
@@ -304,9 +308,13 @@ export default function ShareScoutingSummary() {
                 </Button>
                 <Button
                   type="button"
-                  variant={communicationMethod === "sms" ? "default" : "outline"}
+                  variant="outline"
                   onClick={() => setCommunicationMethod("sms")}
-                  className="flex-1"
+                  className={`flex-1 ${
+                    communicationMethod === "sms" 
+                      ? "bg-farm-accent hover:bg-farm-accent/90 text-farm-dark border-farm-accent" 
+                      : "border-farm-accent/20 text-farm-accent hover:bg-farm-accent/10"
+                  }`}
                   disabled={selectedContactData && !selectedContactData.phone}
                 >
                   <MessageSquare className="w-4 h-4 mr-2" />
@@ -350,7 +358,7 @@ export default function ShareScoutingSummary() {
             <Button
               onClick={handleGenerateMessage}
               disabled={!selectedContact || !userContext.trim() || isGenerating}
-              className="w-full"
+              className="w-full bg-farm-accent hover:bg-farm-accent/90 text-farm-dark"
             >
               {isGenerating ? (
                 <>
@@ -365,7 +373,7 @@ export default function ShareScoutingSummary() {
 
           {/* Preview/Edit Message */}
           {generatedMessage && (
-            <div className="border rounded-lg p-4 space-y-4">
+            <div className="border border-farm-accent/20 bg-farm-card rounded-lg p-4 space-y-4">
               <div className="flex items-center justify-between">
                 <h4 className="font-medium">Message Preview</h4>
                 <div className="flex gap-2">
@@ -449,7 +457,7 @@ export default function ShareScoutingSummary() {
               <Button
                 onClick={handleSendMessage}
                 disabled={isSending}
-                className="w-full"
+                className="w-full bg-farm-accent hover:bg-farm-accent/90 text-farm-dark"
               >
                 {isSending ? (
                   <>

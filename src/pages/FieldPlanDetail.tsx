@@ -385,6 +385,8 @@ const FieldPlanDetail = () => {
         return <Droplets className={className} />; // Spray application
       case 'insecticide':
         return <Droplets className={className} />; // Spray application
+      case 'irrigation':
+        return <Droplets className={className} />; // Water/irrigation (same as spraying)
       case 'fungicide':
         return <Droplets className={className} />; // Spray application
       case 'cultivation':
@@ -411,6 +413,10 @@ const FieldPlanDetail = () => {
       case 'fungicide':
       case 'insecticide':
       case 'fertilizer':
+        return <Droplets className={className} />;
+      case 'irrigation':
+      case 'chemigation':
+      case 'fertigation':
         return <Droplets className={className} />;
       case 'tillage':
       case 'cultivation':
@@ -1903,6 +1909,7 @@ const FieldPlanDetail = () => {
                   <SelectItem value="herbicide">Herbicide</SelectItem>
                   <SelectItem value="fungicide">Fungicide</SelectItem>
                   <SelectItem value="insecticide">Insecticide</SelectItem>
+                  <SelectItem value="irrigation">Irrigation</SelectItem>
                   <SelectItem value="cultivation">Cultivation</SelectItem>
                   <SelectItem value="tillage">Tillage</SelectItem>
                   <SelectItem value="harvest">Harvest</SelectItem>
@@ -1987,6 +1994,7 @@ const FieldPlanDetail = () => {
                   <SelectItem value="herbicide">Herbicide</SelectItem>
                   <SelectItem value="fungicide">Fungicide</SelectItem>
                   <SelectItem value="insecticide">Insecticide</SelectItem>
+                  <SelectItem value="irrigation">Irrigation</SelectItem>
                   <SelectItem value="cultivation">Cultivation</SelectItem>
                   <SelectItem value="tillage">Tillage</SelectItem>
                   <SelectItem value="harvest">Harvest</SelectItem>

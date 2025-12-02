@@ -3,7 +3,8 @@ import { useParams } from "react-router-dom";
 import { shareScoutingSummariesAPI, ScoutingSummaryPublicView } from "@/lib/api";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Leaf, MapPin, Calendar, AlertTriangle, CheckCircle2, Info } from "lucide-react";
+import { Leaf, MapPin, Calendar, AlertTriangle, CheckCircle2, Info, Navigation, ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const ScoutingSummaryPublicViewPage = () => {
@@ -94,6 +95,31 @@ const ScoutingSummaryPublicViewPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/80">
+      {/* Top Navigation Bar */}
+      <div className="bg-farm-dark border-b border-farm-accent/20 sticky top-0 z-20">
+        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-farm-accent hover:bg-farm-accent/10 mr-3"
+            onClick={() => window.location.href = 'https://askmyfarm.us'}
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <a 
+            href="https://askmyfarm.us" 
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          >
+            <span className="text-2xl">🌾</span>
+            <span className="font-bold">
+              <span className="text-primary">Ask</span>
+              <span className="text-farm-gold">My</span>
+              <span className="text-primary">Farm</span>
+            </span>
+          </a>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="bg-card border-b">
         <div className="max-w-4xl mx-auto px-6 py-8">
@@ -110,7 +136,7 @@ const ScoutingSummaryPublicViewPage = () => {
           </div>
 
           {/* Field Info */}
-          <div className="flex flex-wrap gap-4 text-sm">
+          <div className="flex flex-wrap gap-4 text-sm items-center">
             {summary.field_name && (
               <div className="flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-farm-muted" />
@@ -133,6 +159,41 @@ const ScoutingSummaryPublicViewPage = () => {
 
       {/* Content */}
       <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
+        {/* Location Map - First for visual context */}
+        {summary.latitude && summary.longitude && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Navigation className="h-5 w-5 text-green-500" />
+                Scouting Location
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {/* Embedded Hybrid Map */}
+              <div className="rounded-lg overflow-hidden border aspect-video">
+                <iframe
+                  src={`https://maps.google.com/maps?q=${summary.latitude},${summary.longitude}&t=h&z=17&output=embed`}
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title="Scouting Location Map"
+                />
+              </div>
+              {summary.location_description && (
+                <p className="text-sm text-farm-muted">
+                  📍 {summary.location_description}
+                </p>
+              )}
+              <p className="text-xs text-farm-muted">
+                Coordinates: {summary.latitude?.toFixed(6)}, {summary.longitude?.toFixed(6)}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Summary */}
         {summary.ai_summary && (
           <Card>
@@ -210,8 +271,8 @@ const ScoutingSummaryPublicViewPage = () => {
           </Card>
         )}
 
-        {/* Location Description */}
-        {summary.location_description && (
+        {/* Location Description (only if no coordinates) */}
+        {!summary.latitude && summary.location_description && (
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Location Details</CardTitle>

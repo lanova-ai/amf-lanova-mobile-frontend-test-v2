@@ -3,7 +3,8 @@ import { useParams } from "react-router-dom";
 import { publicAPI, FieldPlanSummaryPublicView } from "@/lib/api";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sprout, MapPin, Calendar, FileText, Package, Leaf } from "lucide-react";
+import { Sprout, MapPin, Calendar, FileText, Package, Leaf, ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -70,6 +71,31 @@ const SharedFieldPlanSummaryPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/80">
+      {/* Top Navigation Bar */}
+      <div className="bg-farm-dark border-b border-farm-accent/20 sticky top-0 z-20">
+        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-farm-accent hover:bg-farm-accent/10 mr-3"
+            onClick={() => window.location.href = 'https://askmyfarm.us'}
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <a 
+            href="https://askmyfarm.us" 
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          >
+            <span className="text-2xl">🌾</span>
+            <span className="font-bold">
+              <span className="text-primary">Ask</span>
+              <span className="text-farm-gold">My</span>
+              <span className="text-primary">Farm</span>
+            </span>
+          </a>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="bg-card border-b">
         <div className="max-w-4xl mx-auto px-6 py-8">

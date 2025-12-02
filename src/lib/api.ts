@@ -2970,6 +2970,9 @@ export interface ScoutingSummaryPublicView {
   farm_name?: string;
   scouting_date?: string;
   location_description?: string;
+  latitude?: number;
+  longitude?: number;
+  gps_link?: string;
   ai_summary?: string;
   issues_detected?: Array<{
     type?: string;
