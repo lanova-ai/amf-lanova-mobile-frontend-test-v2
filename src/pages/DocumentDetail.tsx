@@ -831,7 +831,7 @@ export default function DocumentDetail() {
                                  document?.original_filename?.toLowerCase().endsWith('.heif');
                   parent.innerHTML = `
                     <div class="p-12 flex flex-col items-center justify-center bg-farm-dark">
-                      <svg class="h-16 w-16 text-farm-muted mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                      <svg class="h-16 w-16 text-farm-muted mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                       <p class="text-sm text-farm-muted">Image preview not available${isHeic ? ' (HEIC format)' : ''}</p>
                       <p class="text-xs text-farm-muted mt-1">${isHeic ? 'HEIC files are being converted. Try reprocessing or downloading the file.' : 'The file is processing or in an unsupported format'}</p>
                     </div>
@@ -839,10 +839,29 @@ export default function DocumentDetail() {
                 }
               }}
             />
+          ) : (document.mime_type === 'application/pdf' || document.document_type === 'pdf') && document.file_url ? (
+            <div className="relative">
+              <iframe
+                src={`${document.file_url}#toolbar=0&navpanes=0`}
+                className="w-full h-[500px] bg-white"
+                title={document.title || document.original_filename}
+              />
+              <div className="absolute bottom-2 right-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => window.open(document.file_url, '_blank')}
+                  className="bg-farm-card/90 hover:bg-farm-card text-farm-text text-xs"
+                >
+                  Open Full Screen
+                </Button>
+              </div>
+            </div>
           ) : (
             <div className="p-12 flex flex-col items-center justify-center bg-farm-dark">
               <FileText className="h-16 w-16 text-farm-muted mb-4" />
-              <p className="text-sm text-farm-muted">PDF Document</p>
+              <p className="text-sm text-farm-muted">Document Preview Not Available</p>
+              <p className="text-xs text-farm-muted mt-1">Click Download to view the file</p>
             </div>
           )}
         </div>
