@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { scoutingNotesAPI, fieldsAPI, shareScoutingSummariesAPI, type ScoutingNote, type Field } from "@/lib/api";
 import { ScoutingNoteCard } from "@/components/scouting/ScoutingNoteCard";
@@ -85,15 +85,109 @@ export default function ScoutingNotes() {
     loadData();
   }, []); // Run only once on mount
   
+  // Track note being processed for AI
+  const [processingNoteId, setProcessingNoteId] = useState<string | null>(null);
+  const processingPollRef = useRef<NodeJS.Timeout | null>(null);
+  
   // Handle navigation from create page
   useEffect(() => {
     if (location.state?.newNoteId) {
-      console.log('🔄 Detected new note from create page, reloading in background');
+      const noteId = location.state.newNoteId;
+      const isProcessing = location.state.processing;
+      
+      console.log('🔄 Detected new note from create page', { noteId, isProcessing });
+      
       // Clear the state to prevent re-triggering
       navigate(location.pathname, { replace: true, state: {} });
-      // Reload data in background WITHOUT showing spinner
-      loadData(false);
+      
+      // Reload data in background, then apply optimistic update
+      loadData(false).then(() => {
+        // If AI processing was requested, start polling for status
+        if (isProcessing) {
+          setProcessingNoteId(noteId);
+          
+          // ✅ OPTIMISTICALLY show "Analyzing" status immediately AFTER data loads
+          // (So it doesn't get overwritten by stale server data)
+          setNotes(prevNotes => 
+            prevNotes.map(note => 
+              note.id === noteId 
+                ? { ...note, ai_status: 'processing' as const }
+                : note
+            )
+          );
+          
+          // Poll for AI status (no toast - the "Analyzing" badge on the card is enough)
+          let consecutiveErrors = 0;
+          const pollForAIStatus = async () => {
+            try {
+              const updatedNote = await scoutingNotesAPI.getScoutingNote(noteId);
+              consecutiveErrors = 0; // Reset error count on success
+              
+              // Update the note in the list
+              setNotes(prevNotes => 
+                prevNotes.map(note => 
+                  note.id === noteId ? updatedNote : note
+                )
+              );
+              
+              // Check if processing is complete
+              if (updatedNote.ai_status === 'completed') {
+                toast.success("AI analysis completed!", { duration: 3000 });
+                setProcessingNoteId(null);
+                if (processingPollRef.current) {
+                  clearInterval(processingPollRef.current);
+                  processingPollRef.current = null;
+                }
+              } else if (updatedNote.ai_status === 'failed') {
+                toast.error("AI analysis failed", { duration: 4000 });
+                setProcessingNoteId(null);
+                if (processingPollRef.current) {
+                  clearInterval(processingPollRef.current);
+                  processingPollRef.current = null;
+                }
+              }
+              // Continue polling if still 'processing' or 'pending'
+            } catch (error) {
+              consecutiveErrors++;
+              console.warn(`AI status check failed (attempt ${consecutiveErrors}):`, error);
+              // Only stop polling after 5 consecutive errors
+              if (consecutiveErrors >= 5) {
+                console.error("Too many consecutive errors, stopping AI status polling");
+                setProcessingNoteId(null);
+                if (processingPollRef.current) {
+                  clearInterval(processingPollRef.current);
+                  processingPollRef.current = null;
+                }
+              }
+              // Otherwise continue polling - transient errors are expected
+            }
+          };
+          
+          // Initial check after 1.5 seconds (reduced from 3s for faster feedback)
+          setTimeout(() => {
+            pollForAIStatus();
+            // Then poll every 3 seconds
+            processingPollRef.current = setInterval(pollForAIStatus, 3000);
+          }, 1500);
+          
+          // Stop polling after 2 minutes max
+          setTimeout(() => {
+            if (processingPollRef.current) {
+              clearInterval(processingPollRef.current);
+              processingPollRef.current = null;
+              setProcessingNoteId(null);
+            }
+          }, 120000);
+        }
+      });
     }
+    
+    // Cleanup on unmount
+    return () => {
+      if (processingPollRef.current) {
+        clearInterval(processingPollRef.current);
+      }
+    };
   }, [location.state?.newNoteId]);
 
   useEffect(() => {

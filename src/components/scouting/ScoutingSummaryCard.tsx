@@ -17,8 +17,11 @@ interface ScoutingSummaryCardProps {
 }
 
 export function ScoutingSummaryCard({ note, onClick, onEdit, onDelete }: ScoutingSummaryCardProps) {
+  // Format date - parse manually to avoid UTC timezone issues
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', { 
+    const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
+    const date = new Date(year, month - 1, day); // month is 0-indexed
+    return date.toLocaleDateString('en-US', { 
       month: 'short', 
       day: 'numeric', 
       year: 'numeric' 

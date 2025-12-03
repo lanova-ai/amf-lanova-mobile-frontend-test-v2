@@ -17,9 +17,10 @@ interface ScoutingNoteCardProps {
 }
 
 export function ScoutingNoteCard({ note, onClick, onReprocess, onDelete }: ScoutingNoteCardProps) {
-  // Format date
+  // Format date - parse manually to avoid UTC timezone issues
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+    const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
+    const date = new Date(year, month - 1, day); // month is 0-indexed
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 

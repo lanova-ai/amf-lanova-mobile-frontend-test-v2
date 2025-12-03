@@ -34,6 +34,7 @@ import {
   Pencil,
   Upload,
   Check,
+  FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -337,7 +338,9 @@ export default function ScoutingNoteDetail() {
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+    // Parse date string to avoid timezone issues (treat as local date, not UTC)
+    const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
+    const date = new Date(year, month - 1, day); // month is 0-indexed
     return date.toLocaleDateString('en-US', { 
       weekday: 'long',
       month: 'long', 
@@ -347,7 +350,9 @@ export default function ScoutingNoteDetail() {
   };
 
   const formatShortDate = (dateString: string) => {
-    const date = new Date(dateString);
+    // Parse date string to avoid timezone issues (treat as local date, not UTC)
+    const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
+    const date = new Date(year, month - 1, day); // month is 0-indexed
     return date.toLocaleDateString('en-US', { 
       month: 'short', 
       day: 'numeric', 
@@ -541,6 +546,17 @@ export default function ScoutingNoteDetail() {
               )}
             </div>
           </Card>
+
+          {/* View Summary Button - shown when AI analysis is complete */}
+          {note.ai_status === 'completed' && (
+            <Button
+              onClick={() => navigate(`/scouting-notes/summary/${note.id}`)}
+              className="w-full bg-farm-accent hover:bg-farm-accent/90 text-farm-dark"
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              View AI Summary
+            </Button>
+          )}
 
           {/* Voice Recording */}
           {note.voice_recordings && note.voice_recordings.length > 0 && (
