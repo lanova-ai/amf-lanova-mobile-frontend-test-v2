@@ -52,6 +52,7 @@ interface FieldPlan {
   estimated_cost?: number;
   actual_cost?: number;
   source_voice_note_title?: string;
+  source_document_title?: string;
   created_at: string;
   updated_at: string;
 }
@@ -642,6 +643,15 @@ const FieldPlans = () => {
                     <div className="mt-2">
                       <span className="text-xs text-farm-muted">
                         📝 From: <span className="text-farm-text font-medium">{plan.source_voice_note_title}</span>
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Source Document (if exists) */}
+                  {plan.source_document_title && (
+                    <div className="mt-2">
+                      <span className="text-xs text-farm-muted">
+                        📄 From: <span className="text-farm-text font-medium">{plan.source_document_title}</span>
                       </span>
                     </div>
                   )}

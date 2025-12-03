@@ -104,6 +104,8 @@ interface FieldPlanDetail {
   actual_cost?: number;
   source_voice_note_title?: string;
   source_voice_note_id?: string;
+  source_document_title?: string;
+  source_document_id?: string;
   created_at: string;
   updated_at: string;
   passes: Pass[];
@@ -1054,6 +1056,25 @@ const FieldPlanDetail = () => {
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-farm-text truncate">📝 {plan.source_voice_note_title}</p>
                       <p className="text-xs text-farm-muted">Tap to view recording details</p>
+                    </div>
+                    <Eye className="h-4 w-4 flex-shrink-0 ml-2 text-farm-muted" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Source Document */}
+            {plan.source_document_title && (
+              <div className="pt-3 border-t">
+                <div className="flex flex-col gap-2">
+                  <span className="text-farm-muted text-sm">Source Document</span>
+                  <button
+                    onClick={() => plan.source_document_id && navigate(`/documents/${plan.source_document_id}`)}
+                    className="flex items-center justify-between w-full text-left p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-farm-text truncate">📄 {plan.source_document_title}</p>
+                      <p className="text-xs text-farm-muted">Tap to view document details</p>
                     </div>
                     <Eye className="h-4 w-4 flex-shrink-0 ml-2 text-farm-muted" />
                   </button>

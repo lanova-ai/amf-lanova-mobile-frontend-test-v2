@@ -1206,6 +1206,7 @@ export interface Document {
   task_id?: string;
   field_plan_id?: string;
   field_plan_pass_id?: string;
+  field_plan_creation_status?: 'creating' | 'completed' | 'failed' | null;
   created_at: string;
   updated_at: string;
 }
@@ -1447,11 +1448,21 @@ export interface FieldPlanProductSummary {
 }
 
 export const fieldPlansAPI = {
-  getFieldPlans: async (params?: { field_id?: string; plan_year?: number; plan_status?: string; limit?: number; offset?: number }) => {
+  getFieldPlans: async (params?: { 
+    field_id?: string; 
+    plan_year?: number; 
+    plan_status?: string; 
+    source_document_id?: string;
+    source_voice_note_id?: string;
+    limit?: number; 
+    offset?: number 
+  }) => {
     const queryParams = new URLSearchParams();
     if (params?.field_id) queryParams.append('field_id', params.field_id);
     if (params?.plan_year) queryParams.append('plan_year', params.plan_year.toString());
     if (params?.plan_status) queryParams.append('plan_status', params.plan_status);
+    if (params?.source_document_id) queryParams.append('source_document_id', params.source_document_id);
+    if (params?.source_voice_note_id) queryParams.append('source_voice_note_id', params.source_voice_note_id);
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.offset) queryParams.append('offset', params.offset.toString());
     

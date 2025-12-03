@@ -126,12 +126,13 @@ export default function Documents() {
   const processingIdsRef = useRef<Set<string>>(new Set());
   const reprocessingIdsRef = useRef<Set<string>>(new Set());
 
-  // Smart polling: Auto-refresh when documents are processing
+  // Smart polling: Auto-refresh when documents are processing or creating field plans
   useEffect(() => {
-    // Check if we have any documents that are currently processing
+    // Check if we have any documents that are currently processing or creating field plans
     const processingDocuments = documents.filter(doc => 
       doc.processing_status === 'PROCESSING' || 
       doc.processing_status === 'PENDING' ||
+      doc.field_plan_creation_status === 'creating' ||
       processingIds.has(doc.id) ||
       reprocessingIds.has(doc.id)
     );
@@ -1645,6 +1646,18 @@ export default function Documents() {
                       {/* AI Analyzed Badge */}
                       {doc.ai_analyzed && !reprocessingIds.has(doc.id) && !processingIds.has(doc.id) && (
                         <span className="text-xs text-farm-accent">✓ AI Analyzed</span>
+                      )}
+                      
+                      {/* Field Plan Creation Status */}
+                      {doc.field_plan_creation_status === 'creating' && (
+                        <span className="text-xs px-2 py-0.5 bg-green-500/10 text-green-600 dark:text-green-400 rounded-full animate-pulse">
+                          Creating Field Plan...
+                        </span>
+                      )}
+                      {doc.field_plan_creation_status === 'completed' && doc.field_plan_id && (
+                        <span className="text-xs px-2 py-0.5 bg-green-500/10 text-green-600 dark:text-green-400 rounded-full">
+                          Field Plan ✓
+                        </span>
                       )}
                     </div>
                   </div>

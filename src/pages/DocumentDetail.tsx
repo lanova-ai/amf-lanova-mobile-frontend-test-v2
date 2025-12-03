@@ -68,6 +68,11 @@ export default function DocumentDetail() {
   const [showFieldPlanResult, setShowFieldPlanResult] = useState(false);
   const [fieldPlanResult, setFieldPlanResult] = useState<any>(null);
   
+  // Linked plans modal
+  const [showLinkedPlansModal, setShowLinkedPlansModal] = useState(false);
+  const [linkedPlans, setLinkedPlans] = useState<any[]>([]);
+  const [loadingLinkedPlans, setLoadingLinkedPlans] = useState(false);
+  
   const [isEditingField, setIsEditingField] = useState(false);
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
   const [availableFields, setAvailableFields] = useState<any[]>([]);
@@ -94,7 +99,7 @@ export default function DocumentDetail() {
     }
   }, [id, location.key]); // Reload when navigating back from edit page
 
-  // Poll document status when it's processing
+  // Poll document status when it's processing or creating field plan
   useEffect(() => {
     if (!document || !id) {
       // Stop polling if no document or id
@@ -106,9 +111,15 @@ export default function DocumentDetail() {
     }
 
     const isProcessing = document.processing_status === 'PROCESSING' || document.processing_status === 'PENDING';
+    const isCreatingFieldPlan = document.field_plan_creation_status === 'creating';
+    const needsPolling = isProcessing || isCreatingFieldPlan;
     
-    if (isProcessing && !pollingIntervalRef.current) {
-      console.log(`⏰ Starting polling for document ${id} (status: ${document.processing_status})`);
+    if (needsPolling && !pollingIntervalRef.current) {
+      const reason = isCreatingFieldPlan ? 'creating field plan' : document.processing_status;
+      console.log(`⏰ Starting polling for document ${id} (${reason})`);
+      
+      // Poll faster when creating field plan (every 5 seconds)
+      const pollInterval = isCreatingFieldPlan ? 5000 : 10000;
       
       pollingIntervalRef.current = setInterval(async () => {
         const currentId = documentIdRef.current;
@@ -125,7 +136,7 @@ export default function DocumentDetail() {
         try {
           // Fetch the document directly and check status immediately
           const doc = await documentsAPI.getDocument(currentId);
-          console.log(`✅ Document ${currentId} status: ${doc.processing_status}`);
+          console.log(`✅ Document ${currentId} status: ${doc.processing_status}, field_plan_creation_status: ${doc.field_plan_creation_status}`);
           
           // Update the document state
           setDocument(doc);
@@ -133,9 +144,21 @@ export default function DocumentDetail() {
           // Update status ref
           documentStatusRef.current = doc.processing_status;
           
-          // Stop polling immediately if completed or failed
-          if (doc.processing_status === 'COMPLETED' || doc.processing_status === 'FAILED') {
-            console.log(`🛑 Document ${currentId} is ${doc.processing_status} - stopping polling immediately`);
+          // Also update creating field plan state if it changed
+          if (doc.field_plan_creation_status === 'completed') {
+            setCreatingFieldPlan(false);
+            toast.success('Field plan created successfully!');
+          } else if (doc.field_plan_creation_status === 'failed') {
+            setCreatingFieldPlan(false);
+          }
+          
+          // Stop polling if no longer needed
+          const stillNeedsPolling = 
+            (doc.processing_status === 'PROCESSING' || doc.processing_status === 'PENDING') ||
+            doc.field_plan_creation_status === 'creating';
+          
+          if (!stillNeedsPolling) {
+            console.log(`🛑 Document ${currentId} no longer needs polling - stopping`);
             if (pollingIntervalRef.current) {
               clearInterval(pollingIntervalRef.current);
               pollingIntervalRef.current = null;
@@ -144,9 +167,9 @@ export default function DocumentDetail() {
         } catch (error) {
           console.error(`❌ Error polling document ${currentId}:`, error);
         }
-      }, 10000); // Poll every 10 seconds
-    } else if (!isProcessing && pollingIntervalRef.current) {
-      console.log(`🛑 Document ${id} is ${document.processing_status} - stopping polling`);
+      }, pollInterval);
+    } else if (!needsPolling && pollingIntervalRef.current) {
+      console.log(`🛑 Document ${id} no longer needs polling - stopping`);
       clearInterval(pollingIntervalRef.current);
       pollingIntervalRef.current = null;
     }
@@ -446,6 +469,40 @@ export default function DocumentDetail() {
     }
   };
 
+  // Fetch all field plans linked to this document
+  const handleViewLinkedPlans = async () => {
+    if (!id) return;
+    
+    try {
+      setLoadingLinkedPlans(true);
+      const plans = await fieldPlansAPI.getFieldPlans({ source_document_id: id });
+      
+      if (plans.length === 1) {
+        // Only one plan - navigate directly
+        navigate(`/field-plans/${plans[0].id}`);
+      } else if (plans.length > 1) {
+        // Multiple plans - show modal
+        setLinkedPlans(plans);
+        setShowLinkedPlansModal(true);
+      } else {
+        // No plans found - try using the field_plan_id from document
+        if (document?.field_plan_id) {
+          navigate(`/field-plans/${document.field_plan_id}`);
+        } else {
+          toast.error("No linked field plans found");
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch linked plans:", error);
+      // Fallback to document's field_plan_id
+      if (document?.field_plan_id) {
+        navigate(`/field-plans/${document.field_plan_id}`);
+      }
+    } finally {
+      setLoadingLinkedPlans(false);
+    }
+  };
+
   // Check if document can potentially be used for field plan creation
   const canCreateFieldPlan = () => {
     if (!document) return false;
@@ -523,6 +580,22 @@ export default function DocumentDetail() {
           <h1 className="text-lg font-semibold text-farm-text flex-1">Document Details</h1>
         </div>
       </header>
+
+      {/* Field Plan Creation Loading Banner */}
+      {(creatingFieldPlan || document?.field_plan_creation_status === 'creating') && (
+        <div className="mx-4 mt-4 p-4 bg-farm-accent/10 border border-farm-accent/30 rounded-lg animate-pulse">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-farm-accent"></div>
+              <Sparkles className="h-4 w-4 text-farm-accent absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-farm-accent">Creating Field Plan...</p>
+              <p className="text-xs text-farm-muted">AI is analyzing your document. This may take up to 3 minutes.</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="p-4 space-y-4">
         {/* Title with inline editing */}
@@ -1007,12 +1080,12 @@ export default function DocumentDetail() {
           {canCreateFieldPlan() && (
             <Button
               onClick={handleCreateFieldPlan}
-              disabled={creatingFieldPlan}
+              disabled={creatingFieldPlan || document?.field_plan_creation_status === 'creating'}
               className="w-full"
               variant="outline"
             >
-              {creatingFieldPlan ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating Plan...</>
+              {(creatingFieldPlan || document?.field_plan_creation_status === 'creating') ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating Field Plan...</>
               ) : (
                 <><Sparkles className="mr-2 h-4 w-4" /> Create Field Plan</>
               )}
@@ -1022,11 +1095,15 @@ export default function DocumentDetail() {
           {/* Show linked field plan if exists */}
           {document?.field_plan_id && (
             <Button
-              onClick={() => navigate(`/field-plans/${document.field_plan_id}`)}
+              onClick={handleViewLinkedPlans}
+              disabled={loadingLinkedPlans}
               className="w-full bg-green-600 hover:bg-green-700 text-white"
             >
-              <FileSpreadsheet className="mr-2 h-4 w-4" />
-              View Linked Field Plan
+              {loadingLinkedPlans ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading...</>
+              ) : (
+                <><FileSpreadsheet className="mr-2 h-4 w-4" /> View Linked Field Plans</>
+              )}
             </Button>
           )}
           
@@ -1134,10 +1211,78 @@ export default function DocumentDetail() {
           )}
           
           <DialogFooter className="flex gap-2">
-            <Button onClick={() => navigate('/field-plans')} className="flex-1">
+            <Button 
+              onClick={() => navigate('/field-plans')} 
+              className="flex-1 bg-farm-accent hover:bg-farm-accent/90 text-farm-dark"
+            >
               View All Plans
             </Button>
             <Button variant="outline" onClick={() => setShowFieldPlanResult(false)} className="flex-1">
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Linked Plans Modal */}
+      <Dialog open={showLinkedPlansModal} onOpenChange={setShowLinkedPlansModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="text-2xl">📋</span>
+              Linked Field Plans ({linkedPlans.length})
+            </DialogTitle>
+            <DialogDescription>
+              This document has been used to create {linkedPlans.length} field plans. Select one to view details.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-2 max-h-80 overflow-y-auto">
+            {linkedPlans.map((plan) => (
+              <button
+                key={plan.id}
+                onClick={() => {
+                  setShowLinkedPlansModal(false);
+                  navigate(`/field-plans/${plan.id}`);
+                }}
+                className="w-full bg-card border rounded-lg p-3 space-y-2 hover:bg-muted/50 transition-colors text-left"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🌾</span>
+                    <span className="font-medium">{plan.field_name || plan.plan_name || 'Unnamed Plan'}</span>
+                  </div>
+                  {plan.passes_count > 0 && (
+                    <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                      {plan.passes_count} passes
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3 text-xs text-farm-muted">
+                  {plan.plan_year && <span>Year: {plan.plan_year}</span>}
+                  {plan.crop_type && <span>• {plan.crop_type}</span>}
+                  {plan.plan_status && (
+                    <span className={`px-1.5 py-0.5 rounded ${
+                      plan.plan_status === 'active' ? 'bg-green-500/10 text-green-600' :
+                      plan.plan_status === 'completed' ? 'bg-blue-500/10 text-blue-600' :
+                      'bg-yellow-500/10 text-yellow-600'
+                    }`}>
+                      {plan.plan_status}
+                    </span>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+          
+          <DialogFooter className="flex gap-2">
+            <Button 
+              onClick={() => navigate('/field-plans')} 
+              className="flex-1 bg-farm-accent hover:bg-farm-accent/90 text-farm-dark"
+            >
+              View All Plans
+            </Button>
+            <Button variant="outline" onClick={() => setShowLinkedPlansModal(false)} className="flex-1">
               Close
             </Button>
           </DialogFooter>
