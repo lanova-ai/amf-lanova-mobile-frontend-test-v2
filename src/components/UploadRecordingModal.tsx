@@ -19,14 +19,21 @@ export function UploadRecordingModal({ open, onClose, onUploadSuccess }: UploadR
   const handleFileSelection = (file: File) => {
     // Validate file type
     // Accept audio/* and video/webm (WebM recordings are often reported as video/webm)
+    const fileName = file.name.toLowerCase();
     const isValidAudio = file.type.startsWith('audio/') || 
                          file.type === 'video/webm' || 
                          file.type === 'video/mp4' ||
-                         file.name.toLowerCase().endsWith('.webm') ||
-                         file.name.toLowerCase().endsWith('.m4a');
+                         file.type === 'application/ogg' ||  // OGG can have this MIME type
+                         fileName.endsWith('.webm') ||
+                         fileName.endsWith('.m4a') ||
+                         fileName.endsWith('.mp3') ||
+                         fileName.endsWith('.wav') ||
+                         fileName.endsWith('.ogg') ||
+                         fileName.endsWith('.aac') ||
+                         fileName.endsWith('.flac');
     
     if (!isValidAudio) {
-      toast.error("Invalid file type. Please select an audio file (WebM, MP3, WAV, M4A, etc.)");
+      toast.error("Invalid file type. Please select an audio file (MP3, WAV, M4A, OGG, WebM, etc.)");
       return;
     }
 

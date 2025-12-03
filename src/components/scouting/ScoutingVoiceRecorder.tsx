@@ -146,16 +146,21 @@ export function ScoutingVoiceRecorder({ voiceBlob, onUpdate, fieldId, latitude, 
     if (!file) return;
 
     // Validate file type
+    const fileName = file.name.toLowerCase();
     const isValidAudio = file.type.startsWith('audio/') || 
                          file.type === 'video/webm' || 
                          file.type === 'video/mp4' ||
-                         file.name.toLowerCase().endsWith('.webm') ||
-                         file.name.toLowerCase().endsWith('.m4a') ||
-                         file.name.toLowerCase().endsWith('.mp3') ||
-                         file.name.toLowerCase().endsWith('.wav');
+                         file.type === 'application/ogg' ||
+                         fileName.endsWith('.webm') ||
+                         fileName.endsWith('.m4a') ||
+                         fileName.endsWith('.mp3') ||
+                         fileName.endsWith('.wav') ||
+                         fileName.endsWith('.ogg') ||
+                         fileName.endsWith('.aac') ||
+                         fileName.endsWith('.flac');
     
     if (!isValidAudio) {
-      toast.error("Invalid file type. Please select an audio file (MP3, WAV, M4A, WebM)");
+      toast.error("Invalid file type. Please select an audio file (MP3, WAV, M4A, OGG, WebM)");
       return;
     }
 
@@ -192,7 +197,7 @@ export function ScoutingVoiceRecorder({ voiceBlob, onUpdate, fieldId, latitude, 
       <input
         ref={fileInputRef}
         type="file"
-        accept="audio/*,.webm,.m4a"
+        accept="audio/*,.webm,.m4a,.mp3,.wav,.ogg,.aac,.flac"
         onChange={handleFileUpload}
         className="hidden"
       />

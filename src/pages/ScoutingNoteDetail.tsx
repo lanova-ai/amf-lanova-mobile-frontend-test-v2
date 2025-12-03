@@ -672,7 +672,7 @@ export default function ScoutingNoteDetail() {
                   <input
                     ref={voiceInputRef}
                     type="file"
-                    accept="audio/*,.webm"
+                    accept="audio/*,.webm,.m4a,.mp3,.wav,.ogg,.aac,.flac"
                     onChange={handleVoiceFileSelect}
                     className="hidden"
                   />
