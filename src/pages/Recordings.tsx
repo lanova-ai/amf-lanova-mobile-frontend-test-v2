@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Mic, MoreVertical, Trash2, Plus, Upload, RefreshCw, AlertCircle } from "lucide-react";
-import { voiceAPI } from "@/lib/api";
+import { voiceAPI, fieldsAPI, Field } from "@/lib/api";
 import { UploadRecordingModal } from "@/components/UploadRecordingModal";
 import {
   DropdownMenu,
@@ -51,6 +51,8 @@ interface VoiceNote {
   duration_seconds: number | null;
   field_id: string | null;
   field_name: string | null;
+  all_field_ids?: string[];  // All fields from multi-field recordings
+  all_field_names?: string[]; // All field names from multi-field recordings
   from_field_note?: boolean;
   error_message?: string | null;
   field_plan_creation_status?: string | null;
@@ -72,11 +74,27 @@ const Recordings = () => {
   
   // Filter states - initialize from URL params
   const [selectedField, setSelectedField] = useState<string>(searchParams.get('field') || "all");
-  const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [selectedYear, setSelectedYear] = useState<string>(searchParams.get('year') || "all");
+  const [fields, setFields] = useState<Field[]>([]);
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
 
   useEffect(() => {
     loadRecordings(true); // Initial load with loading state
+    loadFields();
   }, []);
+  
+  const loadFields = async () => {
+    try {
+      const response = await fieldsAPI.getFields();
+      // Sort fields alphabetically by name
+      const sortedFields = (response.fields || []).sort((a: Field, b: Field) => 
+        (a.name || '').localeCompare(b.name || '')
+      );
+      setFields(sortedFields);
+    } catch (error) {
+      console.error('Failed to load fields:', error);
+    }
+  };
 
   // Reload when returning to page (e.g., from voice capture)
   useEffect(() => {
@@ -123,7 +141,20 @@ const Recordings = () => {
       }
       setError(null);
       const response = await voiceAPI.getVoiceNotes();
-      setRecordings(response.voice_notes || []);
+      const voiceNotes = response.voice_notes || [];
+      setRecordings(voiceNotes);
+      
+      // Extract available years from recordings
+      const years: number[] = [];
+      voiceNotes.forEach((recording: VoiceNote) => {
+        if (recording.created_at) {
+          const year = new Date(recording.created_at).getFullYear();
+          if (!isNaN(year) && year > 1900 && year < 2100 && !years.includes(year)) {
+            years.push(year);
+          }
+        }
+      });
+      setAvailableYears(years.sort((a, b) => b - a)); // Sort descending
     } catch (err: any) {
       console.error("Failed to load recordings:", err);
       setError(err.message || "Failed to load recordings");
@@ -251,45 +282,112 @@ const Recordings = () => {
         {/* Filters */}
         <div className="px-4 py-4 border-b bg-farm-dark/95 backdrop-blur sticky top-0 z-10 space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            {/* Field Filter */}
-            <Select value={selectedField} onValueChange={setSelectedField}>
+            {/* Year Filter */}
+            <Select value={selectedYear} onValueChange={setSelectedYear}>
               <SelectTrigger className="w-full">
                 <SelectValue>
-                  {selectedField === "all" ? "All Fields" : selectedField}
+                  {selectedYear === "all" ? "All Years" : selectedYear}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Fields</SelectItem>
-                {Array.from(new Set(recordings.map(r => r.field_name).filter(Boolean))).map(fieldName => (
-                  <SelectItem key={fieldName} value={fieldName!}>{fieldName}</SelectItem>
+                <SelectItem value="all">All Years</SelectItem>
+                {availableYears.map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
-            {/* Status Filter */}
-            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+            {/* Field Filter - only show fields that have recordings */}
+            <Select value={selectedField} onValueChange={setSelectedField}>
               <SelectTrigger className="w-full">
                 <SelectValue>
-                  {selectedStatus === "all" ? "All Status" : selectedStatus.charAt(0).toUpperCase() + selectedStatus.slice(1)}
+                  {selectedField === "all" 
+                    ? "All Fields" 
+                    : (() => {
+                        const field = fields.find(f => f.field_id === selectedField);
+                        if (field) return `${field.name} (${field.farm_name || 'Unknown Farm'})`;
+                        // Fallback: check all_field_ids for multi-field recordings
+                        const recording = recordings.find(r => 
+                          r.field_id === selectedField || 
+                          (r.all_field_ids && r.all_field_ids.includes(selectedField))
+                        );
+                        if (recording?.all_field_ids && recording?.all_field_names) {
+                          const idx = recording.all_field_ids.indexOf(selectedField);
+                          if (idx >= 0 && recording.all_field_names[idx]) {
+                            return recording.all_field_names[idx];
+                          }
+                        }
+                        return recording?.field_name || "All Fields";
+                      })()
+                  }
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="processing">Processing</SelectItem>
-                <SelectItem value="uploaded">Uploaded</SelectItem>
-                <SelectItem value="error">Error</SelectItem>
+                <SelectItem value="all">All Fields</SelectItem>
+                {(() => {
+                  // Get unique field_ids from recordings (including all_field_ids for multi-field recordings)
+                  const fieldIdsWithRecordings = new Set<string>();
+                  recordings.forEach(r => {
+                    if (r.field_id) fieldIdsWithRecordings.add(r.field_id);
+                    // Include all fields from multi-field recordings
+                    if (r.all_field_ids && Array.isArray(r.all_field_ids)) {
+                      r.all_field_ids.forEach((id: string) => fieldIdsWithRecordings.add(id));
+                    }
+                  });
+                  
+                  // Filter fields to only those with recordings, sorted alphabetically
+                  return Array.from(fieldIdsWithRecordings)
+                    .map(fieldId => {
+                      const field = fields.find(f => f.field_id === fieldId);
+                      // Find a recording that has this field (in primary or all_field_ids)
+                      const recording = recordings.find(r => 
+                        r.field_id === fieldId || 
+                        (r.all_field_ids && r.all_field_ids.includes(fieldId))
+                      );
+                      // Get field name from all_field_names if available
+                      let fieldName = field?.name;
+                      if (!fieldName && recording?.all_field_ids && recording?.all_field_names) {
+                        const idx = recording.all_field_ids.indexOf(fieldId);
+                        if (idx >= 0 && recording.all_field_names[idx]) {
+                          fieldName = recording.all_field_names[idx];
+                        }
+                      }
+                      return {
+                        field_id: fieldId as string,
+                        name: fieldName || recording?.field_name || 'Unknown Field',
+                        farm_name: field?.farm_name || 'Unknown Farm'
+                      };
+                    })
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map((field) => (
+                      <SelectItem key={field.field_id} value={field.field_id}>
+                        {field.name} ({field.farm_name})
+                      </SelectItem>
+                    ));
+                })()}
               </SelectContent>
             </Select>
           </div>
+          
 
           {/* Results count */}
           <div className="flex items-center justify-between">
             <p className="label-text">
               {(() => {
                 const filteredCount = recordings.filter(recording => {
-                  if (selectedField !== "all" && recording.field_name !== selectedField) return false;
-                  if (selectedStatus !== "all" && recording.status !== selectedStatus) return false;
+                  // Year filter
+                  if (selectedYear !== "all") {
+                    const recordingYear = new Date(recording.created_at).getFullYear();
+                    if (recordingYear !== parseInt(selectedYear)) return false;
+                  }
+                  // Field filter - check all_field_ids for multi-field recordings
+                  if (selectedField !== "all") {
+                    const allFieldIds = recording.all_field_ids || [];
+                    const hasField = allFieldIds.includes(selectedField) || recording.field_id === selectedField;
+                    if (!hasField) return false;
+                  }
                   return true;
                 }).length;
                 return `${filteredCount} ${filteredCount === 1 ? 'recording' : 'recordings'} found`;
@@ -303,14 +401,17 @@ const Recordings = () => {
           {(() => {
             // Filter recordings based on filters
             const filteredRecordings = recordings.filter(recording => {
-              // Field filter
-              if (selectedField !== "all" && recording.field_name !== selectedField) {
-                return false;
+              // Year filter
+              if (selectedYear !== "all") {
+                const recordingYear = new Date(recording.created_at).getFullYear();
+                if (recordingYear !== parseInt(selectedYear)) return false;
               }
               
-              // Status filter
-              if (selectedStatus !== "all" && recording.status !== selectedStatus) {
-                return false;
+              // Field filter - check all_field_ids for multi-field recordings
+              if (selectedField !== "all") {
+                const allFieldIds = recording.all_field_ids || [];
+                const hasField = allFieldIds.includes(selectedField) || recording.field_id === selectedField;
+                if (!hasField) return false;
               }
               
               return true;
@@ -430,6 +531,12 @@ const Recordings = () => {
                             {recording.from_field_note ? '🗺️' : '📍'} {recording.field_name}
                             {recording.from_field_note && (
                               <span className="text-[10px] opacity-75 ml-0.5">(Map)</span>
+                            )}
+                            {/* Show count of additional fields - use all_field_names as it includes unmatched fields too */}
+                            {recording.all_field_names && recording.all_field_names.length > 1 && (
+                              <span className="text-[10px] opacity-75 ml-0.5">
+                                (+{recording.all_field_names.length - 1} {recording.all_field_names.length === 2 ? 'field' : 'fields'})
+                              </span>
                             )}
                           </span>
                           <span>•</span>

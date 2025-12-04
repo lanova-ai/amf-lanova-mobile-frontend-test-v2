@@ -11,6 +11,8 @@ import {
   CheckCircle2,
   AlertTriangle,
   ArrowLeft,
+  Tractor,
+  Calendar,
 } from "lucide-react";
 import {
   Page,
@@ -899,6 +901,152 @@ export default function FarmReports() {
     return parts.length > 0 ? parts : text;
   };
 
+  // Parse JD Ops markdown and render as clean timeline (like AMF Reports)
+  interface JDTimelineEvent {
+    date?: string;
+    category: 'planting' | 'application' | 'harvest' | 'tillage' | 'other';
+    description: string;
+  }
+
+  const parseJDOpsToTimeline = (text: string): JDTimelineEvent[] => {
+    if (!text) return [];
+    
+    const lines = text.split('\n');
+    const timeline: JDTimelineEvent[] = [];
+    let currentCategory: JDTimelineEvent['category'] = 'other';
+    let currentMonthRange = '';
+    
+    for (const line of lines) {
+      const trimmed = line.trim();
+      
+      // Skip empty lines and notes
+      if (!trimmed || trimmed.startsWith('*Note:') || trimmed === '***' || trimmed === '---') continue;
+      
+      // Detect section headers (→ Planting, → Application, etc.)
+      const arrowMatch = trimmed.match(/^(\*\*)?(→|->|--)\s*(.+?)(\s*\(([^)]+)\))?(\*\*)?$/);
+      if (arrowMatch) {
+        const title = arrowMatch[3].toLowerCase();
+        currentMonthRange = arrowMatch[5] || '';
+        
+        if (title.includes('plant') || title.includes('seed')) {
+          currentCategory = 'planting';
+        } else if (title.includes('applic') || title.includes('spray') || title.includes('fertiliz')) {
+          currentCategory = 'application';
+        } else if (title.includes('harvest')) {
+          currentCategory = 'harvest';
+        } else if (title.includes('till')) {
+          currentCategory = 'tillage';
+        } else {
+          currentCategory = 'other';
+        }
+        continue;
+      }
+      
+      // Extract bullet points with dates
+      if (trimmed.startsWith('*') || trimmed.startsWith('•')) {
+        const bulletText = trimmed.replace(/^[\*•]\s*/, '').replace(/\*\*/g, '');
+        
+        // Try to extract date from the text - multiple formats:
+        // "Apr 11:" or "Apr 11 :" or "Apr 11," or "Apr 11 -" or just "Apr 11" at start
+        const dateMatch = bulletText.match(/^([A-Z][a-z]{2}\s+\d{1,2})\s*[:,-]?\s*(.+)/);
+        if (dateMatch) {
+          const description = dateMatch[2].trim();
+          // Only add if description is meaningful (not just punctuation)
+          if (description.length > 3) {
+            timeline.push({
+              date: dateMatch[1],
+              category: currentCategory,
+              description: description
+            });
+          }
+        } else {
+          // Check for "Overall mean yield", "Overall mean moisture" - summary items
+          if (bulletText.toLowerCase().includes('overall mean yield') || 
+              bulletText.toLowerCase().includes('overall mean moisture') ||
+              bulletText.toLowerCase().includes('yield by hybrid') ||
+              bulletText.toLowerCase().includes('hybrids summary') ||
+              bulletText.toLowerCase().includes('varieties summary')) {
+            // Add as summary item with month range or "Summary" as date
+            timeline.push({
+              date: currentMonthRange || 'Summary',
+              category: currentCategory,
+              description: bulletText
+            });
+          } else if (bulletText.length > 15) {
+            // Other meaningful content (products, tank mix details, etc.)
+            timeline.push({
+              date: currentMonthRange || undefined,
+              category: currentCategory,
+              description: bulletText
+            });
+          }
+        }
+      }
+    }
+    
+    return timeline;
+  };
+
+  const renderJDOpsTimeline = (text: string) => {
+    const timeline = parseJDOpsToTimeline(text);
+    
+    // If parsing fails, fall back to markdown
+    if (timeline.length === 0) {
+      return renderMarkdownText(text);
+    }
+    
+    const getCategoryColor = (category: JDTimelineEvent['category']) => {
+      switch (category) {
+        case 'planting': return 'text-green-500';
+        case 'application': return 'text-blue-500';
+        case 'harvest': return 'text-orange-500';
+        case 'tillage': return 'text-amber-500';
+        default: return 'text-farm-muted';
+      }
+    };
+
+    return (
+      <div className="space-y-4">
+        {/* Season Timeline */}
+        {timeline.length > 0 && (
+          <div>
+            <h4 className="text-sm font-semibold text-farm-accent mb-2 flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              Season Timeline
+            </h4>
+            <div className="space-y-1.5">
+              {timeline.map((event, i) => {
+                const colorClass = getCategoryColor(event.category);
+                
+                return (
+                  <div key={i} className="flex items-start gap-2 text-sm">
+                    <Tractor className={`w-3.5 h-3.5 flex-shrink-0 mt-0.5 ${colorClass}`} />
+                    {event.date && (
+                      <span className="text-farm-muted font-medium min-w-[60px]">
+                        {event.date}
+                      </span>
+                    )}
+                    <span className="text-muted-foreground">{event.description}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        
+        {/* Full Details - Collapsible */}
+        <details className="mt-4">
+          <summary className="text-xs text-farm-muted cursor-pointer hover:text-farm-accent">
+            View Full Report Details
+          </summary>
+          <div className="mt-3 pt-3 border-t border-farm-accent/10">
+            {renderMarkdownText(text)}
+          </div>
+        </details>
+      </div>
+    );
+  };
+
   const selectedField = fields.find(f => f.field_id === selectedFieldId);
   const selectedFieldDisplay = selectedField 
     ? `${selectedField.name}${selectedField.farm_name ? ` (${selectedField.farm_name})` : ''}`
@@ -1008,12 +1156,7 @@ export default function FarmReports() {
                   </SelectTrigger>
                   <SelectContent>
                     {fieldsInOrganization
-                      .sort((a, b) => {
-                        // Sort by farm first, then by field name
-                        const farmCompare = (a.farm_name || 'Unknown').localeCompare(b.farm_name || 'Unknown');
-                        if (farmCompare !== 0) return farmCompare;
-                        return a.name.localeCompare(b.name);
-                      })
+                      .sort((a, b) => a.name.localeCompare(b.name))
                       .map((field) => (
                         <SelectItem key={field.field_id} value={field.field_id}>
                           {field.name} ({field.farm_name || 'Unknown Farm'})
@@ -1100,10 +1243,10 @@ export default function FarmReports() {
                     {selectedFieldDisplay} - {selectedYear} Season Report
                   </h3>
 
-                  {/* Season Timeline */}
+                  {/* Season Timeline - Clean View like AMF */}
                   {yearlySummary.summary_text && (
                     <div className="pt-2">
-                      {renderMarkdownText(yearlySummary.summary_text)}
+                      {renderJDOpsTimeline(yearlySummary.summary_text)}
                     </div>
                   )}
                 </div>
@@ -1349,10 +1492,10 @@ export default function FarmReports() {
                   )}
                 </div>
 
-                {/* Farm Timeline */}
+                {/* Farm Timeline - Clean View like AMF */}
                 {timelineSummary.summary_text && (
                   <div className="pt-4 border-t border-farm-accent/10">
-                    {renderMarkdownText(timelineSummary.summary_text)}
+                    {renderJDOpsTimeline(timelineSummary.summary_text)}
                   </div>
                 )}
               </div>

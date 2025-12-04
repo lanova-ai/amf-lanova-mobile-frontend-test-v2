@@ -82,7 +82,6 @@ export default function AMFReports() {
   
   // State
   const [fields, setFields] = useState<Field[]>([]);
-  const [selectedOperationId, setSelectedOperationId] = useState<string>('');
   const [selectedFieldId, setSelectedFieldId] = useState<string>(urlFieldId || '');
   const [selectedYear, setSelectedYear] = useState<number>(urlYear ? parseInt(urlYear) : new Date().getFullYear());
   
@@ -121,14 +120,12 @@ export default function AMFReports() {
   const [deletingReport, setDeletingReport] = useState(false);
   
   // Summary tab filters (derived from list items)
-  const [summaryFilterOrg, setSummaryFilterOrg] = useState<string>('all');
   const [summaryFilterField, setSummaryFilterField] = useState<string>('all');
-  const [summaryFilterYear, setSummaryFilterYear] = useState<string>('current');
+  const [summaryFilterYear, setSummaryFilterYear] = useState<string>('all');
   
   // Shared tab filters (derived from list items)
-  const [sharedFilterOrg, setSharedFilterOrg] = useState<string>('all');
   const [sharedFilterField, setSharedFilterField] = useState<string>('all');
-  const [sharedFilterYear, setSharedFilterYear] = useState<string>('current');
+  const [sharedFilterYear, setSharedFilterYear] = useState<string>('all');
   
   const [loadingFields, setLoadingFields] = useState(true);
   const [loadingSummary, setLoadingSummary] = useState(false);
@@ -209,14 +206,7 @@ export default function AMFReports() {
       );
       setFields(sortedFields);
       
-      // If field ID provided via URL, auto-select its organization
-      if (urlFieldId) {
-        const selectedField = sortedFields.find((f: Field) => f.field_id === urlFieldId);
-        if (selectedField) {
-          setSelectedOperationId(selectedField.operation_id);
-        }
-      }
-      // Don't auto-select otherwise - let user choose
+      // Don't auto-select - let user choose
     } catch (error) {
       console.error('Failed to load fields:', error);
       toast.error('Failed to load fields');
@@ -225,72 +215,38 @@ export default function AMFReports() {
     }
   };
   
-  // Get unique organizations
-  const organizations = Array.from(
-    new Map(fields.map(f => [f.operation_id, { id: f.operation_id || '', name: f.operation_name || 'Unknown' }])).values()
-  ).filter(org => org.id).sort((a, b) => a.name.localeCompare(b.name));
-  
-  // Filter fields by selected organization
-  const fieldsInOrganization = selectedOperationId
-    ? fields.filter(f => f.operation_id === selectedOperationId)
-    : fields;
-
   // === Summary Tab Filter Options (derived from allReports) ===
-  const summaryOrganizations = Array.from(
-    new Map(allReports.map(r => [r.farm_name, { id: r.farm_name || 'unknown', name: r.farm_name || 'Unknown' }])).values()
-  ).filter(org => org.id !== 'unknown').sort((a, b) => a.name.localeCompare(b.name));
-  
-  const summaryFields = summaryFilterOrg === 'all'
-    ? Array.from(new Map(allReports.map(r => [r.field_id, { id: r.field_id, name: r.field_name }])).values())
-    : Array.from(new Map(allReports.filter(r => r.farm_name === summaryFilterOrg).map(r => [r.field_id, { id: r.field_id, name: r.field_name }])).values());
+  const summaryFields = Array.from(
+    new Map(allReports.map(r => [r.field_id, { id: r.field_id, name: r.field_name }])).values()
+  );
   
   const summaryYears = Array.from(new Set(allReports.map(r => r.year))).sort((a, b) => b - a);
   
   // Filtered summary reports
   const filteredSummaryReports = allReports.filter(report => {
-    if (summaryFilterOrg !== 'all' && report.farm_name !== summaryFilterOrg) return false;
     if (summaryFilterField !== 'all' && report.field_id !== summaryFilterField) return false;
     if (summaryFilterYear !== 'all') {
-      const yearVal = summaryFilterYear === 'current' ? currentYear : parseInt(summaryFilterYear);
-      if (report.year !== yearVal) return false;
+      if (report.year !== parseInt(summaryFilterYear)) return false;
     }
     return true;
   });
 
   // === Shared Tab Filter Options (derived from sharedReports) ===
-  const sharedOrganizations = Array.from(
-    new Map(sharedReports.map(s => [s.farm_name, { id: s.farm_name || 'unknown', name: s.farm_name || 'Unknown' }])).values()
-  ).filter(org => org.id !== 'unknown').sort((a, b) => a.name.localeCompare(b.name));
-  
-  const sharedFields = sharedFilterOrg === 'all'
-    ? Array.from(new Map(sharedReports.map(s => [s.field_id, { id: s.field_id, name: s.field_name }])).values())
-    : Array.from(new Map(sharedReports.filter(s => s.farm_name === sharedFilterOrg).map(s => [s.field_id, { id: s.field_id, name: s.field_name }])).values());
+  const sharedFields = Array.from(
+    new Map(sharedReports.map(s => [s.field_id, { id: s.field_id, name: s.field_name }])).values()
+  );
   
   const sharedYears = Array.from(new Set(sharedReports.map(s => s.year))).sort((a, b) => b - a);
   
   // Filtered shared reports
   const filteredSharedReports = sharedReports.filter(share => {
-    if (sharedFilterOrg !== 'all' && share.farm_name !== sharedFilterOrg) return false;
     if (sharedFilterField !== 'all' && share.field_id !== sharedFilterField) return false;
     if (sharedFilterYear !== 'all') {
-      const yearVal = sharedFilterYear === 'current' ? currentYear : parseInt(sharedFilterYear);
-      if (share.year !== yearVal) return false;
+      if (share.year !== parseInt(sharedFilterYear)) return false;
     }
     return true;
   });
 
-  // Handle organization change
-  const handleOrganizationChange = (operationId: string) => {
-    setSelectedOperationId(operationId);
-    // Auto-select first field in new organization
-    const orgFields = fields.filter(f => f.operation_id === operationId);
-    if (orgFields.length > 0) {
-      setSelectedFieldId(orgFields[0].field_id);
-    } else {
-      setSelectedFieldId('');
-    }
-  };
-  
   const loadReportSummary = async () => {
     if (!selectedFieldId) return;
     
@@ -561,211 +517,144 @@ export default function AMFReports() {
       </div>
       
       {/* Filters - Different filters for each tab */}
-      <div className="flex-shrink-0 p-4 space-y-3 border-b border-farm-accent/10">
+      <div className="flex-shrink-0 px-4 py-4 border-b bg-farm-dark z-20">
         {viewMode === 'reports' ? (
-          <>
-            {/* Reports Tab Filters - Organization, Field, Year */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-farm-text">Organization</label>
-              <Select 
-                value={selectedOperationId} 
-                onValueChange={handleOrganizationChange}
-                disabled={loadingFields}
-              >
-                <SelectTrigger className="bg-farm-card border-farm-accent/20 text-farm-text">
-                  <SelectValue placeholder={loadingFields ? "Loading..." : "Select an organization"} />
-                </SelectTrigger>
-                <SelectContent className="bg-farm-card border-farm-accent/20">
-                  {organizations.map(org => (
-                    <SelectItem key={org.id} value={org.id}>
-                      {org.name}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Year Filter */}
+            <Select 
+              value={selectedYear.toString()} 
+              onValueChange={(v) => setSelectedYear(parseInt(v))}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue>
+                  {selectedYear} {selectedYear === currentYear && "(Current)"}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {years.map(year => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year} {year === currentYear && "(Current)"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Field Filter */}
+            <Select 
+              value={selectedFieldId} 
+              onValueChange={setSelectedFieldId}
+              disabled={loadingFields}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder={loadingFields ? "Loading..." : "Select Field"}>
+                  {selectedFieldId ? (
+                    fields.find(f => f.field_id === selectedFieldId)?.name || "Select Field"
+                  ) : "Select Field"}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {fields
+                  .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+                  .map(field => (
+                    <SelectItem key={field.field_id} value={field.field_id}>
+                      {field.name} ({field.farm_name || 'Unknown Farm'})
                     </SelectItem>
                   ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="flex gap-3">
-              <div className="flex-1 space-y-1.5">
-                <label className="text-sm font-medium text-farm-text">Field (Farm)</label>
-                <Select 
-                  value={selectedFieldId} 
-                  onValueChange={setSelectedFieldId}
-                  disabled={!selectedOperationId || loadingFields}
-                >
-                  <SelectTrigger className="bg-farm-card border-farm-accent/20 text-farm-text">
-                    <SelectValue placeholder="Select a field" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-farm-card border-farm-accent/20">
-                    {fieldsInOrganization
-                      .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
-                      .map(field => (
-                        <SelectItem key={field.field_id} value={field.field_id}>
-                          {field.name} ({field.farm_name || 'Unknown Farm'})
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="w-28 space-y-1.5">
-                <label className="text-sm font-medium text-farm-text">Year</label>
-                <Select 
-                  value={selectedYear.toString()} 
-                  onValueChange={(v) => setSelectedYear(parseInt(v))}
-                >
-                  <SelectTrigger className="bg-farm-card border-farm-accent/20 text-farm-text">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-farm-card border-farm-accent/20">
-                    {years.map(year => (
-                      <SelectItem key={year} value={year.toString()}>
-                        {year} {year === currentYear && "(Current)"}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </>
+              </SelectContent>
+            </Select>
+          </div>
         ) : viewMode === 'summary' ? (
-          <>
-            {/* Summary Tab Filters - same layout as Reports */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-farm-text">Farm</label>
-              <Select 
-                value={summaryFilterOrg} 
-                onValueChange={(v) => {
-                  setSummaryFilterOrg(v);
-                  setSummaryFilterField('all');
-                }}
-              >
-                <SelectTrigger className="bg-farm-card border-farm-accent/20 text-farm-text">
-                  <SelectValue placeholder="All Farms" />
-                </SelectTrigger>
-                <SelectContent className="bg-farm-card border-farm-accent/20">
-                  <SelectItem value="all">All Farms</SelectItem>
-                  {summaryOrganizations.map(org => (
-                    <SelectItem key={org.id} value={org.id}>
-                      {org.name}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Year Filter */}
+            <Select 
+              value={summaryFilterYear} 
+              onValueChange={setSummaryFilterYear}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue>
+                  {summaryFilterYear === "all" ? "All Years" : summaryFilterYear}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Years</SelectItem>
+                {summaryYears.map(year => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year} {year === currentYear && "(Current)"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Field Filter */}
+            <Select 
+              value={summaryFilterField} 
+              onValueChange={setSummaryFilterField}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue>
+                  {summaryFilterField === "all" ? "All Fields" : (
+                    summaryFields.find(f => f.id === summaryFilterField)?.name || "All Fields"
+                  )}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Fields</SelectItem>
+                {summaryFields
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map(field => (
+                    <SelectItem key={field.id} value={field.id}>
+                      {field.name}
                     </SelectItem>
                   ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="flex gap-3">
-              <div className="flex-1 space-y-1.5">
-                <label className="text-sm font-medium text-farm-text">Field</label>
-                <Select 
-                  value={summaryFilterField} 
-                  onValueChange={setSummaryFilterField}
-                >
-                  <SelectTrigger className="bg-farm-card border-farm-accent/20 text-farm-text">
-                    <SelectValue placeholder="All Fields" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-farm-card border-farm-accent/20">
-                    <SelectItem value="all">All Fields</SelectItem>
-                    {summaryFields.map(field => (
-                      <SelectItem key={field.id} value={field.id}>
-                        {field.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="w-28 space-y-1.5">
-                <label className="text-sm font-medium text-farm-text">Year</label>
-                <Select 
-                  value={summaryFilterYear} 
-                  onValueChange={setSummaryFilterYear}
-                >
-                  <SelectTrigger className="bg-farm-card border-farm-accent/20 text-farm-text">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-farm-card border-farm-accent/20">
-                    <SelectItem value="current">{currentYear} (Current)</SelectItem>
-                    <SelectItem value="all">All Years</SelectItem>
-                    {summaryYears.filter(y => y !== currentYear).map(year => (
-                      <SelectItem key={year} value={year.toString()}>
-                        {year}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </>
+              </SelectContent>
+            </Select>
+          </div>
         ) : (
-          <>
-            {/* Shared Tab Filters - same layout as Reports */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-farm-text">Farm</label>
-              <Select 
-                value={sharedFilterOrg} 
-                onValueChange={(v) => {
-                  setSharedFilterOrg(v);
-                  setSharedFilterField('all');
-                }}
-              >
-                <SelectTrigger className="bg-farm-card border-farm-accent/20 text-farm-text">
-                  <SelectValue placeholder="All Farms" />
-                </SelectTrigger>
-                <SelectContent className="bg-farm-card border-farm-accent/20">
-                  <SelectItem value="all">All Farms</SelectItem>
-                  {sharedOrganizations.map(org => (
-                    <SelectItem key={org.id} value={org.id}>
-                      {org.name}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Year Filter */}
+            <Select 
+              value={sharedFilterYear} 
+              onValueChange={setSharedFilterYear}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue>
+                  {sharedFilterYear === "all" ? "All Years" : sharedFilterYear}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Years</SelectItem>
+                {sharedYears.map(year => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year} {year === currentYear && "(Current)"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Field Filter */}
+            <Select 
+              value={sharedFilterField} 
+              onValueChange={setSharedFilterField}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue>
+                  {sharedFilterField === "all" ? "All Fields" : (
+                    sharedFields.find(f => f.id === sharedFilterField)?.name || "All Fields"
+                  )}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Fields</SelectItem>
+                {sharedFields
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map(field => (
+                    <SelectItem key={field.id} value={field.id}>
+                      {field.name}
                     </SelectItem>
                   ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="flex gap-3">
-              <div className="flex-1 space-y-1.5">
-                <label className="text-sm font-medium text-farm-text">Field</label>
-                <Select 
-                  value={sharedFilterField} 
-                  onValueChange={setSharedFilterField}
-                >
-                  <SelectTrigger className="bg-farm-card border-farm-accent/20 text-farm-text">
-                    <SelectValue placeholder="All Fields" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-farm-card border-farm-accent/20">
-                    <SelectItem value="all">All Fields</SelectItem>
-                    {sharedFields.map(field => (
-                      <SelectItem key={field.id} value={field.id}>
-                        {field.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="w-28 space-y-1.5">
-                <label className="text-sm font-medium text-farm-text">Year</label>
-                <Select 
-                  value={sharedFilterYear} 
-                  onValueChange={setSharedFilterYear}
-                >
-                  <SelectTrigger className="bg-farm-card border-farm-accent/20 text-farm-text">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-farm-card border-farm-accent/20">
-                    <SelectItem value="current">{currentYear} (Current)</SelectItem>
-                    <SelectItem value="all">All Years</SelectItem>
-                    {sharedYears.filter(y => y !== currentYear).map(year => (
-                      <SelectItem key={year} value={year.toString()}>
-                        {year}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </>
+              </SelectContent>
+            </Select>
+          </div>
         )}
       </div>
       
