@@ -132,6 +132,8 @@ const FarmMemory = () => {
       case 'field_operations_yearly':
       case 'field_operations_alltime':
         return <Tractor className="h-4 w-4 text-primary" />;
+      case 'field_report':
+        return <FileText className="h-4 w-4 text-farm-accent" />;
       default:
         return <FileText className="h-4 w-4" />;
     }
@@ -158,6 +160,8 @@ const FarmMemory = () => {
         return 'Document';
       case 'field_plan':
         return 'Field Plan';
+      case 'field_report':
+        return 'AMF Report';
       case 'field_operations_yearly':
         return 'Field Operations';
       case 'field_operations_alltime':
@@ -367,6 +371,11 @@ const FarmMemory = () => {
                           // Fallback: just go to farm reports page
                           navigate('/farm-reports');
                         }
+                      } else if (result.source_type === 'field_report') {
+                        // 📊 AMF Field Report: Navigate to AMF Reports Summary detail view
+                        const fieldId = result.field_id || result.source_id;
+                        const year = result.metadata?.year || result.year || new Date().getFullYear();
+                        navigate(`/amf-reports?field=${fieldId}&year=${year}&tab=summary&view=detail`);
                       } else if (result.url && result.url !== '#') {
                         // 📝 Go to original source (skip placeholder URLs like "#")
                         navigate(result.url);

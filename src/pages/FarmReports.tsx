@@ -244,7 +244,10 @@ export default function FarmReports() {
   const loadFields = async () => {
     try {
       const response = await fieldsAPI.getFields();
-      const fieldsList = response.fields || [];
+      // Sort fields alphabetically by name
+      const fieldsList = (response.fields || []).sort((a: any, b: any) => 
+        (a.name || '').localeCompare(b.name || '')
+      );
       setFields(fieldsList);
       
       // Auto-select first JD operation and field

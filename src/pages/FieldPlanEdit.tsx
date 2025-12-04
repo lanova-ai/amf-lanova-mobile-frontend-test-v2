@@ -73,7 +73,11 @@ const FieldPlanEdit = () => {
     try {
       setLoading(true);
       const fieldsResponse = await fieldsAPI.getFields();
-      setFields(fieldsResponse.fields || []);
+      // Sort fields alphabetically by name
+      const sortedFields = (fieldsResponse.fields || []).sort((a: any, b: any) => 
+        (a.name || '').localeCompare(b.name || '')
+      );
+      setFields(sortedFields);
     } catch (error: any) {
       console.error("Error loading fields:", error);
       toast.error("Failed to load fields");
@@ -102,7 +106,11 @@ const FieldPlanEdit = () => {
         notes: planResponse.notes || "",
       });
       
-      setFields(fieldsResponse.fields || []);
+      // Sort fields alphabetically by name
+      const sortedFields = (fieldsResponse.fields || []).sort((a: any, b: any) => 
+        (a.name || '').localeCompare(b.name || '')
+      );
+      setFields(sortedFields);
     } catch (error: any) {
       console.error("Error loading plan:", error);
       toast.error("Failed to load field plan");

@@ -192,10 +192,12 @@ export function ScoutingLocationPicker({
       setLoadingFields(true);
       const response = await fieldsAPI.getFields();
       
-      // Filter fields that have geometry
-      const fieldsWithBoundaries = (response.fields || []).filter((field: any) => {
-        return field.geometry && field.geometry.coordinates;
-      });
+      // Filter fields that have geometry and sort alphabetically
+      const fieldsWithBoundaries = (response.fields || [])
+        .filter((field: any) => {
+          return field.geometry && field.geometry.coordinates;
+        })
+        .sort((a: any, b: any) => (a.name || '').localeCompare(b.name || ''));
       
       setFields(fieldsWithBoundaries);
     } catch (error) {

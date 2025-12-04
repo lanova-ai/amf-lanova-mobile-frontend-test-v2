@@ -220,7 +220,11 @@ const RecordingDetail = () => {
   const loadAvailableFields = async () => {
     try {
       const response = await fieldsAPI.getFields();
-      setAvailableFields(response.fields || []);
+      // Sort fields alphabetically by name
+      const sortedFields = (response.fields || []).sort((a: any, b: any) => 
+        (a.name || '').localeCompare(b.name || '')
+      );
+      setAvailableFields(sortedFields);
     } catch (err) {
       console.error("Failed to load fields:", err);
     }
@@ -402,6 +406,25 @@ const RecordingDetail = () => {
         ? await voiceAPI.recreateFieldPlan(recording.id)
         : await voiceAPI.createFieldPlan(recording.id);
       
+      // Check for duplicate plan error (success: false)
+      if (response.success === false) {
+        if (response.error === 'duplicate_plan') {
+          const existingPlan = response.existing_plan || response.existing_plans?.[0];
+          const planName = existingPlan?.plan_name || 'Unknown';
+          setCreationStatus(prev => ({ ...prev, fieldPlan: 'error' }));
+          toast.error(
+            `A field plan "${planName}" already exists for this field/year. Please delete it first before creating a new one.`,
+            { duration: 8000 }
+          );
+          await loadRecording(false);
+          return;
+        }
+        // Other errors
+        setCreationStatus(prev => ({ ...prev, fieldPlan: 'error' }));
+        toast.error(response.message || "Failed to create field plan");
+        return;
+      }
+      
       setFieldPlanResult(response);
       setShowFieldPlanResult(true);
       setCreationStatus(prev => ({ ...prev, fieldPlan: 'success' }));
@@ -409,6 +432,16 @@ const RecordingDetail = () => {
       // Handle multi-field plan creation
       if (response.is_bulk_plan) {
         toast.success(`✅ ${response.total_plans_created} field plans created successfully!`);
+        // Show warning if some fields were skipped (existing plans)
+        if (response.skipped_fields?.length > 0) {
+          const skippedNames = response.skipped_fields.map((f: any) => f.field_name).join(', ');
+          toast.warning(`⏭️ Skipped ${response.skipped_fields.length} field(s) with existing plans: ${skippedNames}`, { duration: 8000 });
+        }
+        // Show info if some plans need field assignment (unmatched fields)
+        if (response.plans_needing_field_assignment?.length > 0) {
+          const unmatchedNames = response.plans_needing_field_assignment.map((p: any) => p.field_name).join(', ');
+          toast.warning(`📝 ${response.plans_needing_field_assignment.length} plan(s) created but need field assignment: ${unmatchedNames}. Edit each plan to assign the correct field.`, { duration: 10000 });
+        }
       } else {
         // Show appropriate toast based on field matching for single field
         const fieldMatchSource = response.field_match_source || 'none';

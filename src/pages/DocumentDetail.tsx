@@ -214,7 +214,11 @@ export default function DocumentDetail() {
   const loadAvailableFields = async () => {
     try {
       const response = await fieldsAPI.getFields();
-      setAvailableFields(response.fields || []);
+      // Sort fields alphabetically by name
+      const sortedFields = (response.fields || []).sort((a: any, b: any) => 
+        (a.name || '').localeCompare(b.name || '')
+      );
+      setAvailableFields(sortedFields);
     } catch (err) {
       console.error("Failed to load fields:", err);
     }
@@ -440,7 +444,7 @@ export default function DocumentDetail() {
       
       const result = await fieldPlansAPI.createFieldPlanFromDocument(id);
       
-      if (result.success && result.plans_created && result.plans_created.length > 0) {
+      if (result.success && result.plans_created?.length > 0) {
         // Store result and show modal
         setFieldPlanResult({
           is_bulk_plan: result.plans_created.length > 1,
@@ -456,8 +460,28 @@ export default function DocumentDetail() {
         setShowFieldPlanResult(true);
         toast.success(`Created ${result.plans_created.length} field plan(s)!`);
         
+        // Show warning if some fields were skipped (existing plans)
+        if ((result as any).skipped_fields?.length > 0) {
+          const skippedNames = (result as any).skipped_fields.map((f: any) => f.field_name).join(', ');
+          toast.warning(`⏭️ Skipped ${(result as any).skipped_fields.length} field(s) with existing plans: ${skippedNames}`, { duration: 8000 });
+        }
+        
+        // Show info if some plans need field assignment (unmatched fields)
+        if ((result as any).plans_needing_field_assignment?.length > 0) {
+          const unmatchedNames = (result as any).plans_needing_field_assignment.map((p: any) => p.field_name).join(', ');
+          toast.warning(`📝 ${(result as any).plans_needing_field_assignment.length} plan(s) created but need field assignment: ${unmatchedNames}. Edit each plan to assign the correct field.`, { duration: 10000 });
+        }
+        
         // Refresh document to update field_plan_id link
         await loadDocument();
+      } else if (result.error === 'duplicate_plan') {
+        // Handle duplicate plan error with specific message
+        const existingPlan = result.existing_plan || result.existing_plans?.[0];
+        const planName = existingPlan?.plan_name || 'Unknown';
+        toast.error(
+          `A field plan "${planName}" already exists. Please delete it first before creating a new one.`,
+          { duration: 8000 }
+        );
       } else {
         toast.error(result.message || "Could not create field plan from this document");
       }

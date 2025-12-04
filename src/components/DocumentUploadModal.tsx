@@ -64,7 +64,11 @@ export default function DocumentUploadModal({ open, onClose, onUploadComplete, a
     try {
       setLoadingFields(true);
       const response = await fieldsAPI.getFields();
-      setAvailableFields(response.fields || []);
+      // Sort fields alphabetically by name
+      const sortedFields = (response.fields || []).sort((a: any, b: any) => 
+        (a.name || '').localeCompare(b.name || '')
+      );
+      setAvailableFields(sortedFields);
     } catch (error) {
       console.error("Failed to load fields:", error);
     } finally {

@@ -38,6 +38,7 @@ const Layout = ({ children }: LayoutProps) => {
     if (path === '/map') return 'AskMyFarm'; // Show AskMyFarm title on map page
     if (path === '/farm-memory') return 'Farm Memory';
     if (path === '/farm-reports' || path.startsWith('/farm-reports/')) return 'JD Ops Reports';
+    if (path === '/amf-reports') return 'AMF Field Reports';
     // if (path === '/tasks' || path.startsWith('/tasks/')) return 'Tasks';
     // FIELD NOTES - Temporarily commented out (replaced by Scouting Notes)
     // if (path === '/field-notes' || path.startsWith('/field-notes/')) return 'Notes';
@@ -65,6 +66,13 @@ const Layout = ({ children }: LayoutProps) => {
               <span className="text-primary">Ask</span>
               <span className="text-yellow-400">My</span>
               <span className="text-primary">Farm</span>
+            </h1>
+          ) : location.pathname === '/amf-reports' ? (
+            <h1 className="text-xl font-bold">
+              <span className="text-farm-accent">A</span>
+              <span className="text-amber-500">M</span>
+              <span className="text-farm-accent">F</span>
+              {" "}Reports
             </h1>
           ) : (
             getPageTitle() && <h1 className="text-xl font-bold">{getPageTitle()}</h1>
@@ -143,6 +151,25 @@ const Layout = ({ children }: LayoutProps) => {
                 >
                   <FileBarChart2 className="w-5 h-5 flex-shrink-0 text-farm-accent" />
                   <span className="font-medium">JD Ops Reports</span>
+                </button>
+
+                {/* AMF Field Reports */}
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    navigate("/amf-reports");
+                  }}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
+                    isActive("/amf-reports") ? "bg-accent" : "hover:bg-accent"
+                  }`}
+                >
+                  <FileBarChart2 className="w-5 h-5 flex-shrink-0 text-farm-accent" />
+                  <span className="font-medium">
+                    <span className="text-farm-accent">A</span>
+                    <span className="text-amber-500">M</span>
+                    <span className="text-farm-accent">F</span>
+                    {" "}Reports
+                  </span>
                 </button>
 
                 {/* Separator */}

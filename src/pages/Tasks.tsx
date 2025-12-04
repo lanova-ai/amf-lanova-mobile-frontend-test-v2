@@ -54,7 +54,11 @@ const Tasks = () => {
         ]);
         
         setTasks(tasksResponse.tasks || []);
-        setFields(fieldsResponse.fields || []);
+        // Sort fields alphabetically by name
+        const sortedFields = (fieldsResponse.fields || []).sort((a: any, b: any) => 
+          (a.name || '').localeCompare(b.name || '')
+        );
+        setFields(sortedFields);
 
         const tasksList = tasksResponse.tasks || [];
         const activeCount = tasksList.filter((t: any) =>

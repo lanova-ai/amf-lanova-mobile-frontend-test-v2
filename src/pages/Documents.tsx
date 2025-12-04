@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { documentsAPI, Document, fieldsAPI, shareTimelinesAPI } from "@/lib/api";
 import { toast } from "sonner";
 import DocumentUploadModal from "@/components/DocumentUploadModal";
@@ -63,15 +63,16 @@ import { Input } from "@/components/ui/input";
 export default function Documents() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   
   // View mode: notes | summary | shared
   const [viewMode, setViewMode] = useState<'notes' | 'summary' | 'shared'>('notes');
   
-  // Filters (shared across all tabs)
-  const [filterYear, setFilterYear] = useState<string>("all");
-  const [filterField, setFilterField] = useState<string>("all");
+  // Filters (shared across all tabs) - initialize from URL params
+  const [filterYear, setFilterYear] = useState<string>(searchParams.get('year') || "all");
+  const [filterField, setFilterField] = useState<string>(searchParams.get('field') || "all");
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -445,7 +446,11 @@ export default function Documents() {
   const loadFields = async () => {
     try {
       const response = await fieldsAPI.getFields();
-      setFields(response.fields || []);
+      // Sort fields alphabetically by name
+      const sortedFields = (response.fields || []).sort((a: any, b: any) => 
+        (a.name || '').localeCompare(b.name || '')
+      );
+      setFields(sortedFields);
     } catch (error) {
       console.error("Failed to load fields:", error);
     }
@@ -1302,10 +1307,9 @@ export default function Documents() {
   }
 
   return (
-    <div className="absolute inset-0 overflow-y-auto scrollbar-hide page-background">
-      <div className="min-h-full flex flex-col">
-        {/* Tabs */}
-        <div className="px-4 py-4 border-b border-farm-accent/20 bg-farm-dark/95 backdrop-blur sticky top-0 z-20">
+    <div className="absolute inset-0 flex flex-col page-background">
+      {/* Fixed Header: Tabs */}
+      <div className="flex-shrink-0 px-4 py-4 border-b border-farm-accent/20 bg-farm-dark z-30">
           <div className="inline-flex items-center justify-center w-full bg-farm-card border border-farm-accent/20 p-1 rounded-full">
             <button
               onClick={() => setViewMode('notes')}
@@ -1342,7 +1346,7 @@ export default function Documents() {
 
         {/* Selection Actions */}
         {viewMode === 'notes' && isSelectionMode && (
-          <div className="px-4 py-3 border-b bg-primary/5 backdrop-blur sticky top-[60px] z-10">
+          <div className="flex-shrink-0 px-4 py-3 border-b bg-farm-dark/95 z-20">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <button
@@ -1391,7 +1395,7 @@ export default function Documents() {
 
         {/* Filters - Only show in Notes tab */}
         {viewMode === 'notes' && (
-          <div className={`px-4 py-4 border-b bg-farm-dark/95 backdrop-blur sticky z-10 space-y-3 ${isSelectionMode ? 'top-[114px]' : 'top-[60px]'}`}>
+          <div className="flex-shrink-0 px-4 py-4 border-b bg-farm-dark z-20 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             {/* Type Filter */}
             <Select value={filterYear} onValueChange={setFilterYear}>
@@ -1487,9 +1491,9 @@ export default function Documents() {
         </div>
         )}
 
-        {/* Notes Tab - Documents List */}
+        {/* Notes Tab - Documents List (Scrollable) */}
         {viewMode === 'notes' && (
-          <main className="flex-1 px-4 py-4 pb-24">
+          <main className="flex-1 overflow-y-auto scrollbar-hide px-4 py-4 pb-24">
             {filteredDocuments.length === 0 ? (
             <div className="text-center py-12 space-y-4">
               {documents.length === 0 ? (
@@ -1671,7 +1675,7 @@ export default function Documents() {
 
         {/* Filters - Summary Tab */}
         {viewMode === 'summary' && !selectedSummary && !loadingSummaryDetail && (
-          <div className="px-4 py-4 border-b bg-farm-dark/95 backdrop-blur sticky top-[60px] z-10 space-y-3">
+          <div className="flex-shrink-0 px-4 py-4 border-b bg-farm-dark z-20 space-y-3">
             <div className="grid grid-cols-2 gap-3">
               {/* Year Filter */}
               <Select value={filterYear} onValueChange={setFilterYear}>
@@ -1744,9 +1748,9 @@ export default function Documents() {
           </div>
         )}
 
-        {/* Summary Tab - Document Summaries */}
+        {/* Summary Tab - Document Summaries (Scrollable) */}
         {viewMode === 'summary' && (
-          <main className="flex-1 overflow-y-auto px-4 py-4">
+          <main className="flex-1 overflow-y-auto scrollbar-hide px-4 py-4">
             {loadingSummaryDetail ? (
               /* Loading State */
               <div className="flex items-center justify-center min-h-[400px]">
@@ -2089,7 +2093,7 @@ export default function Documents() {
 
         {/* Filters - Shared Tab */}
         {viewMode === 'shared' && !selectedShare && (
-          <div className="px-4 py-4 border-b bg-farm-dark/95 backdrop-blur sticky top-[60px] z-10 space-y-3">
+          <div className="flex-shrink-0 px-4 py-4 border-b bg-farm-dark z-20 space-y-3">
             <div className="grid grid-cols-2 gap-3">
               {/* Year Filter */}
               <Select value={filterYear} onValueChange={setFilterYear}>
@@ -2162,9 +2166,9 @@ export default function Documents() {
           </div>
         )}
 
-        {/* Shared Tab - Shared Timelines */}
+        {/* Shared Tab - Shared Timelines (Scrollable) */}
         {viewMode === 'shared' && (
-          <main className="flex-1 overflow-y-auto px-4 py-4">
+          <main className="flex-1 overflow-y-auto scrollbar-hide px-4 py-4">
             {selectedShare ? (
               /* Detail View - Only show when selectedShare is set */
               <div className="space-y-4" key={`share-detail-${selectedShare.id}`}>
@@ -2463,7 +2467,6 @@ export default function Documents() {
             )}
           </main>
         )}
-      </div>
 
       {/* Floating Action Button - Upload (Notes tab only) */}
       {viewMode === 'notes' && (

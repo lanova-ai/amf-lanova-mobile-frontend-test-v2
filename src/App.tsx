@@ -64,6 +64,9 @@ import ScoutingSummaryPublicView from "./pages/ScoutingSummaryPublicView";
 import SharedFieldPlanSummary from "./pages/SharedFieldPlanSummary";
 import SharedTimeline from "./pages/SharedTimeline";
 import SharedDocument from "./pages/SharedDocument";
+import AMFReports from "./pages/AMFReports";
+import ShareFieldReport from "./pages/ShareFieldReport";
+import SharedFieldReport from "./pages/SharedFieldReport";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
@@ -148,6 +151,8 @@ const App = () => (
             <Route path="/map" element={<ProtectedRoute><Layout><FieldsMap /></Layout></ProtectedRoute>} />
             <Route path="/farm-memory" element={<ProtectedRoute><Layout><FarmMemory /></Layout></ProtectedRoute>} />
             <Route path="/farm-reports" element={<ProtectedRoute><Layout><FarmReports /></Layout></ProtectedRoute>} />
+            <Route path="/amf-reports" element={<ProtectedRoute><Layout><AMFReports /></Layout></ProtectedRoute>} />
+            <Route path="/share-field-report" element={<ProtectedRoute><ShareFieldReport /></ProtectedRoute>} />
             <Route path="/recordings" element={<ProtectedRoute><Layout><Recordings /></Layout></ProtectedRoute>} />
               <Route path="/documents" element={<ProtectedRoute><Layout><Documents /></Layout></ProtectedRoute>} />
               <Route path="/documents/:id" element={<ProtectedRoute><DocumentDetail /></ProtectedRoute>} />
@@ -196,6 +201,7 @@ const App = () => (
             <Route path="/shared/summary/:shareToken" element={<SharedFieldPlanSummary />} />
             <Route path="/shared/timeline/:shareToken" element={<SharedTimeline />} />
             <Route path="/shared/document/:shareToken" element={<SharedDocument />} />
+            <Route path="/shared/field-report/:shareToken" element={<SharedFieldReport />} />
             <Route path="/founding-farmers/apply" element={<FoundingFarmerApply />} />
             <Route path="/founding-farmers/signup" element={<FoundingFarmerSignup />} />
             <Route path="/terms" element={<Terms />} />

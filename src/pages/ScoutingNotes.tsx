@@ -48,9 +48,9 @@ export default function ScoutingNotes() {
   // View mode: notes | summary | shared
   const [viewMode, setViewMode] = useState<'notes' | 'summary' | 'shared'>('notes');
   
-  // Filters for Notes tab
-  const [filterField, setFilterField] = useState<string>("all");
-  const [filterYear, setFilterYear] = useState<string>("all");
+  // Filters for Notes tab - initialize from URL params
+  const [filterField, setFilterField] = useState<string>(searchParams.get('field') || "all");
+  const [filterYear, setFilterYear] = useState<string>(searchParams.get('year') || "all");
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   
   // Summary-specific state
@@ -233,7 +233,11 @@ export default function ScoutingNotes() {
       ]);
 
       setNotes(notesData.notes);
-      setFields(fieldsData.fields || []);
+      // Sort fields alphabetically by name
+      const sortedFields = (fieldsData.fields || []).sort((a: any, b: any) => 
+        (a.name || '').localeCompare(b.name || '')
+      );
+      setFields(sortedFields);
       
       // Extract available years from scouting_date
       const years = new Set<number>();

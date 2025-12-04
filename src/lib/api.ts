@@ -1686,14 +1686,27 @@ export const fieldPlansAPI = {
     return apiFetch<{
       success: boolean;
       document_id: string;
-      plans_created: { 
+      plans_created?: { 
         id: string; 
         plan_name?: string; 
         field_name?: string;
         plan_year?: number;
         total_passes?: number;
       }[];
-      message: string;
+      message?: string;
+      error?: string;
+      existing_plan?: {
+        id: string;
+        plan_name: string;
+        field_name: string;
+        crop_type: string;
+        plan_year: number;
+      };
+      existing_plans?: {
+        field_name: string;
+        plan_name: string;
+        plan_id: string;
+      }[];
     }>(`/api/v1/field-plans/import/photo/create`, {
       method: 'POST',
       body: formData,
@@ -3080,6 +3093,265 @@ export const foundingFarmerAPI = {
     return apiFetch('/api/v1/founding-farmer/mark-code-used', {
       method: 'POST',
       body: JSON.stringify({ code, email }),
+    });
+  },
+};
+
+// ============================================================================
+// Field Reports API (AMF Reports)
+// ============================================================================
+
+export interface FieldReportDataItem {
+  id: string;
+  title?: string;
+  date?: string;
+  summary?: string;
+  type?: string;
+}
+
+export interface FieldReportDataSection {
+  count: number;
+  items: FieldReportDataItem[];
+}
+
+export interface FieldReportJDOpsSection {
+  count: number;
+  last_sync?: string;
+  has_summary: boolean;
+  summary_preview?: string;
+}
+
+export interface FieldReportSummary {
+  field_id: string;
+  field_name: string;
+  farm_name?: string;
+  operation_name?: string;
+  year: number;
+  acreage?: number;
+  jd_ops: FieldReportJDOpsSection;
+  voice_notes: FieldReportDataSection;
+  documents: FieldReportDataSection;
+  scouting_notes: FieldReportDataSection;
+  field_plans: FieldReportDataSection;
+  generated_report?: {
+    exists: boolean;
+    report_id?: string;
+    generated_at?: string;
+    is_stale?: boolean;
+  };
+}
+
+export interface FieldReportTimelineEvent {
+  date: string;
+  event: string;
+  source: 'jd_ops' | 'recording' | 'document' | 'scouting' | 'plan';
+  category: 'planting' | 'application' | 'scouting' | 'harvest' | 'planning' | 'other';
+}
+
+export interface FieldReportGenerated {
+  id: string;
+  field_id: string;
+  field_name: string;
+  farm_name?: string;
+  year: number;
+  executive_summary?: string;
+  season_timeline?: string;
+  timeline_events?: FieldReportTimelineEvent[];
+  key_highlights: string[];
+  issues_encountered: string[];
+  recommendations: string[];
+  full_report_markdown?: string;
+  source_counts: {
+    voice_notes: number;
+    documents: number;
+    scouting_notes: number;
+    field_plans: number;
+    jd_ops_operations: number;
+  };
+  generated_at?: string;
+  is_stale: boolean;
+}
+
+export interface FieldReportPublic {
+  field_name: string;
+  farm_name?: string;
+  acreage?: number;
+  year: number;
+  custom_title?: string;
+  executive_summary?: string;
+  season_timeline?: string;
+  timeline_events?: FieldReportTimelineEvent[];
+  key_highlights: string[];
+  issues_encountered: string[];
+  recommendations: string[];
+  source_counts: {
+    voice_notes: number;
+    documents: number;
+    scouting_notes: number;
+    field_plans: number;
+    jd_ops_operations: number;
+  };
+  shared_by: string;
+  shared_at?: string;
+  generated_at?: string;
+}
+
+export interface FieldReportListItem {
+  id: string;
+  field_id: string;
+  field_name: string;
+  farm_name?: string;
+  acreage?: number;
+  year: number;
+  executive_summary?: string;
+  key_highlights: string[];
+  generated_at?: string;
+  source_counts: {
+    voice_notes: number;
+    documents: number;
+    scouting_notes: number;
+    field_plans: number;
+    jd_ops_operations: number;
+  };
+}
+
+export const fieldReportsAPI = {
+  // List all generated reports for the user
+  listReports: async (year?: number): Promise<{ reports: FieldReportListItem[]; total: number }> => {
+    const params = new URLSearchParams();
+    if (year) params.append('year', year.toString());
+    const queryString = params.toString();
+    return apiFetch(`/api/v1/field-reports/${queryString ? `?${queryString}` : ''}`);
+  },
+
+  // Get aggregated field report summary
+  getReportSummary: async (fieldId: string, year?: number): Promise<FieldReportSummary> => {
+    const params = new URLSearchParams();
+    if (year) params.append('year', year.toString());
+    const queryString = params.toString();
+    return apiFetch(`/api/v1/field-reports/${fieldId}/report-summary${queryString ? `?${queryString}` : ''}`);
+  },
+
+  // Generate AI field report
+  generateReport: async (fieldId: string, year?: number, regenerate?: boolean): Promise<{
+    status: string;
+    message: string;
+    report_id: string;
+    field_id?: string;
+    year?: number;
+    generated_at?: string;
+  }> => {
+    const params = new URLSearchParams();
+    if (year) params.append('year', year.toString());
+    if (regenerate) params.append('regenerate', 'true');
+    const queryString = params.toString();
+    return apiFetch(`/api/v1/field-reports/${fieldId}/generate-report${queryString ? `?${queryString}` : ''}`, {
+      method: 'POST',
+    });
+  },
+
+  // Get generated field report
+  getReport: async (fieldId: string, year?: number): Promise<FieldReportGenerated | {
+    status: string;
+    message: string;
+    report_id: string;
+  }> => {
+    const params = new URLSearchParams();
+    if (year) params.append('year', year.toString());
+    const queryString = params.toString();
+    return apiFetch(`/api/v1/field-reports/${fieldId}/report${queryString ? `?${queryString}` : ''}`);
+  },
+
+  // Get public field report (no auth)
+  getPublicReport: async (shareToken: string): Promise<FieldReportPublic> => {
+    const url = `${env.API_BASE_URL}/api/v1/field-reports/public/${shareToken}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to load field report');
+    }
+    return response.json();
+  },
+
+  // Generate AI-powered share message
+  generateShareMessage: async (params: {
+    field_id: string;
+    year: number;
+    recipient_name: string;
+    recipient_type: string;
+    communication_method: string;
+    user_context: string;
+  }): Promise<{
+    subject?: string;
+    body: string;
+    share_link: string;
+    metadata: Record<string, unknown>;
+  }> => {
+    return apiFetch('/api/v1/field-reports/generate-share-message', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  },
+
+  // Get share history
+  getShareHistory: async (): Promise<{
+    shares: Array<{
+      id: string;
+      field_id: string;
+      field_name: string;
+      farm_name?: string;
+      year: number;
+      recipient_names: string;
+      communication_method: string;
+      share_link: string;
+      message_subject?: string;
+      message_body?: string;
+      view_count: number;
+      last_viewed_at?: string;
+      shared_at: string;
+    }>;
+    total_count: number;
+  }> => {
+    return apiFetch('/api/v1/field-reports/share-history');
+  },
+
+  // Delete a share
+  deleteShare: async (shareId: string): Promise<{ success: boolean; message: string }> => {
+    return apiFetch(`/api/v1/field-reports/shares/${shareId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Delete a report
+  deleteReport: async (reportId: string): Promise<{ success: boolean; message: string }> => {
+    return apiFetch(`/api/v1/field-reports/reports/${reportId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Send share message (email/SMS)
+  sendShareMessage: async (params: {
+    field_id: string;
+    year: number;
+    recipient_ids: string[];
+    communication_method: string;
+    subject?: string;
+    body: string;
+    share_link: string;
+  }): Promise<{
+    success: boolean;
+    sent_count: number;
+    total_count: number;
+    results: Array<{
+      contact_id: string;
+      contact_name: string;
+      status: string;
+      message: string;
+    }>;
+  }> => {
+    return apiFetch('/api/v1/field-reports/send-share-message', {
+      method: 'POST',
+      body: JSON.stringify(params),
     });
   },
 };

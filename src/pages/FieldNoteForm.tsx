@@ -62,7 +62,11 @@ const FieldNoteForm = () => {
         voiceAPI.getVoiceNotes({ limit: 50 })
       ]);
       
-      setFields(fieldsResponse.fields || []);
+      // Sort fields alphabetically by name
+      const sortedFields = (fieldsResponse.fields || []).sort((a: any, b: any) => 
+        (a.name || '').localeCompare(b.name || '')
+      );
+      setFields(sortedFields);
       setVoiceNotes(voiceNotesResponse.voice_notes || []);
 
       // If editing, load observation data

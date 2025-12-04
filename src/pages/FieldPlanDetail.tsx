@@ -182,7 +182,11 @@ const FieldPlanDetail = () => {
   const loadAvailableFields = async () => {
     try {
       const response = await fieldsAPI.getFields();
-      setAvailableFields(response.fields || []);
+      // Sort fields alphabetically by name for easier selection
+      const sortedFields = (response.fields || []).sort((a: any, b: any) => 
+        (a.name || '').localeCompare(b.name || '')
+      );
+      setAvailableFields(sortedFields);
     } catch (error) {
       console.error("Failed to load fields:", error);
     }
@@ -1101,29 +1105,25 @@ const FieldPlanDetail = () => {
             )}
           </div>
 
-          {/* Plan Notes */}
-          <div className="mt-4 pt-4 border-t">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-farm-muted">Notes</h3>
+          {/* Plan Notes - only show if notes exist or editing */}
+          {(plan.notes || editingOverview) && (
+            <div className="mt-4 pt-4 border-t">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-medium text-farm-muted">Notes</h3>
+              </div>
+              {editingOverview ? (
+                <textarea
+                  value={editedNotes}
+                  onChange={(e) => setEditedNotes(e.target.value)}
+                  className="w-full px-2 py-1 bg-farm-dark border border-farm-accent/20 rounded text-farm-text text-sm focus:outline-none focus:ring-2 focus:ring-farm-accent min-h-[80px]"
+                  placeholder="Add notes about this plan..."
+                  disabled={saving}
+                />
+              ) : (
+                <p className="text-sm text-farm-text leading-relaxed">{plan.notes}</p>
+              )}
             </div>
-            {editingOverview ? (
-              <textarea
-                value={editedNotes}
-                onChange={(e) => setEditedNotes(e.target.value)}
-                className="w-full px-2 py-1 bg-farm-dark border border-farm-accent/20 rounded text-farm-text text-sm focus:outline-none focus:ring-2 focus:ring-farm-accent min-h-[80px]"
-                placeholder="Add notes about this plan..."
-                disabled={saving}
-              />
-            ) : (
-              <>
-                {plan.notes ? (
-                  <p className="text-sm text-farm-text leading-relaxed">{plan.notes}</p>
-                ) : (
-                  <p className="text-sm text-farm-muted italic">No notes</p>
-                )}
-              </>
-            )}
-          </div>
+          )}
           
           {/* Save/Cancel buttons */}
           {editingOverview && (

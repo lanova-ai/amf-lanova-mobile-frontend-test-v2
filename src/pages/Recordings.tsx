@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Mic, MoreVertical, Trash2, Plus, Upload, RefreshCw, AlertCircle } from "lucide-react";
 import { voiceAPI } from "@/lib/api";
@@ -59,6 +59,7 @@ interface VoiceNote {
 const Recordings = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [recordings, setRecordings] = useState<VoiceNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -69,8 +70,8 @@ const Recordings = () => {
   const [viewPlansConfirm, setViewPlansConfirm] = useState<string | null>(null);
   const [fabMenuOpen, setFabMenuOpen] = useState(false);
   
-  // Filter states
-  const [selectedField, setSelectedField] = useState<string>("all");
+  // Filter states - initialize from URL params
+  const [selectedField, setSelectedField] = useState<string>(searchParams.get('field') || "all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
 
   useEffect(() => {

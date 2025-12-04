@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Eye, Trash2, MoreVertical, Calendar, Share2, ArrowLeft, X, ChevronRight } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { fieldPlansAPI, sharePlansAPI, fieldPlanSummariesAPI, FieldPlanSummaryListItem, FieldPlanSummaryResponse } from "@/lib/api";
 import {
@@ -59,6 +59,7 @@ interface FieldPlan {
 
 const FieldPlans = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [plans, setPlans] = useState<FieldPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [planToDelete, setPlanToDelete] = useState<FieldPlan | null>(null);
@@ -90,9 +91,9 @@ const FieldPlans = () => {
   const [selectedPlans, setSelectedPlans] = useState<Set<string>>(new Set());
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   
-  // Filters
-  const [fieldFilter, setFieldFilter] = useState<string>("all");
-  const [yearFilter, setYearFilter] = useState<string>("all");
+  // Filters - initialize from URL params
+  const [fieldFilter, setFieldFilter] = useState<string>(searchParams.get('field') || "all");
+  const [yearFilter, setYearFilter] = useState<string>(searchParams.get('year') || "all");
   const [availableFields, setAvailableFields] = useState<{field_id: string, field_name: string}[]>([]);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
 

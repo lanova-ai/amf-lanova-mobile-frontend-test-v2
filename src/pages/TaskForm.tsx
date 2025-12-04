@@ -43,7 +43,11 @@ const TaskForm = () => {
   const loadFields = async () => {
     try {
       const response = await fieldsAPI.getFields();
-      setFields(response.fields || []);
+      // Sort fields alphabetically by name
+      const sortedFields = (response.fields || []).sort((a: any, b: any) => 
+        (a.name || '').localeCompare(b.name || '')
+      );
+      setFields(sortedFields);
     } catch (error) {
       console.error("Error loading fields:", error);
     }
