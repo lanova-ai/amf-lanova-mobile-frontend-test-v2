@@ -434,6 +434,98 @@ const FieldPlanDetail = () => {
     }
   };
 
+  // Timeline parsing for Previous Season Summary (same as JD Ops Reports)
+  interface JDTimelineEvent {
+    date?: string;
+    category: 'planting' | 'application' | 'harvest' | 'tillage' | 'other';
+    description: string;
+  }
+
+  const parseJDOpsToTimeline = (text: string): JDTimelineEvent[] => {
+    if (!text) return [];
+    
+    const lines = text.split('\n');
+    const timeline: JDTimelineEvent[] = [];
+    let currentCategory: JDTimelineEvent['category'] = 'other';
+    let currentMonthRange = '';
+    
+    for (const line of lines) {
+      const trimmed = line.trim();
+      
+      // Skip empty lines and notes
+      if (!trimmed || trimmed.startsWith('*Note:') || trimmed === '***' || trimmed === '---') continue;
+      
+      // Detect section headers (→ Planting, → Application, etc.)
+      const arrowMatch = trimmed.match(/^(\*\*)?(→|->|--)\s*(.+?)(\s*\(([^)]+)\))?(\*\*)?$/);
+      if (arrowMatch) {
+        const title = arrowMatch[3].toLowerCase();
+        currentMonthRange = arrowMatch[5] || '';
+        
+        if (title.includes('plant') || title.includes('seed')) {
+          currentCategory = 'planting';
+        } else if (title.includes('applic') || title.includes('spray') || title.includes('fertiliz')) {
+          currentCategory = 'application';
+        } else if (title.includes('harvest')) {
+          currentCategory = 'harvest';
+        } else if (title.includes('till')) {
+          currentCategory = 'tillage';
+        } else {
+          currentCategory = 'other';
+        }
+        continue;
+      }
+      
+      // Extract bullet points with dates
+      if (trimmed.startsWith('*') || trimmed.startsWith('•')) {
+        const bulletText = trimmed.replace(/^[\*•]\s*/, '').replace(/\*\*/g, '');
+        
+        // Try to extract date from the text
+        const dateMatch = bulletText.match(/^([A-Z][a-z]{2}\s+\d{1,2})\s*[:,-]?\s*(.+)/);
+        if (dateMatch) {
+          const description = dateMatch[2].trim();
+          if (description.length > 3) {
+            timeline.push({
+              date: dateMatch[1],
+              category: currentCategory,
+              description: description
+            });
+          }
+        } else {
+          // Summary items without date prefix
+          if (bulletText.toLowerCase().includes('overall mean yield') || 
+              bulletText.toLowerCase().includes('overall mean moisture') ||
+              bulletText.toLowerCase().includes('yield by hybrid') ||
+              bulletText.toLowerCase().includes('hybrids summary') ||
+              bulletText.toLowerCase().includes('varieties summary')) {
+            timeline.push({
+              date: currentMonthRange || 'Summary',
+              category: currentCategory,
+              description: bulletText
+            });
+          } else if (bulletText.length > 15) {
+            timeline.push({
+              date: currentMonthRange || undefined,
+              category: currentCategory,
+              description: bulletText
+            });
+          }
+        }
+      }
+    }
+    
+    return timeline;
+  };
+
+  const getCategoryColor = (category: JDTimelineEvent['category']) => {
+    switch (category) {
+      case 'planting': return 'text-green-500';
+      case 'application': return 'text-blue-500';
+      case 'harvest': return 'text-orange-500';
+      case 'tillage': return 'text-amber-500';
+      default: return 'text-farm-muted';
+    }
+  };
+
   const formatCost = (cost?: number) => {
     if (!cost) return "—";
     return `$${cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -1797,41 +1889,74 @@ const FieldPlanDetail = () => {
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-farm-accent mx-auto"></div>
                     <p className="text-sm text-farm-muted mt-2">Loading summary...</p>
                   </div>
-                ) : activityPasses?.has_jd_data && activityPasses.passes.length > 0 ? (
-                  <div className="space-y-3">
-                    {activityPasses.passes.map((pass, idx) => (
-                      <div 
-                        key={idx}
-                        className="bg-farm-dark/50 rounded-lg p-3 border border-farm-accent/10"
-                      >
-                        <div className="flex items-start gap-3">
-                          {getActivityPassIcon(pass.pass_type)}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between">
-                              <h3 className="font-semibold text-sm text-farm-text">{pass.title}</h3>
-                              {pass.dates.length > 0 && (
-                                <span className="text-xs text-farm-muted">
-                                  {pass.dates.length === 1 
-                                    ? pass.dates[0] 
-                                    : `${pass.dates[0]} - ${pass.dates[pass.dates.length - 1]}`
-                                  }
+                ) : activityPasses?.has_jd_data && activityPasses.summary_text ? (
+                  <div className="space-y-4">
+                    {/* Season Timeline - same format as JD Ops Reports */}
+                    <div>
+                      <h4 className="text-sm font-semibold text-farm-accent mb-2 flex items-center gap-2">
+                        <CalendarIcon className="w-4 h-4" />
+                        Season Timeline
+                      </h4>
+                      <div className="space-y-1.5">
+                        {parseJDOpsToTimeline(activityPasses.summary_text).map((event, i) => {
+                          const colorClass = getCategoryColor(event.category);
+                          
+                          return (
+                            <div key={i} className="flex items-start gap-2 text-sm">
+                              <Tractor className={`w-3.5 h-3.5 flex-shrink-0 mt-0.5 ${colorClass}`} />
+                              {event.date && (
+                                <span className="text-farm-muted font-medium min-w-[60px]">
+                                  {event.date}
                                 </span>
                               )}
+                              <span className="text-muted-foreground">{event.description}</span>
                             </div>
-                            {pass.details.length > 0 && (
-                              <ul className="mt-1.5 space-y-0.5">
-                                {pass.details.map((detail, dIdx) => (
-                                  <li key={dIdx} className="text-xs text-farm-muted flex items-start gap-1.5">
-                                    <span className="text-farm-accent mt-0.5">•</span>
-                                    <span>{detail}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                          </div>
-                        </div>
+                          );
+                        })}
                       </div>
-                    ))}
+                    </div>
+                    
+                    {/* View Full Report - Collapsible */}
+                    <details className="mt-3">
+                      <summary className="text-xs text-farm-muted cursor-pointer hover:text-farm-accent">
+                        View Full Report Details
+                      </summary>
+                      <div className="mt-3 pt-3 border-t border-farm-accent/10 space-y-3">
+                        {activityPasses.passes.map((pass, idx) => (
+                          <div 
+                            key={idx}
+                            className="bg-farm-dark/50 rounded-lg p-3 border border-farm-accent/10"
+                          >
+                            <div className="flex items-start gap-3">
+                              {getActivityPassIcon(pass.pass_type)}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between">
+                                  <h3 className="font-semibold text-sm text-farm-text">{pass.title}</h3>
+                                  {pass.dates.length > 0 && (
+                                    <span className="text-xs text-farm-muted">
+                                      {pass.dates.length === 1 
+                                        ? pass.dates[0] 
+                                        : `${pass.dates[0]} - ${pass.dates[pass.dates.length - 1]}`
+                                      }
+                                    </span>
+                                  )}
+                                </div>
+                                {pass.details.length > 0 && (
+                                  <ul className="mt-1.5 space-y-0.5">
+                                    {pass.details.map((detail, dIdx) => (
+                                      <li key={dIdx} className="text-xs text-farm-muted flex items-start gap-1.5">
+                                        <span className="text-farm-accent mt-0.5">•</span>
+                                        <span>{detail}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </details>
                     
                     {/* View Full Report Link */}
                     <button
