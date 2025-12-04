@@ -160,13 +160,20 @@ export default function SharedFieldReport() {
             </h4>
             <div className="space-y-1.5">
               {report.timeline_events.map((event: FieldReportTimelineEvent, i: number) => {
-                const SourceIcon = {
-                  'jd_ops': Tractor,
-                  'recording': Mic,
-                  'document': Camera,
-                  'scouting': Leaf,
-                  'plan': FileText,
-                }[event.source] || Calendar;
+                // Determine icon based on source and event text
+                let SourceIcon = Calendar;
+                if (event.source === 'jd_ops') {
+                  SourceIcon = Tractor;
+                } else if (event.source === 'recording') {
+                  SourceIcon = Mic;
+                } else if (event.source === 'document') {
+                  // Differentiate between Photo and Document
+                  SourceIcon = event.event?.toLowerCase().startsWith('photo') ? Camera : FileText;
+                } else if (event.source === 'scouting') {
+                  SourceIcon = Leaf;
+                } else if (event.source === 'plan') {
+                  SourceIcon = FileText;
+                }
                 
                 const categoryColor = {
                   'planting': 'text-green-500',
