@@ -68,7 +68,7 @@ type ViewMode = 'reports' | 'summary' | 'shared';
 export default function AMFReports() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   
   // Get initial values from URL params or navigation state
   const urlFieldId = searchParams.get('field');
@@ -149,6 +149,27 @@ export default function AMFReports() {
       window.history.replaceState({}, document.title);
     }
   }, []);
+  
+  // Sync selections to URL (preserves state when navigating away and back)
+  useEffect(() => {
+    const params = new URLSearchParams();
+    
+    // Always sync tab
+    if (viewMode !== 'reports') {
+      params.set('tab', viewMode);
+    }
+    
+    // Sync field and year for Reports tab
+    if (selectedFieldId) {
+      params.set('field', selectedFieldId);
+    }
+    if (selectedYear) {
+      params.set('year', selectedYear.toString());
+    }
+    
+    // Update URL without adding to history (replace instead of push)
+    setSearchParams(params, { replace: true });
+  }, [selectedFieldId, selectedYear, viewMode, setSearchParams]);
   
   // Load fields on mount
   useEffect(() => {
