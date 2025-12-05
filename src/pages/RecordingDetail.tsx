@@ -1184,8 +1184,8 @@ const RecordingDetail = () => {
             </div>
           )}
 
-          {/* Action Buttons */}
-          {(recording.status === 'completed' || recording.status === 'approved') && (
+          {/* Action Buttons - Show for completed, approved, OR failed (so user can reprocess) */}
+          {(recording.status === 'completed' || recording.status === 'approved' || recording.status === 'failed') && (
             <div className="space-y-3 pt-4 border-t border-farm-accent/20">
               <h3 className="text-sm font-medium text-farm-muted uppercase">Actions</h3>
               <div className="grid grid-cols-1 gap-2">
@@ -1256,24 +1256,26 @@ const RecordingDetail = () => {
       </main>
 
       {/* Reprocess Confirmation Dialog */}
-      <Dialog open={showReprocessConfirm} onOpenChange={setShowReprocessConfirm}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Reprocess Voice Note?</DialogTitle>
-            <DialogDescription className="text-sm">
+      <AlertDialog open={showReprocessConfirm} onOpenChange={setShowReprocessConfirm}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reprocess Voice Note?</AlertDialogTitle>
+            <AlertDialogDescription>
               This will re-run AI analysis, regenerate insights, and update the smart title.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setShowReprocessConfirm(false)} className="flex-1">
-              Cancel
-            </Button>
-            <Button onClick={handleReprocess} disabled={isSaving} className="flex-1">
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleReprocess} 
+              disabled={isSaving}
+              className="bg-farm-accent text-farm-dark hover:bg-farm-accent/90"
+            >
               {isSaving ? "Processing..." : "Reprocess"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Tasks Creation Result Dialog */}
       <Dialog open={showTasksResult} onOpenChange={setShowTasksResult}>

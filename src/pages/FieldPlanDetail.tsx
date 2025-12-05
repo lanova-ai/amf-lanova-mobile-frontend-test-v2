@@ -74,7 +74,7 @@ interface Pass {
   pass_order: number;
   pass_description?: string;
   timing_type?: string;
-  timing_date?: string;
+  scheduled_date?: string;  // Planned date for the pass
   timing_growth_stage?: string;
   equipment?: string;
   application_method?: string;
@@ -1452,20 +1452,20 @@ const FieldPlanDetail = () => {
                         </div>
 
                         {/* Pass Metadata */}
-                        {(pass.timing_date || pass.timing_growth_stage || pass.products_count > 0) && (
+                        {(pass.scheduled_date || pass.timing_growth_stage || pass.products_count > 0) && (
                           <div className="flex items-center gap-2 text-xs text-farm-muted mt-1">
-                            {pass.timing_date && (
-                              <span>{formatDate(pass.timing_date)}</span>
+                            {pass.scheduled_date && (
+                              <span>{formatDate(pass.scheduled_date)}</span>
                             )}
                             {pass.timing_growth_stage && (
                               <>
-                                {pass.timing_date && <span>•</span>}
+                                {pass.scheduled_date && <span>•</span>}
                                 <span>{pass.timing_growth_stage}</span>
                               </>
                             )}
                             {pass.products_count > 0 && (
                               <>
-                                {(pass.timing_date || pass.timing_growth_stage) && <span>•</span>}
+                                {(pass.scheduled_date || pass.timing_growth_stage) && <span>•</span>}
                                 <span>{pass.products_count} product{pass.products_count !== 1 ? 's' : ''}</span>
                               </>
                             )}
