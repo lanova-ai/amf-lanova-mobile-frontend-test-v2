@@ -5,7 +5,7 @@ import {
   MapPin,
   FileText,
   Mic,
-  Camera,
+  Image,
   ClipboardList,
   Tractor,
   Leaf,
@@ -162,17 +162,29 @@ export default function SharedFieldReport() {
               {report.timeline_events.map((event: FieldReportTimelineEvent, i: number) => {
                 // Determine icon based on source and event text
                 let SourceIcon = Calendar;
+                const isPhoto = event.event?.toLowerCase().startsWith('photo');
+                
                 if (event.source === 'jd_ops') {
                   SourceIcon = Tractor;
                 } else if (event.source === 'recording') {
                   SourceIcon = Mic;
                 } else if (event.source === 'document') {
-                  // Differentiate between Photo and Document
-                  SourceIcon = event.event?.toLowerCase().startsWith('photo') ? Camera : FileText;
+                  // Use Image icon for photos, FileText for documents
+                  SourceIcon = isPhoto ? Image : FileText;
                 } else if (event.source === 'scouting') {
                   SourceIcon = Leaf;
                 } else if (event.source === 'plan') {
                   SourceIcon = FileText;
+                }
+                
+                // Strip prefixes - icons are self-explanatory
+                let displayText = event.event || '';
+                const prefixes = ['document:', 'photo:', 'recording:', 'uploaded '];
+                for (const prefix of prefixes) {
+                  if (displayText.toLowerCase().startsWith(prefix)) {
+                    displayText = displayText.slice(prefix.length).trim();
+                    break;
+                  }
                 }
                 
                 const categoryColor = {
@@ -190,7 +202,7 @@ export default function SharedFieldReport() {
                     <span className="text-farm-muted font-medium min-w-[52px]">
                       {new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </span>
-                    <span className="text-muted-foreground">{event.event}</span>
+                    <span className="text-muted-foreground">{displayText}</span>
                   </div>
                 );
               })}
@@ -246,7 +258,7 @@ export default function SharedFieldReport() {
             )}
             {report.source_counts.documents > 0 && (
               <span className="text-xs bg-farm-accent/10 text-farm-accent px-2 py-1 rounded flex items-center gap-1">
-                <Camera className="w-3 h-3" />
+                <Image className="w-3 h-3" />
                 {report.source_counts.documents} Docs
               </span>
             )}

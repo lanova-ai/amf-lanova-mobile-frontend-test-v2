@@ -904,7 +904,7 @@ export default function FarmReports() {
   // Parse JD Ops markdown and render as clean timeline (like AMF Reports)
   interface JDTimelineEvent {
     date?: string;
-    category: 'planting' | 'application' | 'harvest' | 'tillage' | 'other';
+    category: 'planting' | 'application' | 'harvest' | 'tillage' | 'fertilizer' | 'other';
     description: string;
   }
 
@@ -913,78 +913,97 @@ export default function FarmReports() {
     
     const lines = text.split('\n');
     const timeline: JDTimelineEvent[] = [];
-    let currentCategory: JDTimelineEvent['category'] = 'other';
-    let currentMonthRange = '';
+    
+    // Helper to detect category from description text
+    const detectCategory = (desc: string): JDTimelineEvent['category'] => {
+      const lower = desc.toLowerCase();
+      // Check for explicit tags first: [PLANTED], [APPLIED], [HARVESTED], [TILLAGE], [FERTILIZER]
+      if (lower.includes('[planted]') || lower.includes('[seeded]')) return 'planting';
+      if (lower.includes('[fertilizer]') || lower.includes('[fertilized]')) return 'fertilizer';
+      if (lower.includes('[applied]') || lower.includes('[sprayed]')) return 'application';
+      if (lower.includes('[harvested]')) return 'harvest';
+      if (lower.includes('[tillage]') || lower.includes('[tilled]')) return 'tillage';
+      
+      // Fallback: detect from content
+      if (lower.includes('planted') || lower.includes('seeded') || lower.includes('seeding')) return 'planting';
+      if (lower.includes('harvested') || lower.includes('yield') || lower.includes('bu/ac')) return 'harvest';
+      if (lower.includes('fertilizer') || lower.includes('nh3') || lower.includes('lb/ac')) return 'fertilizer';
+      if (lower.includes('applied') || lower.includes('spray') || lower.includes('tank mix')) return 'application';
+      if (lower.includes('tillage') || lower.includes('tilled')) return 'tillage';
+      
+      return 'other';
+    };
+    
+    // Helper to clean description (remove tags)
+    const cleanDescription = (desc: string): string => {
+      return desc
+        .replace(/\[PLANTED\]/gi, '')
+        .replace(/\[SEEDED\]/gi, '')
+        .replace(/\[APPLIED\]/gi, '')
+        .replace(/\[SPRAYED\]/gi, '')
+        .replace(/\[HARVESTED\]/gi, '')
+        .replace(/\[TILLAGE\]/gi, '')
+        .replace(/\[TILLED\]/gi, '')
+        .replace(/\[FERTILIZER\]/gi, '')
+        .replace(/\[FERTILIZED\]/gi, '')
+        .trim();
+    };
     
     for (const line of lines) {
       const trimmed = line.trim();
       
-      // Skip empty lines and notes
+      // Skip empty lines, notes, headers
       if (!trimmed || trimmed.startsWith('*Note:') || trimmed === '***' || trimmed === '---') continue;
-      
-      // Detect section headers (→ Planting, → Application, etc.)
-      const arrowMatch = trimmed.match(/^(\*\*)?(→|->|--)\s*(.+?)(\s*\(([^)]+)\))?(\*\*)?$/);
-      if (arrowMatch) {
-        const title = arrowMatch[3].toLowerCase();
-        currentMonthRange = arrowMatch[5] || '';
-        
-        if (title.includes('plant') || title.includes('seed')) {
-          currentCategory = 'planting';
-        } else if (title.includes('applic') || title.includes('spray') || title.includes('fertiliz')) {
-          currentCategory = 'application';
-        } else if (title.includes('harvest')) {
-          currentCategory = 'harvest';
-        } else if (title.includes('till')) {
-          currentCategory = 'tillage';
-        } else {
-          currentCategory = 'other';
-        }
-        continue;
-      }
+      if (trimmed.startsWith('#')) continue; // Skip markdown headers
+      if (trimmed.match(/^(\*\*)?(→|->|--)\s*/)) continue; // Skip section headers
       
       // Extract bullet points with dates
       if (trimmed.startsWith('*') || trimmed.startsWith('•')) {
-        const bulletText = trimmed.replace(/^[\*•]\s*/, '').replace(/\*\*/g, '');
+        // Only strip leading bullet, preserve ** for bold rendering
+        const bulletText = trimmed.replace(/^[\*•]\s*/, '');
         
-        // Try to extract date from the text - multiple formats:
-        // "Apr 11:" or "Apr 11 :" or "Apr 11," or "Apr 11 -" or just "Apr 11" at start
+        // Try to extract date from the text: "Apr 11:" or "Apr 11 :" etc.
         const dateMatch = bulletText.match(/^([A-Z][a-z]{2}\s+\d{1,2})\s*[:,-]?\s*(.+)/);
         if (dateMatch) {
-          const description = dateMatch[2].trim();
-          // Only add if description is meaningful (not just punctuation)
+          const rawDescription = dateMatch[2].trim();
+          const category = detectCategory(rawDescription);
+          const description = cleanDescription(rawDescription);
+          
+          // Only add if description is meaningful
           if (description.length > 3) {
             timeline.push({
               date: dateMatch[1],
-              category: currentCategory,
-              description: description
+              category,
+              description
             });
           }
-        } else {
-          // Check for "Overall mean yield", "Overall mean moisture" - summary items
-          if (bulletText.toLowerCase().includes('overall mean yield') || 
-              bulletText.toLowerCase().includes('overall mean moisture') ||
-              bulletText.toLowerCase().includes('yield by hybrid') ||
-              bulletText.toLowerCase().includes('hybrids summary') ||
-              bulletText.toLowerCase().includes('varieties summary')) {
-            // Add as summary item with month range or "Summary" as date
-            timeline.push({
-              date: currentMonthRange || 'Summary',
-              category: currentCategory,
-              description: bulletText
-            });
-          } else if (bulletText.length > 15) {
-            // Other meaningful content (products, tank mix details, etc.)
-            timeline.push({
-              date: currentMonthRange || undefined,
-              category: currentCategory,
-              description: bulletText
-            });
-          }
+        } else if (bulletText.length > 15) {
+          // Content without date prefix
+          const category = detectCategory(bulletText);
+          const description = cleanDescription(bulletText);
+          timeline.push({
+            date: undefined,
+            category,
+            description
+          });
         }
       }
     }
     
     return timeline;
+  };
+
+  // Helper to render description with bold text (converts **text** to styled spans)
+  const renderBoldText = (text: string) => {
+    const parts = text.split(/(\*\*[^*]+\*\*)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        const boldText = part.slice(2, -2);
+        // Field names are bolded - show in green accent color
+        return <span key={i} className="font-semibold text-farm-accent">{boldText}</span>;
+      }
+      return <span key={i}>{part}</span>;
+    });
   };
 
   const renderJDOpsTimeline = (text: string) => {
@@ -998,10 +1017,11 @@ export default function FarmReports() {
     const getCategoryColor = (category: JDTimelineEvent['category']) => {
       switch (category) {
         case 'planting': return 'text-green-500';
+        case 'fertilizer': return 'text-purple-500';
         case 'application': return 'text-blue-500';
         case 'harvest': return 'text-orange-500';
-        case 'tillage': return 'text-amber-500';
-        default: return 'text-farm-muted';
+        case 'tillage': return 'text-amber-600';
+        default: return 'text-gray-400';
       }
     };
 
@@ -1026,7 +1046,7 @@ export default function FarmReports() {
                         {event.date}
                       </span>
                     )}
-                    <span className="text-muted-foreground">{event.description}</span>
+                    <span className="text-farm-muted">{renderBoldText(event.description)}</span>
                   </div>
                 );
               })}

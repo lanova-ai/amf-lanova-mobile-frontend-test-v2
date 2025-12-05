@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, X } from "lucide-react";
+import { ArrowLeft, X, Tractor } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { jdOnboardingAPI } from "@/lib/api";
@@ -49,8 +49,8 @@ const JohnDeereConnect = () => {
         <main className="flex-1 px-6 py-8 overflow-y-auto scrollbar-hide">
           <div className="max-w-md mx-auto space-y-8 animate-fade-in">
             <div className="text-center">
-              <div className="icon-brand mb-4">
-                <span className="icon-brand-emoji">🚜</span>
+              <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-green-600 flex items-center justify-center">
+                <Tractor className="w-9 h-9 text-white" />
               </div>
               <h1 className="page-title">John Deere Operations Center</h1>
             </div>
@@ -84,7 +84,7 @@ const JohnDeereConnect = () => {
               <Button 
                 onClick={handleConnect} 
                 disabled={isLoading}
-                className="w-full h-12 text-base font-semibold"
+                className="w-full h-12 text-base font-semibold bg-farm-accent hover:bg-farm-accent/90 text-farm-dark"
               >
                 {isLoading ? "Connecting..." : "Continue to John Deere"}
               </Button>

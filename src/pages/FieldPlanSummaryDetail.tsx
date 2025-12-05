@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { fieldPlanSummariesAPI, FieldPlanSummaryResponse } from "@/lib/api";
 import { toast } from "sonner";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   ArrowLeft,
   Loader2,
@@ -202,25 +204,36 @@ export default function FieldPlanSummaryDetail() {
           </div>
         </div>
 
-        {/* AI Summary */}
+        {/* AI Summary - Inline bullet points */}
         {(summary.summary_text || isEditing) && (
-          <div className="bg-farm-card rounded-lg border border-farm-accent/20 p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <FileText className="h-5 w-5 text-farm-accent" />
-              <h3 className="font-semibold text-farm-text">Summary</h3>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 mb-2">
+              <FileText className="h-4 w-4 text-farm-accent" />
+              <h3 className="text-sm font-semibold text-farm-muted">Summary</h3>
             </div>
             {isEditing ? (
               <textarea
                 value={editedSummaryText}
                 onChange={(e) => setEditedSummaryText(e.target.value)}
-                className="w-full min-h-[300px] p-3 border border-farm-accent/20 rounded-md text-sm bg-farm-dark text-farm-text resize-y focus:outline-none focus:ring-2 focus:ring-farm-accent"
+                className="w-full min-h-[200px] p-3 border border-farm-accent/20 rounded-md text-sm bg-farm-dark text-farm-text resize-y focus:outline-none focus:ring-2 focus:ring-farm-accent"
                 autoFocus
-                rows={15}
+                rows={10}
               />
             ) : (
-              <div className="text-sm text-farm-text leading-relaxed whitespace-pre-line">
-                {summary.summary_text}
-              </div>
+              <ul className="text-sm text-farm-text leading-relaxed space-y-1.5 list-none">
+                {summary.summary_text.split(/[•\n]/).filter((line: string) => line.trim()).map((line: string, idx: number) => (
+                  <li key={idx} className="flex items-start gap-2">
+                    <span className="text-farm-accent mt-0.5">•</span>
+                    <span className="[&_strong]:text-farm-accent [&_strong]:font-semibold">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
+                        p: ({children}) => <>{children}</>
+                      }}>
+                        {line.trim()}
+                      </ReactMarkdown>
+                    </span>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
         )}

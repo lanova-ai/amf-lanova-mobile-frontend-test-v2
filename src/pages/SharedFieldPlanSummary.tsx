@@ -135,11 +135,20 @@ const SharedFieldPlanSummaryPage = () => {
         {summary.summary_text && (
           <div className="bg-card border rounded-lg p-4">
             <h3 className="font-semibold mb-3">Summary</h3>
-            <div className="prose prose-sm max-w-none text-muted-foreground">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {summary.summary_text}
-              </ReactMarkdown>
-            </div>
+            <ul className="text-sm text-muted-foreground leading-relaxed space-y-1.5 list-none">
+              {summary.summary_text.split(/[•\n]/).filter((line: string) => line.trim()).map((line: string, idx: number) => (
+                <li key={idx} className="flex items-start gap-2">
+                  <span className="text-green-500 mt-0.5">•</span>
+                  <span className="[&_strong]:text-green-500 [&_strong]:font-semibold">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
+                      p: ({children}) => <>{children}</>
+                    }}>
+                      {line.trim()}
+                    </ReactMarkdown>
+                  </span>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
 

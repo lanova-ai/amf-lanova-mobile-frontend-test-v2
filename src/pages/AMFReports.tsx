@@ -3,7 +3,7 @@ import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { 
   FileText, 
   Mic, 
-  Camera, 
+  Image, 
   ClipboardList, 
   Tractor, 
   ChevronRight,
@@ -721,7 +721,7 @@ export default function AMFReports() {
                 />
                 
                 <DataSectionCard 
-                  icon={Camera}
+                  icon={Image}
                   title="Docs & Photos"
                   count={reportSummary.documents.count}
                   items={reportSummary.documents.items}
@@ -981,17 +981,29 @@ export default function AMFReports() {
                         {selectedReport.timeline_events.map((event, i) => {
                           // Determine icon based on source and event text
                           let SourceIcon = Calendar;
+                          const isPhoto = event.event?.toLowerCase().startsWith('photo');
+                          
                           if (event.source === 'jd_ops') {
                             SourceIcon = Tractor;
                           } else if (event.source === 'recording') {
                             SourceIcon = Mic;
                           } else if (event.source === 'document') {
-                            // Differentiate between Photo and Document
-                            SourceIcon = event.event?.toLowerCase().startsWith('photo') ? Camera : FileText;
+                            // Use Image icon for photos, FileText for documents
+                            SourceIcon = isPhoto ? Image : FileText;
                           } else if (event.source === 'scouting') {
                             SourceIcon = Leaf;
                           } else if (event.source === 'plan') {
                             SourceIcon = FileText;
+                          }
+                          
+                          // Strip prefixes - icons are self-explanatory
+                          let displayText = event.event || '';
+                          const prefixes = ['document:', 'photo:', 'recording:', 'uploaded '];
+                          for (const prefix of prefixes) {
+                            if (displayText.toLowerCase().startsWith(prefix)) {
+                              displayText = displayText.slice(prefix.length).trim();
+                              break;
+                            }
                           }
                           
                           const categoryColor = {
@@ -1009,7 +1021,7 @@ export default function AMFReports() {
                               <span className="text-farm-muted font-medium min-w-[52px]">
                                 {new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                               </span>
-                              <span className="text-muted-foreground">{event.event}</span>
+                              <span className="text-muted-foreground">{displayText}</span>
                             </div>
                           );
                         })}

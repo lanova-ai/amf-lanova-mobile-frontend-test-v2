@@ -71,6 +71,14 @@ const Welcome = () => {
                 Join Program
               </Button>
             </div>
+            
+            {/* Token sign-up link */}
+            <button
+              onClick={() => navigate("/founding-farmers/signup")}
+              className="text-sm text-farm-muted hover:text-farm-accent transition-colors"
+            >
+              Already have a token? <span className="underline">Sign Up</span>
+            </button>
           </div>
 
           {/* Feature Highlights - Cards */}

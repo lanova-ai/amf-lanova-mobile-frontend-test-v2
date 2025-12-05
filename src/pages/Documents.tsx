@@ -20,6 +20,7 @@ import {
   FolderOpen,
   CheckCircle2,
   Clock,
+  Calendar,
   AlertCircle,
   Loader2,
   Plus,
@@ -92,8 +93,6 @@ export default function Documents() {
   const [sharedTimelines, setSharedTimelines] = useState<any[]>([]);
   const [loadingShared, setLoadingShared] = useState(false);
   const [selectedShare, setSelectedShare] = useState<any | null>(null);
-  const [selectedShareTimeline, setSelectedShareTimeline] = useState<any | null>(null);
-  const [loadingShareTimeline, setLoadingShareTimeline] = useState(false);
   
   // Edit Title Modal
   const [showEditTitleModal, setShowEditTitleModal] = useState(false);
@@ -349,51 +348,8 @@ export default function Documents() {
     }
     if (viewMode !== 'shared') {
       setSelectedShare(null);
-      setSelectedShareTimeline(null);
     }
   }, [viewMode]);
-
-  const loadShareTimeline = async () => {
-    if (!selectedShare) return;
-    
-    try {
-      setLoadingShareTimeline(true);
-      
-      // If share has summary_id, use that (preferred)
-      if (selectedShare.summary_id) {
-        const timeline = await fieldsAPI.getDocumentTimelineById(selectedShare.summary_id);
-        setSelectedShareTimeline(timeline);
-      } else if (selectedShare.field_id && selectedShare.year && selectedShare.time_period) {
-        // Fallback: Use field/year/time_period (but this might load wrong summary if multiple exist)
-        const timeline = await fieldsAPI.getFieldDocumentTimeline(
-          selectedShare.field_id,
-          selectedShare.time_period || 'full_season',
-          selectedShare.year,
-          false // regenerate
-        );
-        setSelectedShareTimeline(timeline);
-      } else {
-        console.warn("Share record missing required fields for timeline loading");
-        setSelectedShareTimeline(null);
-      }
-    } catch (error) {
-      console.error("Failed to load timeline for share:", error);
-      // Don't show error - just means timeline might not exist
-      setSelectedShareTimeline(null);
-    } finally {
-      setLoadingShareTimeline(false);
-    }
-  };
-
-  // Load timeline summary when a share is selected
-  useEffect(() => {
-    if (selectedShare && selectedShare.field_id && selectedShare.year && selectedShare.time_period) {
-      loadShareTimeline();
-    } else {
-      setSelectedShareTimeline(null);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedShare]);
 
   const loadCachedSummaries = async () => {
     try {
@@ -1831,15 +1787,25 @@ export default function Documents() {
                 </div>
 
                 {/* Summary Header */}
-                <div className="card">
-                  <div className="space-y-2">
-                    <h2 className="text-xl font-bold">{selectedSummary.farm_name} - {selectedSummary.field_name}</h2>
-                    <p className="text-sm text-farm-muted">
-                      Year: {selectedSummary.year} • {selectedSummary.total_documents} document{selectedSummary.total_documents !== 1 ? 's' : ''} analyzed
-                      {selectedSummary.last_computed_at && (
-                        <> • {new Date(selectedSummary.last_computed_at).toLocaleDateString()}</>
-                      )}
-                    </p>
+                <div className="space-y-2">
+                  <h2 className="text-xl font-bold text-farm-text">
+                    {selectedSummary.custom_title || `${selectedSummary.farm_name} - ${selectedSummary.field_name}`}
+                  </h2>
+                  <div className="flex flex-wrap items-center gap-4 text-sm text-farm-muted">
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-4 w-4" />
+                      <span>{selectedSummary.year}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <FileText className="h-4 w-4" />
+                      <span>{selectedSummary.total_documents} document{selectedSummary.total_documents !== 1 ? 's' : ''}</span>
+                    </div>
+                    {selectedSummary.last_computed_at && (
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-4 w-4" />
+                        <span>{new Date(selectedSummary.last_computed_at).toLocaleDateString()}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1855,7 +1821,20 @@ export default function Documents() {
                       rows={15}
                     />
                   ) : (
-                    <p className="body-text whitespace-pre-wrap">{selectedSummary.summary_text}</p>
+                    <ul className="text-sm text-farm-text leading-relaxed space-y-1.5 list-none">
+                      {selectedSummary.summary_text.split(/[•\n]/).filter((line: string) => line.trim()).map((line: string, idx: number) => (
+                        <li key={idx} className="flex items-start gap-2">
+                          <span className="text-farm-accent mt-0.5">•</span>
+                          <span className="[&_strong]:text-farm-accent [&_strong]:font-semibold">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
+                              p: ({children}) => <>{children}</>
+                            }}>
+                              {line.trim()}
+                            </ReactMarkdown>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
                   )}
                 </div>
 
@@ -1878,8 +1857,14 @@ export default function Documents() {
                       <ul className="space-y-2">
                         {selectedSummary.key_observations.map((obs: string, idx: number) => (
                           <li key={idx} className="flex items-start gap-2">
-                            <span className="text-primary mt-0.5">•</span>
-                            <span className="body-text flex-1">{obs}</span>
+                            <span className="text-farm-accent mt-0.5">•</span>
+                            <span className="text-sm text-farm-text flex-1 [&_strong]:text-farm-accent [&_strong]:font-semibold">
+                              <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
+                                p: ({children}) => <>{children}</>
+                              }}>
+                                {obs}
+                              </ReactMarkdown>
+                            </span>
                           </li>
                         ))}
                       </ul>
@@ -1906,8 +1891,14 @@ export default function Documents() {
                       <ul className="space-y-2">
                         {selectedSummary.trends.map((trend: string, idx: number) => (
                           <li key={idx} className="flex items-start gap-2">
-                            <span className="text-blue-600 mt-0.5">📈</span>
-                            <span className="body-text flex-1">{trend}</span>
+                            <span className="text-blue-500 mt-0.5">📈</span>
+                            <span className="text-sm text-farm-text flex-1 [&_strong]:text-blue-500 [&_strong]:font-semibold">
+                              <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
+                                p: ({children}) => <>{children}</>
+                              }}>
+                                {trend}
+                              </ReactMarkdown>
+                            </span>
                           </li>
                         ))}
                       </ul>
@@ -1934,8 +1925,14 @@ export default function Documents() {
                       <ul className="space-y-2">
                         {selectedSummary.recommendations.map((rec: string, idx: number) => (
                           <li key={idx} className="flex items-start gap-2">
-                            <span className="text-farm-accent mt-0.5">✓</span>
-                            <span className="body-text flex-1">{rec}</span>
+                            <span className="text-green-500 mt-0.5">✓</span>
+                            <span className="text-sm text-farm-text flex-1 [&_strong]:text-green-500 [&_strong]:font-semibold">
+                              <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
+                                p: ({children}) => <>{children}</>
+                              }}>
+                                {rec}
+                              </ReactMarkdown>
+                            </span>
                           </li>
                         ))}
                       </ul>
@@ -2257,79 +2254,17 @@ export default function Documents() {
                   </div>
                 )}
 
-                {/* Message Content */}
+                {/* Message Content - Contains full summary already */}
                 <div className="card">
                   <h3 className="font-semibold mb-2 text-sm text-farm-muted">Message</h3>
-                  <div className="body-text prose prose-sm max-w-none dark:prose-invert">
+                  <div className="text-sm text-farm-text leading-snug
+                    [&_strong]:text-farm-accent [&_strong]:font-semibold
+                    [&_p]:my-1 [&_ul]:my-1 [&_li]:my-0">
                     <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
                       {selectedShare.message_body}
                     </ReactMarkdown>
                   </div>
                 </div>
-
-                {/* Timeline Summary Content - Only for timeline shares */}
-                {selectedShare.share_type === 'timeline' && loadingShareTimeline ? (
-                  <div className="card">
-                    <div className="flex items-center justify-center py-8">
-                      <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                    </div>
-                  </div>
-                ) : selectedShare.share_type === 'timeline' && selectedShareTimeline ? (
-                  <>
-                    {/* Complete Summary */}
-                    {selectedShareTimeline.summary_text && (
-                      <div className="card">
-                        <h3 className="font-semibold mb-2">Complete Summary</h3>
-                        <p className="body-text whitespace-pre-wrap">{selectedShareTimeline.summary_text}</p>
-                      </div>
-                    )}
-
-                    {/* Key Observations */}
-                    {selectedShareTimeline.key_observations && selectedShareTimeline.key_observations.length > 0 && (
-                      <div className="card">
-                        <h3 className="font-semibold mb-3">Key Observations</h3>
-                        <ul className="space-y-2">
-                          {selectedShareTimeline.key_observations.map((obs: string, idx: number) => (
-                            <li key={idx} className="flex items-start gap-2">
-                              <span className="text-primary mt-0.5">•</span>
-                              <span className="body-text flex-1">{obs}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {/* Trends */}
-                    {selectedShareTimeline.trends && selectedShareTimeline.trends.length > 0 && (
-                      <div className="card">
-                        <h3 className="font-semibold mb-3">Trends</h3>
-                        <ul className="space-y-2">
-                          {selectedShareTimeline.trends.map((trend: string, idx: number) => (
-                            <li key={idx} className="flex items-start gap-2">
-                              <span className="text-blue-600 mt-0.5">📈</span>
-                              <span className="body-text flex-1">{trend}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {/* Recommendations */}
-                    {selectedShareTimeline.recommendations && selectedShareTimeline.recommendations.length > 0 && (
-                      <div className="card">
-                        <h3 className="font-semibold mb-3">Recommendations</h3>
-                        <ul className="space-y-2">
-                          {selectedShareTimeline.recommendations.map((rec: string, idx: number) => (
-                            <li key={idx} className="flex items-start gap-2">
-                              <span className="text-farm-accent mt-0.5">✓</span>
-                              <span className="body-text flex-1">{rec}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </>
-                ) : null}
               </div>
             ) : !selectedShare && (
               /* List View or Loading/Empty - Only show when selectedShare is null */
@@ -2360,18 +2295,21 @@ export default function Documents() {
                   .map((share) => (
                   <div
                     key={share.id}
-                    className="card-interactive relative"
+                    className="card-interactive relative group"
                     onClick={() => setSelectedShare(share)}
                   >
                     {/* Three-dot menu - Top Right */}
-                    <div className="absolute top-2 right-2 z-20">
-                      <DropdownMenu modal={false}>
-                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-accent/50">
-                            <MoreVertical className="h-3.5 w-3.5 text-farm-muted" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="z-50">
+                    <DropdownMenu modal={false}>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          onClick={(e) => e.stopPropagation()}
+                          className="absolute top-3 right-3 z-50 h-8 w-8 flex items-center justify-center rounded-md hover:bg-farm-accent/20 focus:outline-none focus:ring-2 focus:ring-farm-accent"
+                        >
+                          <MoreVertical className="h-4 w-4 text-farm-muted" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="z-[9999]">
                           <DropdownMenuItem onClick={(e) => {
                             e.stopPropagation();
                             setSelectedShare(share);
@@ -2398,9 +2336,8 @@ export default function Documents() {
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                    </div>
                     
-                    <div className="flex items-start justify-between gap-3 pr-8">
+                    <div className="flex items-start justify-between gap-3 pr-12">
                       <div className="flex-1 min-w-0">
                         {/* Title - different for document vs timeline */}
                         <div className="flex items-center gap-2 mb-1">

@@ -236,7 +236,7 @@ export function LogoUploadModal({ open, onClose, onUploadSuccess }: LogoUploadMo
                 </Button>
                 <Button
                   onClick={handleCropComplete}
-                  className="flex-1 h-12 text-base font-semibold shadow-md"
+                  className="flex-1 h-12 text-base font-semibold bg-farm-accent hover:bg-farm-accent/90 text-farm-dark"
                 >
                   <Crop className="w-5 h-5 mr-2" />
                   Apply Crop
@@ -267,16 +267,14 @@ export function LogoUploadModal({ open, onClose, onUploadSuccess }: LogoUploadMo
                 </div>
 
                 {/* Enhanced Button */}
-                <div className="bg-gradient-to-r from-primary/10 to-primary/5 border-2 border-primary/30 rounded-xl p-4 hover:shadow-lg hover:shadow-primary/20 transition-all">
-                  <Button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-full h-14 text-base font-semibold shadow-md"
-                    size="lg"
-                  >
-                    <Upload className="w-6 h-6 mr-2" />
-                    Choose Image
-                  </Button>
-                </div>
+                <Button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full h-14 text-base font-semibold bg-farm-accent hover:bg-farm-accent/90 text-farm-dark"
+                  size="lg"
+                >
+                  <Upload className="w-6 h-6 mr-2" />
+                  Choose Image
+                </Button>
               </div>
 
               <input
@@ -362,7 +360,7 @@ export function LogoUploadModal({ open, onClose, onUploadSuccess }: LogoUploadMo
                 </Button>
                 <Button
                   onClick={handleUpload}
-                  className="flex-1 h-12 text-base font-semibold shadow-md"
+                  className="flex-1 h-12 text-base font-semibold bg-farm-accent hover:bg-farm-accent/90 text-farm-dark"
                   disabled={uploading}
                 >
                   {uploading ? (

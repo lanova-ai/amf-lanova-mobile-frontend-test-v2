@@ -3080,11 +3080,19 @@ export const foundingFarmerAPI = {
     });
   },
 
-  // Validate approval code
+  // Validate approval code (requires email)
   validateCode: async (code: string, email: string): Promise<{ valid: boolean; email: string; message: string }> => {
     return apiFetch('/api/v1/founding-farmer/validate-code', {
       method: 'POST',
       body: JSON.stringify({ code, email }),
+    });
+  },
+
+  // Lookup approval code (returns email - used for token entry)
+  lookupCode: async (code: string): Promise<{ valid: boolean; email: string; message: string }> => {
+    return apiFetch('/api/v1/founding-farmer/lookup-code', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
     });
   },
 

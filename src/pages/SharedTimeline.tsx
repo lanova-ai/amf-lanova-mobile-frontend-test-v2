@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Clock, MapPin, Calendar, FileText, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const SharedTimelinePage = () => {
   const { shareToken } = useParams<{ shareToken: string }>();
@@ -165,11 +167,24 @@ const SharedTimelinePage = () => {
           </Card>
         )}
 
-        {/* Complete Summary */}
+        {/* Summary */}
         {timeline.summary_text && (
           <div className="bg-farm-card border border-farm-accent/20 rounded-lg p-4">
-            <h3 className="font-semibold mb-2">Complete Summary</h3>
-            <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{timeline.summary_text}</p>
+            <h3 className="font-semibold mb-3">Summary</h3>
+            <ul className="text-sm text-muted-foreground leading-relaxed space-y-1.5 list-none">
+              {timeline.summary_text.split(/[•\n]/).filter((line: string) => line.trim()).map((line: string, idx: number) => (
+                <li key={idx} className="flex items-start gap-2">
+                  <span className="text-primary mt-0.5">•</span>
+                  <span className="[&_strong]:text-primary [&_strong]:font-semibold flex-1">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
+                      p: ({children}) => <>{children}</>
+                    }}>
+                      {line.trim()}
+                    </ReactMarkdown>
+                  </span>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
 
@@ -181,7 +196,13 @@ const SharedTimelinePage = () => {
               {timeline.key_observations.map((obs, index) => (
                 <li key={index} className="flex items-start gap-2">
                   <span className="text-primary mt-0.5">•</span>
-                  <span className="text-sm text-muted-foreground flex-1">{obs}</span>
+                  <span className="text-sm text-muted-foreground flex-1 [&_strong]:text-primary [&_strong]:font-semibold">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
+                      p: ({children}) => <>{children}</>
+                    }}>
+                      {obs}
+                    </ReactMarkdown>
+                  </span>
                 </li>
               ))}
             </ul>
@@ -195,8 +216,14 @@ const SharedTimelinePage = () => {
             <ul className="space-y-2">
               {timeline.trends.map((trend, index) => (
                 <li key={index} className="flex items-start gap-2">
-                  <span className="text-blue-600 mt-0.5">📈</span>
-                  <span className="text-sm text-muted-foreground flex-1">{trend}</span>
+                  <span className="text-blue-500 mt-0.5">📈</span>
+                  <span className="text-sm text-muted-foreground flex-1 [&_strong]:text-blue-500 [&_strong]:font-semibold">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
+                      p: ({children}) => <>{children}</>
+                    }}>
+                      {trend}
+                    </ReactMarkdown>
+                  </span>
                 </li>
               ))}
             </ul>
@@ -210,8 +237,14 @@ const SharedTimelinePage = () => {
             <ul className="space-y-2">
               {timeline.recommendations.map((rec, index) => (
                 <li key={index} className="flex items-start gap-2">
-                  <span className="text-farm-accent mt-0.5">✓</span>
-                  <span className="text-sm text-muted-foreground flex-1">{rec}</span>
+                  <span className="text-green-500 mt-0.5">✓</span>
+                  <span className="text-sm text-muted-foreground flex-1 [&_strong]:text-green-500 [&_strong]:font-semibold">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
+                      p: ({children}) => <>{children}</>
+                    }}>
+                      {rec}
+                    </ReactMarkdown>
+                  </span>
                 </li>
               ))}
             </ul>

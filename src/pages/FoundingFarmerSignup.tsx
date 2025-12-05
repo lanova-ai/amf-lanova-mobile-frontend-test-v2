@@ -1,16 +1,23 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Loader2 } from "lucide-react";
-import { authAPI } from "@/lib/api";
+import { ArrowLeft, Loader2, KeyRound, CheckCircle2 } from "lucide-react";
+import { authAPI, foundingFarmerAPI } from "@/lib/api";
 import { toast } from "sonner";
 
 export default function FoundingFarmerSignup() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const approvalCode = searchParams.get("code") || "";
+  const codeFromUrl = searchParams.get("code") || "";
+  
+  // Step management: "token" -> "form"
+  const [step, setStep] = useState<"token" | "form">(codeFromUrl ? "form" : "token");
+  const [approvalCode, setApprovalCode] = useState(codeFromUrl);
+  const [tokenInput, setTokenInput] = useState("");
+  const [isValidating, setIsValidating] = useState(false);
+  const [validatedEmail, setValidatedEmail] = useState("");
   
   const [formData, setFormData] = useState({
     email: "",
@@ -24,35 +31,53 @@ export default function FoundingFarmerSignup() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Show invalid link page if no approval code
-  if (!approvalCode) {
-    return (
-      <div className="min-h-screen page-background flex items-center justify-center p-6">
-        <div className="max-w-md w-full text-center">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-destructive/10 rounded-full mb-6">
-            <span className="text-5xl">⚠️</span>
-          </div>
-          
-          <h1 className="text-2xl font-bold text-foreground mb-3">Invalid Sign-Up Link</h1>
-          
-          <p className="text-sm text-farm-muted mb-6">
-            This sign-up link is invalid or has expired. Please use the link from your approval email.
-          </p>
-          
-          <Button
-            onClick={() => navigate("/")}
-            className="w-full bg-farm-accent hover:bg-farm-accent/90 text-farm-dark"
-          >
-            Back to Home
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  // If code from URL, validate it on mount
+  useEffect(() => {
+    if (codeFromUrl) {
+      validateToken(codeFromUrl);
+    }
+  }, [codeFromUrl]);
+
+  // Validate token and get associated email
+  const validateToken = async (code: string) => {
+    setIsValidating(true);
+    try {
+      const result = await foundingFarmerAPI.lookupCode(code);
+      if (result.valid && result.email) {
+        setApprovalCode(code);
+        setValidatedEmail(result.email);
+        setFormData(prev => ({ ...prev, email: result.email }));
+        setStep("form");
+        if (!codeFromUrl) {
+          toast.success("Token verified! Complete your sign-up below.");
+        }
+      } else {
+        toast.error(result.message || "Invalid or expired token");
+        setStep("token");
+      }
+    } catch (error: any) {
+      const msg = error?.details?.detail || error?.message || "Invalid or expired token";
+      toast.error(msg);
+      setStep("token");
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
+  // Handle token submission
+  const handleTokenSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanToken = tokenInput.trim().toUpperCase();
+    if (!cleanToken) {
+      toast.error("Please enter your approval token");
+      return;
+    }
+    validateToken(cleanToken);
+  };
 
   // Password validation helper
   const validatePassword = (pwd: string): string | null => {
-    if (!pwd) return null; // Password is optional
+    if (!pwd) return null;
     if (pwd.length < 8) return "Password must be at least 8 characters";
     if (!/[A-Z]/.test(pwd)) return "Must include at least one uppercase letter";
     if (!/[a-z]/.test(pwd)) return "Must include at least one lowercase letter";
@@ -63,19 +88,16 @@ export default function FoundingFarmerSignup() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate required fields
     if (!formData.email || !formData.phoneNumber || !formData.firstName || !formData.lastName || !formData.farmName) {
       toast.error("Please fill in all required fields");
       return;
     }
 
-    // Validate phone number
     if (formData.phoneNumber.length !== 10) {
       toast.error("Please enter a valid 10-digit phone number");
       return;
     }
 
-    // Validate password if provided
     if (formData.password) {
       const passwordError = validatePassword(formData.password);
       if (passwordError) {
@@ -92,7 +114,6 @@ export default function FoundingFarmerSignup() {
     setIsSubmitting(true);
 
     try {
-      // Call the new simplified sign-up endpoint
       await authAPI.foundingFarmerSignup({
         approval_code: approvalCode,
         email: formData.email,
@@ -104,8 +125,6 @@ export default function FoundingFarmerSignup() {
       });
 
       toast.success("Account created successfully! Please log in to continue.");
-      
-      // Redirect to login page
       navigate("/auth/login");
     } catch (error: any) {
       const errorMessage = error?.details?.detail || error?.message || "Sign-up failed. Please try again.";
@@ -115,42 +134,142 @@ export default function FoundingFarmerSignup() {
     }
   };
 
+  // ===== TOKEN ENTRY STEP =====
+  if (step === "token") {
+    return (
+      <div className="min-h-screen page-background flex items-center justify-center p-6">
+        <div className="max-w-md w-full">
+          {/* Back Button */}
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/")}
+            className="mb-6 -ml-2"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back
+          </Button>
+
+          {/* Logo */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4">
+              <span className="text-5xl">🌾</span>
+            </div>
+            <h2 className="text-xl font-semibold mb-4">
+              <span className="text-primary">Ask</span>
+              <span className="text-yellow-400">My</span>
+              <span className="text-primary">Farm</span>
+            </h2>
+            
+            <h1 className="text-2xl font-bold text-primary mb-3">
+              Enter Your Token
+            </h1>
+            <p className="text-sm text-farm-muted">
+              Enter the approval token from your email to continue sign-up.
+            </p>
+          </div>
+
+          <form onSubmit={handleTokenSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="token" className="text-foreground">Approval Token</Label>
+              <div className="relative">
+                <KeyRound className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-farm-muted" />
+                <Input
+                  id="token"
+                  type="text"
+                  placeholder="AMF-XXXX"
+                  value={tokenInput}
+                  onChange={(e) => setTokenInput(e.target.value.toUpperCase())}
+                  disabled={isValidating}
+                  className="bg-card border-border pl-10 text-center text-lg font-mono tracking-widest uppercase"
+                  maxLength={10}
+                  autoFocus
+                />
+              </div>
+              <p className="text-xs text-farm-muted text-center">
+                Check your approval email for the token (e.g., AMF-K7X3)
+              </p>
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full bg-farm-accent hover:bg-farm-accent/90 text-farm-dark"
+              size="lg"
+              disabled={isValidating || !tokenInput.trim()}
+            >
+              {isValidating ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Verifying...
+                </>
+              ) : (
+                "Continue"
+              )}
+            </Button>
+          </form>
+
+          <p className="text-xs text-farm-muted text-center mt-6">
+            Don't have a token?{" "}
+            <button
+              onClick={() => navigate("/founding-farmers/apply")}
+              className="text-farm-accent hover:underline"
+            >
+              Apply for the program
+            </button>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ===== SIGNUP FORM STEP =====
   return (
-    <div className="min-h-screen page-background flex items-start justify-center p-6 pt-12">
+    <div className="min-h-screen page-background flex items-start justify-center p-6 pt-8">
       <div className="max-w-md w-full">
         {/* Back Button */}
         <Button
           variant="ghost"
-          onClick={() => navigate("/")}
-          className="mb-6 -ml-2"
+          onClick={() => {
+            if (codeFromUrl) {
+              navigate("/");
+            } else {
+              setStep("token");
+            }
+          }}
+          className="mb-4 -ml-2"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back
         </Button>
 
         {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4">
-            <span className="text-5xl">🌾</span>
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-3">
+            <span className="text-4xl">🌾</span>
           </div>
-          <h2 className="text-xl font-semibold mb-6">
+          <h2 className="text-lg font-semibold mb-4">
             <span className="text-primary">Ask</span>
             <span className="text-yellow-400">My</span>
             <span className="text-primary">Farm</span>
           </h2>
           
-          <h1 className="text-2xl md:text-3xl font-bold text-primary mb-3">
+          {/* Verified badge */}
+          <div className="inline-flex items-center gap-2 bg-green-500/10 text-green-500 px-3 py-1.5 rounded-full text-sm mb-4">
+            <CheckCircle2 className="h-4 w-4" />
+            Token Verified
+          </div>
+          
+          <h1 className="text-xl font-bold text-primary mb-2">
             Complete Your Sign-Up
           </h1>
           <p className="text-sm text-farm-muted">
-            You've been approved! Fill out the form below to create your account.
+            Fill out the form below to create your account.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Email */}
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-foreground">Email Address *</Label>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Email - Pre-filled and read-only if validated */}
+          <div className="space-y-1.5">
+            <Label htmlFor="email" className="text-foreground text-sm">Email Address *</Label>
             <Input
               id="email"
               type="email"
@@ -158,14 +277,17 @@ export default function FoundingFarmerSignup() {
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               required
-              disabled={isSubmitting}
-              className="bg-card border-border"
+              disabled={isSubmitting || !!validatedEmail}
+              className={`bg-card border-border ${validatedEmail ? 'opacity-70' : ''}`}
             />
+            {validatedEmail && (
+              <p className="text-xs text-farm-muted">Email verified from your approval</p>
+            )}
           </div>
 
           {/* Phone Number */}
-          <div className="space-y-2">
-            <Label htmlFor="phone" className="text-foreground">Phone Number *</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="phone" className="text-foreground text-sm">Phone Number *</Label>
             <Input
               id="phone"
               type="tel"
@@ -179,39 +301,39 @@ export default function FoundingFarmerSignup() {
             <p className="text-xs text-farm-muted">10-digit US phone number</p>
           </div>
 
-          {/* First Name */}
-          <div className="space-y-2">
-            <Label htmlFor="firstName" className="text-foreground">First Name *</Label>
-            <Input
-              id="firstName"
-              type="text"
-              placeholder="John"
-              value={formData.firstName}
-              onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-              required
-              disabled={isSubmitting}
-              className="bg-card border-border"
-            />
-          </div>
-
-          {/* Last Name */}
-          <div className="space-y-2">
-            <Label htmlFor="lastName" className="text-foreground">Last Name *</Label>
-            <Input
-              id="lastName"
-              type="text"
-              placeholder="Doe"
-              value={formData.lastName}
-              onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-              required
-              disabled={isSubmitting}
-              className="bg-card border-border"
-            />
+          {/* Name Row */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="firstName" className="text-foreground text-sm">First Name *</Label>
+              <Input
+                id="firstName"
+                type="text"
+                placeholder="John"
+                value={formData.firstName}
+                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                required
+                disabled={isSubmitting}
+                className="bg-card border-border"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="lastName" className="text-foreground text-sm">Last Name *</Label>
+              <Input
+                id="lastName"
+                type="text"
+                placeholder="Doe"
+                value={formData.lastName}
+                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                required
+                disabled={isSubmitting}
+                className="bg-card border-border"
+              />
+            </div>
           </div>
 
           {/* Farm Name */}
-          <div className="space-y-2">
-            <Label htmlFor="farmName" className="text-foreground">Farm Name *</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="farmName" className="text-foreground text-sm">Farm Name *</Label>
             <Input
               id="farmName"
               type="text"
@@ -225,8 +347,8 @@ export default function FoundingFarmerSignup() {
           </div>
 
           {/* Password (Optional) */}
-          <div className="space-y-2">
-            <Label htmlFor="password" className="text-foreground">
+          <div className="space-y-1.5">
+            <Label htmlFor="password" className="text-foreground text-sm">
               Password <span className="text-farm-muted text-xs">(optional)</span>
             </Label>
             <Input
@@ -266,7 +388,7 @@ export default function FoundingFarmerSignup() {
           {/* Submit Button */}
           <Button
             type="submit"
-            className="w-full bg-farm-accent hover:bg-farm-accent/90 text-farm-dark mt-8"
+            className="w-full bg-farm-accent hover:bg-farm-accent/90 text-farm-dark mt-6"
             size="lg"
             disabled={isSubmitting}
           >
@@ -284,4 +406,3 @@ export default function FoundingFarmerSignup() {
     </div>
   );
 }
-
