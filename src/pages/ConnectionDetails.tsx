@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, RefreshCw, Unlink, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { ArrowLeft, Loader2, RefreshCw, Unlink, CheckCircle2, XCircle, Clock, ExternalLink, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -296,6 +296,29 @@ export default function ConnectionDetails() {
                   : "Manually trigger a sync to import the latest field data from John Deere Operations Center"
                 }
               </p>
+
+              {/* Grant Organization Access */}
+              <div className="pt-4 border-t border-farm-accent/10">
+                <Button
+                  onClick={() => {
+                    // Open in external browser (not PWA)
+                    window.open(
+                      'https://connections.deere.com/connections/0oaqyaxtyhUjkNhmU5d7/select-organizations',
+                      '_blank',
+                      'noopener,noreferrer'
+                    );
+                  }}
+                  variant="outline"
+                  className="w-full border-farm-accent/20 text-farm-accent hover:bg-farm-accent/10"
+                >
+                  <Building2 className="h-4 w-4 mr-2" />
+                  Grant Organization Access
+                  <ExternalLink className="h-3 w-3 ml-2 opacity-60" />
+                </Button>
+                <p className="text-xs text-farm-muted mt-2 px-1">
+                  If your fields aren't showing up, click here to grant access to your JD organizations
+                </p>
+              </div>
 
               <div className="pt-4 border-t border-farm-accent/10">
                 <Button

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, X, Tractor } from "lucide-react";
+import { ArrowLeft, X, Tractor, ExternalLink, Building2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { jdOnboardingAPI } from "@/lib/api";
@@ -80,7 +80,41 @@ const JohnDeereConnect = () => {
               </div>
             </div>
 
-            <div className="space-y-3">
+            {/* Step 1: Grant Organization Access (if not already done) */}
+            <div className="space-y-3 border border-farm-accent/20 rounded-lg p-4 bg-farm-card">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-farm-accent text-farm-dark text-sm font-bold">1</span>
+                <h3 className="font-semibold text-farm-text">Grant Organization Access</h3>
+              </div>
+              <p className="text-sm text-farm-muted">
+                First, if you have not already, grant AskMyFarm access to your John Deere organizations. If you have already granted access, skip to Step 2.
+              </p>
+              <Button
+                onClick={() => {
+                  window.open(
+                    'https://connections.deere.com/connections/0oaqyaxtyhUjkNhmU5d7/select-organizations',
+                    '_blank',
+                    'noopener,noreferrer'
+                  );
+                }}
+                variant="outline"
+                className="w-full border-farm-accent/20 text-farm-accent hover:bg-farm-accent/10"
+              >
+                <Building2 className="h-4 w-4 mr-2" />
+                Grant Organization Access
+                <ExternalLink className="h-3 w-3 ml-2 opacity-60" />
+              </Button>
+            </div>
+
+            {/* Step 2: Continue to John Deere */}
+            <div className="space-y-3 border border-farm-accent/20 rounded-lg p-4 bg-farm-card">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-farm-accent text-farm-dark text-sm font-bold">2</span>
+                <h3 className="font-semibold text-farm-text">Connect Your Account</h3>
+              </div>
+              <p className="text-sm text-farm-muted">
+                After granting access, connect your John Deere account to import your fields.
+              </p>
               <Button 
                 onClick={handleConnect} 
                 disabled={isLoading}
@@ -88,14 +122,15 @@ const JohnDeereConnect = () => {
               >
                 {isLoading ? "Connecting..." : "Continue to John Deere"}
               </Button>
-              <button
-                onClick={() => navigate("/settings")}
-                disabled={isLoading}
-                className="block text-center text-farm-muted hover:text-foreground transition-colors w-full disabled:opacity-50"
-              >
-                Cancel
-              </button>
             </div>
+
+            <button
+              onClick={() => navigate("/settings")}
+              disabled={isLoading}
+              className="block text-center text-farm-muted hover:text-foreground transition-colors w-full disabled:opacity-50"
+            >
+              Cancel
+            </button>
           </div>
         </main>
       </div>

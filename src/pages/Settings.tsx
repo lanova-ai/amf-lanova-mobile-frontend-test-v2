@@ -14,8 +14,7 @@ import {
   Trash2,
   Image as ImageIcon,
   AlertTriangle,
-  Lock,
-  FileBarChart
+  Lock
 } from "lucide-react";
 import { toast } from "sonner";
 import { userAPI, UserProfile, ConnectionStatus } from "@/lib/api";
@@ -255,28 +254,6 @@ export default function Settings() {
               <h3 className="font-semibold text-farm-text">My Contacts</h3>
               <p className="text-sm text-farm-muted">
                 Agronomists, advisors, buyers
-              </p>
-            </div>
-            <ChevronRight className="h-5 w-5 text-farm-text flex-shrink-0" />
-          </button>
-        </Section>
-
-        {/* AMF Field Reports */}
-        <Section>
-          <button
-            onClick={() => navigate("/amf-reports")}
-            className="w-full flex items-center gap-3 hover:bg-farm-accent/5 transition-colors text-left -m-4 p-4 rounded-lg"
-          >
-            <FileBarChart className="h-6 w-6 text-farm-accent flex-shrink-0" />
-            <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-farm-text">
-                <span className="text-farm-accent">A</span>
-                <span className="text-amber-500">M</span>
-                <span className="text-farm-accent">F</span>
-                {" "}Field Reports
-              </h3>
-              <p className="text-sm text-farm-muted">
-                Unified field dashboard & sharing
               </p>
             </div>
             <ChevronRight className="h-5 w-5 text-farm-text flex-shrink-0" />
