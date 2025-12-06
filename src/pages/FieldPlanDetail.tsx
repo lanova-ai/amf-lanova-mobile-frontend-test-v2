@@ -533,7 +533,11 @@ const FieldPlanDetail = () => {
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "Not set";
-    return new Date(dateString).toLocaleDateString('en-US', {
+    // Parse date parts directly to avoid timezone shift
+    // "2026-07-01" should display as "Jul 1, 2026" not "Jun 30, 2026"
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day); // month is 0-indexed
+    return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric'
