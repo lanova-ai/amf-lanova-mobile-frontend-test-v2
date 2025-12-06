@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, X, Tractor, ExternalLink, Building2 } from "lucide-react";
+import { ArrowLeft, X, ExternalLink, Building2 } from "lucide-react";
+import jdOpsIcon from "@/photos/john-deere-ops-icon.png";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { jdOnboardingAPI } from "@/lib/api";
@@ -49,10 +50,10 @@ const JohnDeereConnect = () => {
         <main className="flex-1 px-6 py-8 overflow-y-auto scrollbar-hide">
           <div className="max-w-md mx-auto space-y-8 animate-fade-in">
             <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-green-600 flex items-center justify-center">
-                <Tractor className="w-9 h-9 text-white" />
+              <div className="w-16 h-16 mx-auto mb-4 rounded-xl overflow-hidden">
+                <img src={jdOpsIcon} alt="John Deere Ops" className="w-full h-full object-contain" />
               </div>
-              <h1 className="page-title">John Deere Operations Center</h1>
+              <h1 className="text-lg font-semibold text-farm-text">John Deere Operations Center</h1>
             </div>
 
             <div className="space-y-4">
@@ -69,14 +70,6 @@ const JohnDeereConnect = () => {
                   <span className="text-primary font-bold">✓</span>
                   <span>Field names and acreage</span>
                 </div>
-              </div>
-
-              <div className="border-t pt-4">
-                <p className="text-sm text-farm-muted text-center">
-                  Your data is encrypted and we never store your JD password.
-                  <br />
-                  You can disconnect at any time.
-                </p>
               </div>
             </div>
 
