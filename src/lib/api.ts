@@ -3059,12 +3059,16 @@ export const shareScoutingSummariesAPI = {
 // ============================================================================
 
 export interface FoundingFarmerApplication {
+  first_name: string;
+  last_name: string;
   email: string;
   has_jd_ops: boolean;
 }
 
 export interface FoundingFarmerApplicationResponse {
   id: string;
+  first_name?: string;
+  last_name?: string;
   email: string;
   has_jd_ops: boolean;
   status: string;
