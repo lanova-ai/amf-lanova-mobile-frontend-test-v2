@@ -254,7 +254,7 @@ export default function ChangePassword() {
             <div className="pt-4">
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full bg-farm-accent hover:bg-farm-accent/90 text-farm-dark font-semibold"
                 size="lg"
                 disabled={saving}
               >

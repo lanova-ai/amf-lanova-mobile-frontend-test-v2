@@ -204,7 +204,10 @@ export default function ContactsList() {
         title="My Contacts"
         backTo="/settings"
         action={
-          <Button onClick={() => navigate("/settings/contacts/new")}>
+          <Button 
+            onClick={() => navigate("/settings/contacts/new")}
+            className="bg-farm-accent hover:bg-farm-accent/90 text-farm-dark font-semibold"
+          >
             <Plus className="h-4 w-4 mr-2" />
             Add
           </Button>

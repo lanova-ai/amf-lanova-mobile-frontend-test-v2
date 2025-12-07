@@ -93,12 +93,27 @@ export function LogoUploadModal({ open, onClose, onUploadSuccess }: LogoUploadMo
     // Create preview with error handling
     const reader = new FileReader();
     
+    // Check if file is HEIC/HEIF (iPhone photos)
+    const isHeic = file.type === 'image/heic' || file.type === 'image/heif' || 
+                   file.name.toLowerCase().endsWith('.heic') || 
+                   file.name.toLowerCase().endsWith('.heif');
+
     reader.onload = async (e) => {
       try {
         const dataUrl = e.target?.result as string;
         
         if (!dataUrl) {
           throw new Error('Failed to read file');
+        }
+
+        // Skip resize for HEIC files - browser canvas can't handle them
+        // Safari can display HEIC natively, other browsers may not
+        if (isHeic) {
+          console.log('[Logo] HEIC file detected, skipping resize');
+          setPreviewUrl(dataUrl);
+          setShowCrop(true);
+          setLoadingPreview(false);
+          return;
         }
 
         // Resize large images for better cropper performance
@@ -108,9 +123,18 @@ export function LogoUploadModal({ open, onClose, onUploadSuccess }: LogoUploadMo
         setLoadingPreview(false);
       } catch (error) {
         console.error('[Logo] Error processing image:', error);
-        toast.error("Could not process this image. Try a different file.");
-        setSelectedFile(null);
-        setLoadingPreview(false);
+        // If resize fails, try using original
+        const dataUrl = e.target?.result as string;
+        if (dataUrl) {
+          console.log('[Logo] Resize failed, using original image');
+          setPreviewUrl(dataUrl);
+          setShowCrop(true);
+          setLoadingPreview(false);
+        } else {
+          toast.error("Could not process this image. Try a different file format (JPG or PNG).");
+          setSelectedFile(null);
+          setLoadingPreview(false);
+        }
       }
     };
     
@@ -121,9 +145,9 @@ export function LogoUploadModal({ open, onClose, onUploadSuccess }: LogoUploadMo
       setLoadingPreview(false);
     };
 
-    // For HEIC/HEIF files, try to handle them
-    if (file.type === 'image/heic' || file.type === 'image/heif') {
-      toast.info("Processing iPhone photo format...");
+    // Notify user about HEIC processing
+    if (isHeic) {
+      toast.info("iPhone photo detected. For best results, use JPG or PNG.");
     }
 
     reader.readAsDataURL(file);

@@ -209,7 +209,11 @@ export default function ContactForm() {
           }
         }}
         action={
-          <Button onClick={handleSubmit} disabled={saving}>
+          <Button 
+            onClick={handleSubmit} 
+            disabled={saving}
+            className="bg-farm-accent hover:bg-farm-accent/90 text-farm-dark font-semibold"
+          >
             <LoadingButton loading={saving} loadingText="Saving...">
               Save
             </LoadingButton>
