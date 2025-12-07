@@ -23,9 +23,56 @@ export function LogoUploadModal({ open, onClose, onUploadSuccess }: LogoUploadMo
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [loadingPreview, setLoadingPreview] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelection = (file: File) => {
+  // Resize large images for better performance in cropper
+  const resizeImageForPreview = (dataUrl: string, maxDimension: number = 1500): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        // If image is small enough, use original
+        if (img.width <= maxDimension && img.height <= maxDimension) {
+          resolve(dataUrl);
+          return;
+        }
+
+        // Calculate new dimensions maintaining aspect ratio
+        let newWidth = img.width;
+        let newHeight = img.height;
+        
+        if (img.width > img.height) {
+          newWidth = maxDimension;
+          newHeight = Math.round((img.height / img.width) * maxDimension);
+        } else {
+          newHeight = maxDimension;
+          newWidth = Math.round((img.width / img.height) * maxDimension);
+        }
+
+        // Create canvas and resize
+        const canvas = document.createElement('canvas');
+        canvas.width = newWidth;
+        canvas.height = newHeight;
+        const ctx = canvas.getContext('2d');
+        
+        if (!ctx) {
+          reject(new Error('Could not get canvas context'));
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, newWidth, newHeight);
+        
+        // Convert to dataURL (use JPEG for smaller size)
+        const resizedDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+        console.log(`[Logo] Resized from ${img.width}x${img.height} to ${newWidth}x${newHeight}`);
+        resolve(resizedDataUrl);
+      };
+      img.onerror = () => reject(new Error('Failed to load image for resizing'));
+      img.src = dataUrl;
+    });
+  };
+
+  const handleFileSelection = async (file: File) => {
     // Validate file type
     if (!file.type.startsWith('image/')) {
       toast.error("Invalid file type. Please select an image file (PNG, JPG, WEBP)");
@@ -39,15 +86,46 @@ export function LogoUploadModal({ open, onClose, onUploadSuccess }: LogoUploadMo
     }
 
     setSelectedFile(file);
-    setShowCrop(true);
+    setLoadingPreview(true);
     setCrop({ x: 0, y: 0 });
     setZoom(1);
 
-    // Create preview
+    // Create preview with error handling
     const reader = new FileReader();
-    reader.onload = (e) => {
-      setPreviewUrl(e.target?.result as string);
+    
+    reader.onload = async (e) => {
+      try {
+        const dataUrl = e.target?.result as string;
+        
+        if (!dataUrl) {
+          throw new Error('Failed to read file');
+        }
+
+        // Resize large images for better cropper performance
+        const resizedDataUrl = await resizeImageForPreview(dataUrl);
+        setPreviewUrl(resizedDataUrl);
+        setShowCrop(true);
+        setLoadingPreview(false);
+      } catch (error) {
+        console.error('[Logo] Error processing image:', error);
+        toast.error("Could not process this image. Try a different file.");
+        setSelectedFile(null);
+        setLoadingPreview(false);
+      }
     };
+    
+    reader.onerror = () => {
+      console.error('[Logo] FileReader error:', reader.error);
+      toast.error("Failed to read file. Please try again.");
+      setSelectedFile(null);
+      setLoadingPreview(false);
+    };
+
+    // For HEIC/HEIF files, try to handle them
+    if (file.type === 'image/heic' || file.type === 'image/heif') {
+      toast.info("Processing iPhone photo format...");
+    }
+
     reader.readAsDataURL(file);
   };
 
@@ -123,9 +201,9 @@ export function LogoUploadModal({ open, onClose, onUploadSuccess }: LogoUploadMo
     }
   };
 
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      handleFileSelection(e.target.files[0]);
+      await handleFileSelection(e.target.files[0]);
     }
   };
 
@@ -164,6 +242,7 @@ export function LogoUploadModal({ open, onClose, onUploadSuccess }: LogoUploadMo
     setCroppedImageBlob(null);
     setShowCrop(false);
     setUploading(false);
+    setLoadingPreview(false);
     onClose();
   };
 
@@ -191,7 +270,18 @@ export function LogoUploadModal({ open, onClose, onUploadSuccess }: LogoUploadMo
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {showCrop && previewUrl ? (
+          {loadingPreview ? (
+            <>
+              {/* Loading State */}
+              <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                <Loader2 className="w-12 h-12 text-primary animate-spin" />
+                <div className="text-center">
+                  <p className="text-base font-medium text-foreground">Processing image...</p>
+                  <p className="text-sm text-muted-foreground mt-1">This may take a moment for large photos</p>
+                </div>
+              </div>
+            </>
+          ) : showCrop && previewUrl ? (
             <>
               {/* Image Cropper */}
               <div className="relative w-full h-64 bg-farm-dark rounded-lg overflow-hidden">
