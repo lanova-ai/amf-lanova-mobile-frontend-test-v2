@@ -644,7 +644,7 @@ const Recordings = () => {
       <Popover open={fabMenuOpen} onOpenChange={setFabMenuOpen}>
         <PopoverTrigger asChild>
           <button
-            className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-farm-accent text-farm-dark shadow-lg hover:shadow-xl transition-all hover:scale-110 flex items-center justify-center z-50"
+            className="fixed bottom-6 right-6 lg:right-[calc(50%-256px+1.5rem)] w-14 h-14 rounded-full bg-farm-accent text-farm-dark shadow-lg hover:shadow-xl transition-all hover:scale-110 flex items-center justify-center z-50"
             aria-label="Add recording"
           >
             <Plus className="w-6 h-6" />

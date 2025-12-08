@@ -21,9 +21,6 @@ import { userAPI, UserProfile, ConnectionStatus } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { LogoUploadModal } from "@/components/LogoUploadModal";
 import {
-  Page,
-  PageHeader,
-  PageContent,
   PageLoading,
   Section,
   Button,
@@ -168,21 +165,16 @@ export default function Settings() {
   
   if (!profile) {
     return (
-      <Page>
-        <div className="flex flex-col items-center justify-center min-h-screen p-4">
-          <XCircle className="h-12 w-12 text-destructive mb-4" />
-          <p className="text-farm-muted">Failed to load profile</p>
-          <Button onClick={loadData} className="mt-4">Retry</Button>
-        </div>
-      </Page>
+      <div className="flex-1 flex flex-col items-center justify-center p-4">
+        <XCircle className="h-12 w-12 text-destructive mb-4" />
+        <p className="text-farm-muted">Failed to load profile</p>
+        <Button onClick={loadData} className="mt-4">Retry</Button>
+      </div>
     );
   }
 
   return (
-    <Page>
-      <PageHeader title="Settings" backTo="/home" />
-
-      <PageContent>
+    <div className="flex-1 overflow-y-auto scrollbar-hide p-4 space-y-6">
         {/* (a) Farm Logo */}
         <Section title="Farm Logo" description="Personalize your dashboard">
           {profile.farm_logo_url ? (
@@ -408,7 +400,6 @@ export default function Settings() {
             Logout
           </Button>
         </div>
-      </PageContent>
 
       {/* Delete Logo Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
@@ -434,7 +425,7 @@ export default function Settings() {
         onClose={() => setLogoModalOpen(false)}
         onUploadSuccess={handleLogoUploadSuccess}
       />
-    </Page>
+    </div>
   );
 }
 

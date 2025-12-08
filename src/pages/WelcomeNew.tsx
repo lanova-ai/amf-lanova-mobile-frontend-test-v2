@@ -1,12 +1,17 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { MobileFirstIndicator } from "@/components/MobileFirstIndicator";
 
 const WelcomeNew = () => {
   const navigate = useNavigate();
 
   return (
     <div className="min-h-screen page-background-hero flex flex-col overflow-y-auto scrollbar-hide">
-      <main className="flex-1 flex flex-col items-center justify-center px-6 py-12">
+      <main className="flex-1 flex flex-col lg:flex-row items-center justify-center px-6 py-12 lg:px-0">
+        {/* Left Mobile Indicator - Desktop Only */}
+        <MobileFirstIndicator />
+
+        {/* Main Content */}
         <div className="w-full max-w-md space-y-8 animate-fade-in">
           {/* Logo/Brand - Matching main Welcome page */}
           <div className="text-center">
@@ -48,15 +53,18 @@ const WelcomeNew = () => {
               Skip for now
             </button>
           </div>
-        </div>
-      </main>
 
-      {/* Footer */}
-      <footer className="pb-6 px-6 text-center">
-        <p className="text-xs text-farm-muted">
-          You can also connect from Settings later
-        </p>
-      </footer>
+          {/* Footer text - inside content area on mobile */}
+          <div className="text-center pt-6">
+            <p className="text-xs text-farm-muted">
+              You can also connect from Settings later
+            </p>
+          </div>
+        </div>
+
+        {/* Right Mobile Indicator - Desktop Only */}
+        <MobileFirstIndicator />
+      </main>
     </div>
   );
 };

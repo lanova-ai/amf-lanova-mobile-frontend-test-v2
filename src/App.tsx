@@ -152,29 +152,29 @@ const App = () => (
             <Route path="/farm-memory" element={<ProtectedRoute><Layout><FarmMemory /></Layout></ProtectedRoute>} />
             <Route path="/farm-reports" element={<ProtectedRoute><Layout><FarmReports /></Layout></ProtectedRoute>} />
             <Route path="/amf-reports" element={<ProtectedRoute><Layout><AMFReports /></Layout></ProtectedRoute>} />
-            <Route path="/share-field-report" element={<ProtectedRoute><ShareFieldReport /></ProtectedRoute>} />
+            <Route path="/share-field-report" element={<ProtectedRoute><Layout><ShareFieldReport /></Layout></ProtectedRoute>} />
             <Route path="/recordings" element={<ProtectedRoute><Layout><Recordings /></Layout></ProtectedRoute>} />
               <Route path="/documents" element={<ProtectedRoute><Layout><Documents /></Layout></ProtectedRoute>} />
-              <Route path="/documents/:id" element={<ProtectedRoute><DocumentDetail /></ProtectedRoute>} />
-              <Route path="/documents/:id/share" element={<ProtectedRoute><ShareDocument /></ProtectedRoute>} />
+              <Route path="/documents/:id" element={<ProtectedRoute><Layout><DocumentDetail /></Layout></ProtectedRoute>} />
+              <Route path="/documents/:id/share" element={<ProtectedRoute><Layout><ShareDocument /></Layout></ProtectedRoute>} />
             {/* <Route path="/tasks" element={<ProtectedRoute><Layout><Tasks /></Layout></ProtectedRoute>} /> */}
             {/* FIELD NOTES - Temporarily commented out (replaced by Scouting Notes) */}
             {/* <Route path="/field-notes" element={<ProtectedRoute><Layout><FieldNotesList /></Layout></ProtectedRoute>} /> */}
             <Route path="/scouting-notes" element={<ProtectedRoute><Layout><ScoutingNotes /></Layout></ProtectedRoute>} />
             <Route path="/field-plans" element={<ProtectedRoute><Layout><FieldPlans /></Layout></ProtectedRoute>} />
             
-            {/* Full-screen routes (no layout, protected) */}
-            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-            <Route path="/settings/profile" element={<ProtectedRoute><ProfileEdit /></ProtectedRoute>} />
-            <Route path="/settings/change-password" element={<ProtectedRoute><ChangePassword /></ProtectedRoute>} />
-            <Route path="/set-password" element={<ProtectedRoute><SetPassword /></ProtectedRoute>} />
-            <Route path="/settings/farm" element={<ProtectedRoute><FarmDetailsEdit /></ProtectedRoute>} />
-            <Route path="/settings/connections/johndeere" element={<ProtectedRoute><ConnectionDetails /></ProtectedRoute>} />
-            <Route path="/settings/contacts" element={<ProtectedRoute><ContactsList /></ProtectedRoute>} />
-            <Route path="/settings/contacts/new" element={<ProtectedRoute><ContactForm /></ProtectedRoute>} />
-            <Route path="/settings/contacts/:contactId/edit" element={<ProtectedRoute><ContactForm /></ProtectedRoute>} />
-            <Route path="/voice-capture" element={<ProtectedRoute><VoiceCapture /></ProtectedRoute>} />
-            <Route path="/recordings/:id" element={<ProtectedRoute><RecordingDetail /></ProtectedRoute>} />
+            {/* Settings (with layout, protected) */}
+            <Route path="/settings" element={<ProtectedRoute><Layout><Settings /></Layout></ProtectedRoute>} />
+            <Route path="/settings/profile" element={<ProtectedRoute><Layout><ProfileEdit /></Layout></ProtectedRoute>} />
+            <Route path="/settings/change-password" element={<ProtectedRoute><Layout><ChangePassword /></Layout></ProtectedRoute>} />
+            <Route path="/set-password" element={<ProtectedRoute><Layout><SetPassword /></Layout></ProtectedRoute>} />
+            <Route path="/settings/farm" element={<ProtectedRoute><Layout><FarmDetailsEdit /></Layout></ProtectedRoute>} />
+            <Route path="/settings/connections/johndeere" element={<ProtectedRoute><Layout><ConnectionDetails /></Layout></ProtectedRoute>} />
+            <Route path="/settings/contacts" element={<ProtectedRoute><Layout><ContactsList /></Layout></ProtectedRoute>} />
+            <Route path="/settings/contacts/new" element={<ProtectedRoute><Layout><ContactForm /></Layout></ProtectedRoute>} />
+            <Route path="/settings/contacts/:contactId/edit" element={<ProtectedRoute><Layout><ContactForm /></Layout></ProtectedRoute>} />
+            <Route path="/voice-capture" element={<ProtectedRoute><Layout><VoiceCapture /></Layout></ProtectedRoute>} />
+            <Route path="/recordings/:id" element={<ProtectedRoute><Layout><RecordingDetail /></Layout></ProtectedRoute>} />
             {/* <Route path="/tasks/new" element={<ProtectedRoute><TaskForm /></ProtectedRoute>} /> */}
             {/* <Route path="/tasks/:id" element={<ProtectedRoute><TaskDetail /></ProtectedRoute>} /> */}
             {/* <Route path="/tasks/:id/edit" element={<ProtectedRoute><TaskForm /></ProtectedRoute>} /> */}
@@ -182,18 +182,18 @@ const App = () => (
             {/* <Route path="/field-notes/new" element={<ProtectedRoute><FieldNoteForm /></ProtectedRoute>} /> */}
             {/* <Route path="/field-notes/:id" element={<ProtectedRoute><FieldNoteDetail /></ProtectedRoute>} /> */}
             {/* <Route path="/field-notes/:id/edit" element={<ProtectedRoute><FieldNoteForm /></ProtectedRoute>} /> */}
-            <Route path="/scouting-notes/create" element={<ProtectedRoute><ScoutingNoteCreate /></ProtectedRoute>} />
-            <Route path="/scouting-notes/summary/:noteId" element={<ProtectedRoute><ScoutingSummaryDetail /></ProtectedRoute>} />
-            <Route path="/scouting-notes/share-summary" element={<ProtectedRoute><ShareScoutingSummary /></ProtectedRoute>} />
-            <Route path="/scouting-notes/:id" element={<ProtectedRoute><ScoutingNoteDetail /></ProtectedRoute>} />
-            <Route path="/field-plans/new" element={<ProtectedRoute><FieldPlanEdit /></ProtectedRoute>} />
-            <Route path="/field-plans/share" element={<ProtectedRoute><SharePlans /></ProtectedRoute>} />
-            <Route path="/field-plans/summary/:summaryId" element={<ProtectedRoute><FieldPlanSummaryDetail /></ProtectedRoute>} />
-            <Route path="/field-plans/summary/:summaryId/share" element={<ProtectedRoute><ShareFieldPlanSummary /></ProtectedRoute>} />
-            <Route path="/field-plans/:id" element={<ProtectedRoute><FieldPlanDetail /></ProtectedRoute>} />
-            <Route path="/field-plans/:id/edit" element={<ProtectedRoute><FieldPlanEdit /></ProtectedRoute>} />
-            <Route path="/documents/share-timeline" element={<ProtectedRoute><ShareTimeline /></ProtectedRoute>} />
-            <Route path="/field-plans/:planId/generate-prescription" element={<ProtectedRoute><GeneratePrescription /></ProtectedRoute>} />
+            <Route path="/scouting-notes/create" element={<ProtectedRoute><Layout><ScoutingNoteCreate /></Layout></ProtectedRoute>} />
+            <Route path="/scouting-notes/summary/:noteId" element={<ProtectedRoute><Layout><ScoutingSummaryDetail /></Layout></ProtectedRoute>} />
+            <Route path="/scouting-notes/share-summary" element={<ProtectedRoute><Layout><ShareScoutingSummary /></Layout></ProtectedRoute>} />
+            <Route path="/scouting-notes/:id" element={<ProtectedRoute><Layout><ScoutingNoteDetail /></Layout></ProtectedRoute>} />
+            <Route path="/field-plans/new" element={<ProtectedRoute><Layout><FieldPlanEdit /></Layout></ProtectedRoute>} />
+            <Route path="/field-plans/share" element={<ProtectedRoute><Layout><SharePlans /></Layout></ProtectedRoute>} />
+            <Route path="/field-plans/summary/:summaryId" element={<ProtectedRoute><Layout><FieldPlanSummaryDetail /></Layout></ProtectedRoute>} />
+            <Route path="/field-plans/summary/:summaryId/share" element={<ProtectedRoute><Layout><ShareFieldPlanSummary /></Layout></ProtectedRoute>} />
+            <Route path="/field-plans/:id" element={<ProtectedRoute><Layout><FieldPlanDetail /></Layout></ProtectedRoute>} />
+            <Route path="/field-plans/:id/edit" element={<ProtectedRoute><Layout><FieldPlanEdit /></Layout></ProtectedRoute>} />
+            <Route path="/documents/share-timeline" element={<ProtectedRoute><Layout><ShareTimeline /></Layout></ProtectedRoute>} />
+            <Route path="/field-plans/:planId/generate-prescription" element={<ProtectedRoute><Layout><GeneratePrescription /></Layout></ProtectedRoute>} />
             
             {/* Public Routes (no authentication) */}
             <Route path="/briefings/:shareToken" element={<BriefingView />} />

@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Menu, Home, Map, CheckSquare, FileText, BarChart3, Mic, Settings, LogOut, FolderOpen, MapPin, Brain, FileBarChart2, Leaf } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { MobileFirstIndicator } from "@/components/MobileFirstIndicator";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -31,52 +31,27 @@ const Layout = ({ children }: LayoutProps) => {
   // Check if current route is active
   const isActive = (path: string) => location.pathname === path;
 
-  // Get page title based on current route
-  const getPageTitle = () => {
-    const path = location.pathname;
-    if (path === '/home') return 'AskMyFarm';
-    if (path === '/map') return 'AskMyFarm'; // Show AskMyFarm title on map page
-    if (path === '/farm-memory') return 'Farm Memory';
-    if (path === '/farm-reports' || path.startsWith('/farm-reports/')) return 'JD Ops Reports';
-    if (path === '/amf-reports') return 'AMF Field Reports';
-    // if (path === '/tasks' || path.startsWith('/tasks/')) return 'Tasks';
-    // FIELD NOTES - Temporarily commented out (replaced by Scouting Notes)
-    // if (path === '/field-notes' || path.startsWith('/field-notes/')) return 'Notes';
-    if (path === '/scouting-notes') return 'Scouting Notes';
-    if (path === '/scouting-notes/create') return 'New Scouting Note';
-    if (path.startsWith('/scouting-notes/')) return 'Scouting Note Details';
-    if (path === '/field-plans' || path.startsWith('/field-plans/')) return 'Field Plans';
-    if (path === '/recordings' || path.startsWith('/recordings/')) return 'Recordings';
-    if (path === '/documents' || path.startsWith('/documents/')) return 'Docs & Photos';
-    return 'AskMyFarm';
-  };
-
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
-      {/* Persistent Header */}
-      <header className={`sticky top-0 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b z-[100] ${
-        location.pathname === '/map' ? 'bg-background/70' : 'bg-background/95'
-      }`}>
-        <div className="flex items-center justify-between px-4 py-4">
+    <div className="h-screen bg-background flex lg:justify-center overflow-hidden">
+      {/* Left Mobile Indicator - Desktop Only */}
+      <MobileFirstIndicator />
+      
+      {/* Main App Container - Constrained to mobile width on desktop (512px = max-w-lg) */}
+      <div className="relative flex-1 lg:flex-none lg:w-[512px] h-full flex flex-col lg:border-x lg:border-farm-accent/10 overflow-hidden">
+        {/* Persistent Header */}
+        <header className={`sticky top-0 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b z-[100] ${
+          location.pathname === '/map' ? 'bg-background/70' : 'bg-background/95'
+        }`}>
+          <div className="flex items-center justify-between px-4 py-4">
           <button onClick={() => setShowMenu(true)} className="p-2">
             <Menu className="h-6 w-6" />
           </button>
-          {(location.pathname === '/home' || location.pathname === '/map') ? (
-            <h1 className="text-xl font-bold">
-              <span className="text-primary">Ask</span>
-              <span className="text-yellow-400">My</span>
-              <span className="text-primary">Farm</span>
-            </h1>
-          ) : location.pathname === '/amf-reports' ? (
-            <h1 className="text-xl font-bold">
-              <span className="text-farm-accent">A</span>
-              <span className="text-amber-500">M</span>
-              <span className="text-farm-accent">F</span>
-              {" "}Reports
-            </h1>
-          ) : (
-            getPageTitle() && <h1 className="text-xl font-bold">{getPageTitle()}</h1>
-          )}
+          {/* Consistent AskMyFarm branding across all pages */}
+          <h1 className="text-xl font-bold">
+            <span className="text-primary">Ask</span>
+            <span className="text-yellow-400">My</span>
+            <span className="text-primary">Farm</span>
+          </h1>
           <button 
             onClick={() => navigate('/map')} 
             className={`p-2 rounded-lg transition-colors ${
@@ -95,10 +70,10 @@ const Layout = ({ children }: LayoutProps) => {
       {showMenu && (
         <>
           <div
-            className="fixed inset-0 bg-black/5 backdrop-blur-[2px] z-[9998]"
+            className="absolute inset-0 bg-black/5 backdrop-blur-[2px] z-[9998]"
             onClick={() => setShowMenu(false)}
           />
-          <div className="fixed top-0 left-0 bottom-0 w-56 bg-farm-dark border-r border-farm-accent/20 shadow-xl z-[9999] animate-slide-in-left flex flex-col h-full">
+          <div className="absolute top-0 left-0 bottom-0 w-56 bg-farm-dark border-r border-farm-accent/20 shadow-xl z-[9999] animate-slide-in-left flex flex-col h-full">
             {/* Scrollable Navigation Section */}
             <div className="flex-1 overflow-y-auto scrollbar-hide">
               <div className="p-4">
@@ -310,10 +285,14 @@ const Layout = ({ children }: LayoutProps) => {
         </>
       )}
 
-      {/* Page Content */}
-      <main className="flex-1 relative overflow-y-auto scrollbar-hide">
-        {children}
-      </main>
+        {/* Page Content */}
+        <main className="flex-1 relative overflow-y-auto scrollbar-hide">
+          {children}
+        </main>
+      </div>
+      
+      {/* Right Mobile Indicator - Desktop Only */}
+      <MobileFirstIndicator />
     </div>
   );
 };

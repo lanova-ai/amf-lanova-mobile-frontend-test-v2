@@ -239,8 +239,12 @@ const VoiceCapture = () => {
   };
 
   const handleDiscard = () => {
-    // Just go back to home without uploading
-    navigate("/");
+    // Go back to previous page without uploading
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate("/home");
+    }
   };
 
   const formatTime = (seconds: number) => {

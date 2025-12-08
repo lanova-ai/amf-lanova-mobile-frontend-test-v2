@@ -75,7 +75,7 @@ export function PhotoUploadModal({ open, onClose, onPhotosSelected }: PhotoUploa
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-w-md w-[calc(100vw-2rem)] sm:w-full">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">Add Photos</DialogTitle>
         </DialogHeader>

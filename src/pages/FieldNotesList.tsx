@@ -378,7 +378,7 @@ const FieldNotesList = () => {
         </main>
 
         {/* Floating Action Button */}
-        <div className="fixed bottom-6 right-6 z-20">
+        <div className="fixed bottom-6 right-6 lg:right-[calc(50%-256px+1.5rem)] z-20">
           <Button
             onClick={() => navigate("/field-notes/new")}
             size="lg"

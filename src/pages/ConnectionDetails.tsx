@@ -338,7 +338,7 @@ export default function ConnectionDetails() {
             <>
               <Button
                 onClick={() => navigate('/connect/john-deere')}
-                className="w-full bg-farm-accent hover:bg-farm-accent/90 text-white"
+                className="w-full bg-farm-accent hover:bg-farm-accent/90 text-farm-dark font-semibold"
               >
                 <CheckCircle2 className="h-4 w-4 mr-2" />
                 Connect to John Deere

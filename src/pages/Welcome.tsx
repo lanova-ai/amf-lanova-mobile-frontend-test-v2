@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { Mic, Share2, Tractor, Smartphone } from "lucide-react";
+import { Mic, Share2, Tractor } from "lucide-react";
 import { useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { MobileFirstIndicator } from "@/components/MobileFirstIndicator";
 
 const Welcome = () => {
   const navigate = useNavigate();
@@ -19,22 +20,7 @@ const Welcome = () => {
     <div className="min-h-screen page-background-hero flex flex-col overflow-y-auto scrollbar-hide">
       <main className="flex-1 flex flex-col lg:flex-row items-center justify-center px-6 py-12 lg:px-0">
         {/* Left Mobile Indicator - Desktop Only */}
-        <div className="hidden lg:flex flex-1 items-center justify-center px-8">
-          <div className="text-center space-y-3 max-w-xs opacity-60">
-            <div className="flex justify-center">
-              <div className="relative">
-                <div className="w-16 h-28 bg-farm-card/30 border border-farm-accent/20 rounded-[1.5rem] p-2 shadow-lg">
-                  <div className="w-full h-full bg-farm-dark/50 rounded-[1.2rem] flex items-center justify-center">
-                    <Smartphone className="h-6 w-6 text-farm-accent/40" />
-                  </div>
-                </div>
-              </div>
-            </div>
-            <p className="text-xs text-farm-muted/80">
-              This application is designed for mobile first experience
-            </p>
-          </div>
-        </div>
+        <MobileFirstIndicator />
 
         {/* Main Content */}
         <div className="w-full max-w-md animate-fade-in">
@@ -116,22 +102,7 @@ const Welcome = () => {
         </div>
 
         {/* Right Mobile Indicator - Desktop Only */}
-        <div className="hidden lg:flex flex-1 items-center justify-center px-8">
-          <div className="text-center space-y-3 max-w-xs opacity-60">
-            <div className="flex justify-center">
-              <div className="relative">
-                <div className="w-16 h-28 bg-farm-card/30 border border-farm-accent/20 rounded-[1.5rem] p-2 shadow-lg">
-                  <div className="w-full h-full bg-farm-dark/50 rounded-[1.2rem] flex items-center justify-center">
-                    <Smartphone className="h-6 w-6 text-farm-accent/40" />
-                  </div>
-                </div>
-              </div>
-            </div>
-            <p className="text-xs text-farm-muted/80">
-              This application is designed for mobile first experience
-            </p>
-          </div>
-        </div>
+        <MobileFirstIndicator />
       </main>
 
       {/* Footer */}

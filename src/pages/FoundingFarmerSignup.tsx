@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Loader2, KeyRound, CheckCircle2 } from "lucide-react";
+import { MobileFirstIndicator } from "@/components/MobileFirstIndicator";
 import { authAPI, foundingFarmerAPI } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -137,17 +138,22 @@ export default function FoundingFarmerSignup() {
   // ===== TOKEN ENTRY STEP =====
   if (step === "token") {
     return (
-      <div className="min-h-screen page-background flex items-center justify-center p-6">
-        <div className="max-w-md w-full">
-          {/* Back Button */}
-          <Button
-            variant="ghost"
-            onClick={() => navigate("/")}
-            className="mb-6 -ml-2"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
-          </Button>
+      <div className="min-h-screen page-background flex flex-col overflow-y-auto scrollbar-hide">
+        <main className="flex-1 flex flex-col lg:flex-row items-center justify-center px-6 py-12 lg:px-0">
+          {/* Left Mobile Indicator - Desktop Only */}
+          <MobileFirstIndicator />
+
+          {/* Main Content */}
+          <div className="w-full max-w-md">
+            {/* Back Button */}
+            <Button
+              variant="ghost"
+              onClick={() => navigate("/")}
+              className="mb-6 -ml-2"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
 
           {/* Logo */}
           <div className="text-center mb-8">
@@ -216,30 +222,39 @@ export default function FoundingFarmerSignup() {
               Apply for the program
             </button>
           </p>
-        </div>
+          </div>
+
+          {/* Right Mobile Indicator - Desktop Only */}
+          <MobileFirstIndicator />
+        </main>
       </div>
     );
   }
 
   // ===== SIGNUP FORM STEP =====
   return (
-    <div className="min-h-screen page-background flex items-start justify-center p-6 pt-8">
-      <div className="max-w-md w-full">
-        {/* Back Button */}
-        <Button
-          variant="ghost"
-          onClick={() => {
-            if (codeFromUrl) {
-              navigate("/");
-            } else {
-              setStep("token");
-            }
-          }}
-          className="mb-4 -ml-2"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
+    <div className="min-h-screen page-background flex flex-col overflow-y-auto scrollbar-hide">
+      <main className="flex-1 flex flex-col lg:flex-row items-center justify-center px-6 py-8 lg:px-0">
+        {/* Left Mobile Indicator - Desktop Only */}
+        <MobileFirstIndicator />
+
+        {/* Main Content */}
+        <div className="w-full max-w-md">
+          {/* Back Button */}
+          <Button
+            variant="ghost"
+            onClick={() => {
+              if (codeFromUrl) {
+                navigate("/");
+              } else {
+                setStep("token");
+              }
+            }}
+            className="mb-4 -ml-2"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back
+          </Button>
 
         {/* Logo */}
         <div className="text-center mb-6">
@@ -402,7 +417,11 @@ export default function FoundingFarmerSignup() {
             )}
           </Button>
         </form>
-      </div>
+        </div>
+
+        {/* Right Mobile Indicator - Desktop Only */}
+        <MobileFirstIndicator />
+      </main>
     </div>
   );
 }

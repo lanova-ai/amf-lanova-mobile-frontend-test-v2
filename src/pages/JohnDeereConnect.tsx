@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { jdOnboardingAPI } from "@/lib/api";
 import { toast } from "sonner";
+import { MobileFirstIndicator } from "@/components/MobileFirstIndicator";
 
 const JohnDeereConnect = () => {
   const navigate = useNavigate();
@@ -36,7 +37,12 @@ const JohnDeereConnect = () => {
 
   // Show explanation screen (only screen needed now - OAuth handles the rest)
   return (
-      <div className="min-h-screen bg-farm-dark flex flex-col">
+    <div className="min-h-screen bg-farm-dark flex lg:justify-center">
+      {/* Left Mobile Indicator - Desktop Only */}
+      <MobileFirstIndicator />
+      
+      {/* Main Content */}
+      <div className="flex-1 lg:flex-none lg:w-[512px] flex flex-col lg:border-x lg:border-farm-accent/10">
         <header className="flex items-center justify-between px-4 py-4 border-b">
           <button onClick={() => navigate("/settings")} className="p-2">
             <ArrowLeft className="h-5 w-5" />
@@ -127,6 +133,10 @@ const JohnDeereConnect = () => {
           </div>
         </main>
       </div>
+      
+      {/* Right Mobile Indicator - Desktop Only */}
+      <MobileFirstIndicator />
+    </div>
   );
 };
 

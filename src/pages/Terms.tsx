@@ -1,6 +1,7 @@
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { MobileFirstIndicator } from "@/components/MobileFirstIndicator";
 
 export default function Terms() {
   const navigate = useNavigate();
@@ -20,10 +21,27 @@ export default function Terms() {
         <div className="w-10" /> {/* Spacer for centering */}
       </header>
 
-      {/* Content */}
-      <main className="flex-1 px-6 py-6 overflow-y-auto scrollbar-hide">
-        <div className="max-w-3xl mx-auto">
-          <h1 className="page-title text-left mb-6">Terms of Service</h1>
+      {/* Content with side indicators */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Mobile Indicator - Desktop Only */}
+        <MobileFirstIndicator />
+
+        {/* Main Content */}
+        <main className="flex-1 px-6 py-6 overflow-y-auto scrollbar-hide">
+          <div className="max-w-3xl mx-auto">
+          {/* Brand Header */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl mb-3">
+              <span className="text-4xl">🌾</span>
+            </div>
+            <h2 className="text-lg font-semibold mb-4">
+              <span className="text-primary">Ask</span>
+              <span className="text-farm-gold">My</span>
+              <span className="text-primary">Farm</span>
+            </h2>
+          </div>
+          
+          <h1 className="text-2xl font-bold text-primary text-center mb-8">Terms of Service</h1>
 
           <section className="mb-6">
             <h2 className="text-lg font-semibold mb-3 text-foreground">1. Acceptance of Terms</h2>
@@ -154,8 +172,12 @@ export default function Terms() {
               <strong>Website:</strong> https://www.askmyfarm.us
             </p>
           </section>
-        </div>
-      </main>
+          </div>
+        </main>
+
+        {/* Right Mobile Indicator - Desktop Only */}
+        <MobileFirstIndicator />
+      </div>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { userAPI } from "@/lib/api";
+import { MobileFirstIndicator } from "@/components/MobileFirstIndicator";
 
 export default function SetPassword() {
   const navigate = useNavigate();
@@ -96,8 +97,12 @@ export default function SetPassword() {
         </div>
       </header>
 
-      <main className="flex-1 p-6 overflow-y-auto scrollbar-hide">
-        <div className="max-w-md mx-auto space-y-6">
+      <main className="flex-1 flex flex-col lg:flex-row items-start lg:items-center justify-center p-6 overflow-y-auto scrollbar-hide lg:px-0">
+        {/* Left Mobile Indicator - Desktop Only */}
+        <MobileFirstIndicator />
+
+        {/* Main Content */}
+        <div className="w-full max-w-md mx-auto lg:mx-0 space-y-6">
           {/* Info Card */}
           <div className="bg-card rounded-lg border p-4">
             <div className="flex items-start gap-3">
@@ -236,6 +241,9 @@ export default function SetPassword() {
             </div>
           </form>
         </div>
+
+        {/* Right Mobile Indicator - Desktop Only */}
+        <MobileFirstIndicator />
       </main>
     </div>
   );

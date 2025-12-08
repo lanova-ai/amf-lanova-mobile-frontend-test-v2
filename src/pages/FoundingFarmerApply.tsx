@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ArrowLeft, CheckCircle2, Loader2 } from "lucide-react";
+import { MobileFirstIndicator } from "@/components/MobileFirstIndicator";
 import { foundingFarmerAPI } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -72,17 +73,22 @@ export default function FoundingFarmerApply() {
   }
 
   return (
-    <div className="min-h-screen page-background flex items-start justify-center p-6 pt-12">
-      <div className="max-w-md w-full">
-        {/* Back Button */}
-        <Button
-          variant="ghost"
-          onClick={() => navigate("/")}
-          className="mb-6 -ml-2"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
+    <div className="min-h-screen page-background flex flex-col overflow-y-auto scrollbar-hide">
+      <main className="flex-1 flex flex-col lg:flex-row items-center justify-center px-6 py-12 lg:px-0">
+        {/* Left Mobile Indicator - Desktop Only */}
+        <MobileFirstIndicator />
+
+        {/* Main Content */}
+        <div className="w-full max-w-md">
+          {/* Back Button */}
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/")}
+            className="mb-6 -ml-2"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back
+          </Button>
 
         {/* Logo */}
         <div className="text-center mb-8">
@@ -185,7 +191,11 @@ export default function FoundingFarmerApply() {
             )}
           </Button>
         </form>
-      </div>
+        </div>
+
+        {/* Right Mobile Indicator - Desktop Only */}
+        <MobileFirstIndicator />
+      </main>
     </div>
   );
 }

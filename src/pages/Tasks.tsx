@@ -437,7 +437,7 @@ const Tasks = () => {
       {/* FAB Action Button */}
       <button
         onClick={() => navigate("/tasks/new")}
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all z-20 flex items-center justify-center"
+        className="fixed bottom-6 right-6 lg:right-[calc(50%-256px+1.5rem)] w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all z-20 flex items-center justify-center"
         style={{ boxShadow: "var(--shadow-elevated)" }}
       >
         <Plus className="h-6 w-6" />

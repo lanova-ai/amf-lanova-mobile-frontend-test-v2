@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Loader2, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { MobileFirstIndicator } from '@/components/MobileFirstIndicator';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -57,17 +58,22 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen page-background-hero flex items-start justify-center p-6 pt-12">
-      <div className="max-w-md w-full">
-        {/* Back Button */}
-        <Button
-          variant="ghost"
-          onClick={() => navigate('/')}
-          className="mb-6 -ml-2"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
+    <div className="min-h-screen page-background-hero flex flex-col overflow-y-auto scrollbar-hide">
+      <main className="flex-1 flex flex-col lg:flex-row items-center justify-center px-6 py-12 lg:px-0">
+        {/* Left Mobile Indicator - Desktop Only */}
+        <MobileFirstIndicator />
+
+        {/* Main Content */}
+        <div className="w-full max-w-md">
+          {/* Back Button */}
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/')}
+            className="mb-6 -ml-2"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back
+          </Button>
 
         {/* Logo */}
         <div className="text-center mb-8">
@@ -192,7 +198,11 @@ export default function Login() {
             </button>
           </div>
         </div>
-      </div>
+        </div>
+
+        {/* Right Mobile Indicator - Desktop Only */}
+        <MobileFirstIndicator />
+      </main>
     </div>
   );
 }

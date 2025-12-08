@@ -373,10 +373,11 @@ const Home = () => {
   };
 
   return (
-    <div className="absolute inset-0 overflow-y-auto overflow-x-hidden scrollbar-hide page-background">
-      <div className="min-h-full flex flex-col">
-        {/* Welcome Section */}
-        <div className="px-6 py-6">
+    <div className="absolute inset-0 overflow-hidden page-background">
+      <div className="h-full overflow-y-auto overflow-x-hidden scrollbar-hide">
+        <div className="min-h-full flex flex-col">
+          {/* Welcome Section */}
+          <div className="px-6 py-6">
           <div className="flex items-center gap-4 mb-1">
             {user?.farm_logo_url ? (
               <div className="h-14 w-14 rounded-lg overflow-hidden bg-muted border-2 border-farm-accent/30 flex-shrink-0">
@@ -802,6 +803,7 @@ const Home = () => {
             </p>
           </div>
         )}
+        </div>
         </div>
       </div>
 
