@@ -865,8 +865,12 @@ export default function DocumentDetail() {
             />
           ) : (document.mime_type === 'application/pdf' || document.document_type === 'pdf') && document.file_url ? (
             <div className="relative">
+              {/* Android doesn't render PDFs in iframes natively - use Google Docs Viewer */}
               <iframe
-                src={`${document.file_url}#toolbar=0&navpanes=0`}
+                src={/android/i.test(navigator.userAgent)
+                  ? `https://docs.google.com/gview?url=${encodeURIComponent(document.file_url)}&embedded=true`
+                  : `${document.file_url}#toolbar=0&navpanes=0`
+                }
                 className="w-full h-[500px] bg-white"
                 title={document.title || document.original_filename}
               />
