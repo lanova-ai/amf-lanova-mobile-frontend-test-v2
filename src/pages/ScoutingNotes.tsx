@@ -729,7 +729,10 @@ export default function ScoutingNotes() {
                       : "Try adjusting your filters to see more notes"}
                   </p>
                   {notes.length === 0 && (
-                    <Button onClick={handleCreateNew}>
+                    <Button 
+                      onClick={handleCreateNew}
+                      className="bg-farm-accent hover:bg-farm-accent/90 text-farm-dark font-semibold"
+                    >
                       <Plus className="w-4 h-4 mr-2" />
                       Create First Note
                     </Button>
