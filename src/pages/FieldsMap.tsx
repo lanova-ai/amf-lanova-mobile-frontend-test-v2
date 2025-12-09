@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { MapContainer, TileLayer, Polygon, Marker, Popup, useMap, Circle } from "react-leaflet";
 import { Loader2, ChevronDown, ChevronUp, Camera, Mic, FileText, Trash2, Layers, Navigation } from "lucide-react";
-import { fieldsAPI, fieldNotesAPI, FieldNote, voiceAPI, documentsAPI } from "@/lib/api";
+import { fieldsAPI, fieldNotesAPI, FieldNote, voiceAPI, documentsAPI, handlePageError } from "@/lib/api";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import L from "leaflet";
@@ -262,7 +262,8 @@ const FieldsMap = () => {
         toast.success(`Loaded ${fieldsWithBoundaries.length} fields${fieldNotesData.field_notes.length > 0 ? ` and ${fieldNotesData.field_notes.length} location notes` : ''}`);
       } catch (error: any) {
         console.error("Error fetching fields:", error);
-        toast.error("Failed to load fields");
+        const errorMsg = handlePageError(error, "Failed to load fields");
+        if (errorMsg) toast.error(errorMsg);
       } finally {
         setLoading(false);
       }

@@ -166,7 +166,7 @@ export default function Terms() {
               If you have any questions about these Terms, please contact us at:
             </p>
             <p className="body-text mb-2">
-              <strong>Email:</strong> contact@lanova.ai
+              <strong>Email:</strong> contact@askmyfarm.us
             </p>
             <p className="body-text mb-2">
               <strong>Website:</strong> https://www.askmyfarm.us

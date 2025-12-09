@@ -12,6 +12,46 @@ export interface APIError {
   details?: any;
 }
 
+// Helper to check if error is a session expiry
+export const isSessionExpiredError = (error: any): boolean => {
+  return error?.status === 401 || error?.details?.sessionExpired === true;
+};
+
+// Helper to check if error is likely due to being offline
+export const isOfflineError = (error: any): boolean => {
+  if (typeof navigator !== 'undefined' && !navigator.onLine) return true;
+  
+  // Check common offline error patterns
+  if (error instanceof TypeError && error.message?.includes('Failed to fetch')) {
+    return true;
+  }
+  if (error?.message?.toLowerCase()?.includes('network')) {
+    return true;
+  }
+  if (error?.message?.toLowerCase()?.includes('offline')) {
+    return true;
+  }
+  
+  return false;
+};
+
+// Helper for consistent error handling in pages
+export const handlePageError = (error: any, defaultMessage: string): string | null => {
+  // If session expired, return null to indicate no toast should be shown
+  // (the API layer will redirect to login)
+  if (isSessionExpiredError(error)) {
+    return null;
+  }
+  
+  // Check if offline and provide helpful message
+  if (isOfflineError(error)) {
+    return "You're offline. Please check your internet connection.";
+  }
+  
+  // Return the error message for the toast
+  return error?.message || defaultMessage;
+};
+
 export interface AuthTokens {
   access_token: string;
   refresh_token?: string;
@@ -107,9 +147,19 @@ async function apiFetch<T>(
 
     // Handle 401 Unauthorized - token expired
     if (response.status === 401 && token) {
+      // Don't try to refresh if we're offline - just throw offline error
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        const offlineError: APIError = {
+          message: "You're offline. Please check your internet connection.",
+          status: 0,
+          details: { offline: true }
+        };
+        throw offlineError;
+      }
+      
       // Try to refresh token
-      const refreshed = await refreshAccessToken();
-      if (refreshed) {
+      const refreshResult = await refreshAccessToken();
+      if (refreshResult.success) {
         // Retry original request with new token
         headers['Authorization'] = `Bearer ${tokenManager.getAccessToken()}`;
         const retryResponse = await fetchWithTimeout(url, { ...config, headers }, timeoutMs);
@@ -117,11 +167,28 @@ async function apiFetch<T>(
           throw await handleErrorResponse(retryResponse);
         }
         return await retryResponse.json();
+      } else if (refreshResult.reason === 'offline') {
+        // Network error during refresh - don't logout, just show offline message
+        const offlineError: APIError = {
+          message: "You're offline. Please check your internet connection.",
+          status: 0,
+          details: { offline: true }
+        };
+        throw offlineError;
       } else {
-        // Refresh failed, redirect to login
+        // Refresh failed due to invalid token - clear tokens and redirect to welcome page
         tokenManager.clearTokens();
-        window.location.href = '/auth/login';
-        throw new Error('Session expired. Please login again.');
+        // Use a small delay to allow any pending operations to complete
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 100);
+        // Throw a recognizable error for UI handling
+        const sessionError: APIError = {
+          message: 'Session expired. Please login again.',
+          status: 401,
+          details: { sessionExpired: true }
+        };
+        throw sessionError;
       }
     }
 
@@ -140,8 +207,23 @@ async function apiFetch<T>(
     if (error && typeof error === 'object' && 'status' in error) {
       throw error;
     }
-    // Re-throw Error instances
+    
+    // Check if offline and provide helpful error
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      const offlineError: APIError = {
+        message: "You're offline. This action requires an internet connection.",
+        status: 0,
+        details: { offline: true }
+      };
+      throw offlineError;
+    }
+    
+    // Re-throw Error instances with better message
     if (error instanceof Error) {
+      // Check for fetch errors that indicate network issues
+      if (error.message?.includes('Failed to fetch')) {
+        throw new Error('Unable to connect. Please check your internet connection.');
+      }
       throw error;
     }
     throw new Error('Network error. Please check your connection.');
@@ -171,9 +253,10 @@ async function handleErrorResponse(response: Response): Promise<APIError> {
 }
 
 // Refresh access token
-async function refreshAccessToken(): Promise<boolean> {
+// Returns { success: true } if refreshed, { success: false, reason: 'offline' | 'invalid' } if failed
+async function refreshAccessToken(): Promise<{ success: boolean; reason?: 'offline' | 'invalid' | 'no_token' }> {
   const refreshToken = tokenManager.getRefreshToken();
-  if (!refreshToken) return false;
+  if (!refreshToken) return { success: false, reason: 'no_token' };
 
   try {
     const response = await fetch(`${env.API_BASE_URL}/api/v1/auth/refresh`, {
@@ -185,13 +268,23 @@ async function refreshAccessToken(): Promise<boolean> {
     if (response.ok) {
       const tokens: AuthTokens = await response.json();
       tokenManager.setTokens(tokens);
-      return true;
+      return { success: true };
     }
+    
+    // Server rejected the refresh token - it's invalid
+    return { success: false, reason: 'invalid' };
   } catch (error) {
     console.error('Token refresh failed:', error);
+    // Network error - likely offline
+    if (error instanceof TypeError && (error.message?.includes('Failed to fetch') || error.message?.includes('Network'))) {
+      return { success: false, reason: 'offline' };
+    }
+    // Check navigator.onLine as fallback
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      return { success: false, reason: 'offline' };
+    }
+    return { success: false, reason: 'invalid' };
   }
-
-  return false;
 }
 
 // ================================
@@ -1177,6 +1270,14 @@ export interface Document {
     condition_assessment: string;
     recommended_actions: string[];
     confidence: number;
+    is_agricultural?: boolean;  // Flag for non-farm content detection
+    metadata?: {
+      document_date?: string;
+      document_date_confidence?: number;
+      crop_stage?: string;
+      issues?: string[];
+      severity?: string;
+    };
   };
   analysis_type?: 'text' | 'visual' | 'hybrid' | 'none';
   detected_elements?: string[];

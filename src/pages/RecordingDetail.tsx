@@ -21,7 +21,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ArrowLeft, Play, Pause, Pencil, Check, X, RefreshCw, Sparkles, FileSpreadsheet, Loader2 } from "lucide-react";
-import { voiceAPI, fieldsAPI, fieldPlansAPI } from "@/lib/api";
+import { voiceAPI, fieldsAPI, fieldPlansAPI, handlePageError } from "@/lib/api";
 
 interface VoiceNoteDetail {
   id: string;
@@ -629,9 +629,10 @@ const RecordingDetail = () => {
         // No plans found
         toast.error("No linked field plans found");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to fetch linked plans:", error);
-      toast.error("Failed to load linked plans");
+      const errorMsg = handlePageError(error, "Failed to load linked plans");
+      if (errorMsg) toast.error(errorMsg);
     } finally {
       setLoadingLinkedPlans(false);
     }

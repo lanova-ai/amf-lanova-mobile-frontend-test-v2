@@ -60,7 +60,8 @@ import {
   Field, 
   FieldReportSummary,
   FieldReportGenerated,
-  FieldReportListItem
+  FieldReportListItem,
+  handlePageError
 } from '@/lib/api';
 
 type ViewMode = 'reports' | 'summary' | 'shared';
@@ -228,9 +229,10 @@ export default function AMFReports() {
       setFields(sortedFields);
       
       // Don't auto-select - let user choose
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load fields:', error);
-      toast.error('Failed to load fields');
+      const errorMsg = handlePageError(error, 'Failed to load fields');
+      if (errorMsg) toast.error(errorMsg);
     } finally {
       setLoadingFields(false);
     }
@@ -287,7 +289,8 @@ export default function AMFReports() {
       if (error.message?.includes('404')) {
         setReportSummary(null);
       } else {
-        toast.error('Failed to load report summary');
+        const errorMsg = handlePageError(error, 'Failed to load report summary');
+        if (errorMsg) toast.error(errorMsg);
       }
     } finally {
       setLoadingSummary(false);
@@ -299,9 +302,10 @@ export default function AMFReports() {
       setLoadingReports(true);
       const response = await fieldReportsAPI.listReports();
       setAllReports(response.reports || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load reports:', error);
-      toast.error('Failed to load reports');
+      const errorMsg = handlePageError(error, 'Failed to load reports');
+      if (errorMsg) toast.error(errorMsg);
     } finally {
       setLoadingReports(false);
     }

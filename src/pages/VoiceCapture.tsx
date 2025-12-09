@@ -399,7 +399,7 @@ const VoiceCapture = () => {
           <div className="w-full max-w-md space-y-3">
             <Button 
               onClick={handleSubmit}
-              className="w-full h-12 text-base font-semibold"
+              className="w-full h-12 text-base bg-farm-accent hover:bg-farm-accent/90 text-farm-dark font-semibold"
             >
               {isOnline ? 'Submit Recording' : 'Save Offline'}
             </Button>

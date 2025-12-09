@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Eye, Trash2, MoreVertical, Calendar, Share2, ArrowLeft, X, ChevronRight } from "lucide-react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { fieldPlansAPI, sharePlansAPI, fieldPlanSummariesAPI, FieldPlanSummaryListItem, FieldPlanSummaryResponse } from "@/lib/api";
+import { fieldPlansAPI, sharePlansAPI, fieldPlanSummariesAPI, FieldPlanSummaryListItem, FieldPlanSummaryResponse, handlePageError } from "@/lib/api";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -122,7 +122,8 @@ const FieldPlans = () => {
         setAvailableFields(fields);
       } catch (error: any) {
         console.error("Error fetching data:", error);
-        toast.error("Failed to load field plans");
+        const errorMsg = handlePageError(error, "Failed to load field plans");
+        if (errorMsg) toast.error(errorMsg);
       } finally {
         setLoading(false);
       }

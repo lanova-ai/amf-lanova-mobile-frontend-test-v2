@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Pencil, Trash2, Plus, X, Calendar as CalendarIcon, TrendingUp, CheckCircle2, Circle, ChevronDown, ChevronUp, MoreVertical, Sprout, Droplets, Wheat, Tractor, Wrench, FileText, Eye, Download, RotateCcw, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { fieldPlansAPI, fieldsAPI, fieldOperationsAPI, ActivityPassesResponse } from "@/lib/api";
+import { fieldPlansAPI, fieldsAPI, fieldOperationsAPI, ActivityPassesResponse, handlePageError } from "@/lib/api";
 import { useManagementZones } from "@/hooks/useManagementZones";
 import { ManagementZonesLayer } from "@/components/ManagementZonesLayer";
 import { MapContainer, TileLayer, Polygon } from "react-leaflet";

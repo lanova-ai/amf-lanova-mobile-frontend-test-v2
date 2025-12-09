@@ -15,6 +15,7 @@ import {
 import { contactsAPI, sharePlansAPI, ShareMessageResponse } from "@/lib/api";
 import type { Contact } from "@/lib/api";
 import { toast } from "sonner";
+import { FEATURES } from "@/config/features";
 
 const CONTEXT_SUGGESTIONS = [
   "Please review and provide a quote",
@@ -283,10 +284,11 @@ export default function SharePlans() {
                   variant={communicationMethod === "sms" ? "default" : "outline"}
                   onClick={() => setCommunicationMethod("sms")}
                   className="flex-1"
-                  disabled={selectedContactData && !selectedContactData.phone}
+                  disabled={!FEATURES.SMS_ENABLED || (selectedContactData && !selectedContactData.phone)}
+                  title={!FEATURES.SMS_ENABLED ? FEATURES.SMS_DISABLED_MESSAGE : undefined}
                 >
                   <MessageSquare className="w-4 h-4 mr-2" />
-                  SMS
+                  SMS {!FEATURES.SMS_ENABLED && <span className="text-xs ml-1">(Soon)</span>}
                 </Button>
               </div>
             </div>
@@ -425,7 +427,7 @@ export default function SharePlans() {
               <Button
                 onClick={handleSendMessage}
                 disabled={isSending}
-                className="w-full"
+                className="w-full bg-farm-accent hover:bg-farm-accent/90 text-farm-dark font-semibold"
               >
                 {isSending ? (
                   <>

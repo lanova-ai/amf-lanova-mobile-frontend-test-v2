@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { documentsAPI, Document, fieldsAPI, fieldPlansAPI } from "@/lib/api";
+import { documentsAPI, Document, fieldsAPI, fieldPlansAPI, handlePageError } from "@/lib/api";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -997,6 +997,22 @@ export default function DocumentDetail() {
                 <span className="font-medium">{(document.visual_analysis.confidence * 100).toFixed(0)}%</span>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Non-Agricultural Content Warning */}
+        {document.visual_analysis?.is_agricultural === false && (
+          <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-orange-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-orange-500">Non-Agricultural Content Detected</h3>
+                <p className="text-sm text-farm-muted mt-1">
+                  This image doesn't appear to be agricultural content. For accurate field analysis, 
+                  please upload photos of crops, fields, farm equipment, or other farm-related subjects.
+                </p>
+              </div>
+            </div>
           </div>
         )}
 

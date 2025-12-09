@@ -15,6 +15,7 @@ import {
 import { contactsAPI, fieldPlanSummariesAPI, ShareMessageResponse } from "@/lib/api";
 import type { Contact } from "@/lib/api";
 import { toast } from "sonner";
+import { FEATURES } from "@/config/features";
 
 const CONTEXT_SUGGESTIONS = [
   "Please review this field plan summary",
@@ -268,14 +269,16 @@ export default function ShareFieldPlanSummary() {
               </button>
               <button
                 onClick={() => setCommunicationMethod("sms")}
+                disabled={!FEATURES.SMS_ENABLED}
+                title={!FEATURES.SMS_ENABLED ? FEATURES.SMS_DISABLED_MESSAGE : undefined}
                 className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg border-2 font-medium transition-all ${
                   communicationMethod === "sms"
                     ? "border-primary bg-primary/5 text-primary"
                     : "border-border hover:border-primary/50"
-                }`}
+                } ${!FEATURES.SMS_ENABLED ? "opacity-50 cursor-not-allowed" : ""}`}
               >
                 <MessageSquare className="h-5 w-5" />
-                <span>SMS</span>
+                <span>SMS {!FEATURES.SMS_ENABLED && "(Soon)"}</span>
               </button>
             </div>
           </div>

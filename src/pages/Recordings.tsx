@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Mic, MoreVertical, Trash2, Plus, Upload, RefreshCw, AlertCircle } from "lucide-react";
-import { voiceAPI, fieldsAPI, Field } from "@/lib/api";
+import { voiceAPI, fieldsAPI, Field, handlePageError } from "@/lib/api";
 import { UploadRecordingModal } from "@/components/UploadRecordingModal";
 import {
   DropdownMenu,
@@ -156,7 +156,8 @@ const Recordings = () => {
       setAvailableYears(years.sort((a, b) => b - a)); // Sort descending
     } catch (err: any) {
       console.error("Failed to load recordings:", err);
-      setError(err.message || "Failed to load recordings");
+      const errorMsg = handlePageError(err, "Failed to load recordings");
+      if (errorMsg) setError(errorMsg); // Only set error if not session expiry
     } finally {
       if (showLoading) {
         setLoading(false);

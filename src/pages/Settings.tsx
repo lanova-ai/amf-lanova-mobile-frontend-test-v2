@@ -5,19 +5,17 @@ import {
   Building2, 
   Link2, 
   Users, 
-  Bell, 
   ChevronRight,
   LogOut,
-  CheckCircle2,
   XCircle,
   Upload,
   Trash2,
-  Image as ImageIcon,
-  AlertTriangle,
-  Lock
+  Lock,
+  HelpCircle
 } from "lucide-react";
 import { toast } from "sonner";
-import { userAPI, UserProfile, ConnectionStatus } from "@/lib/api";
+import { userAPI, UserProfile, ConnectionStatus, handlePageError } from "@/lib/api";
+import { FEATURES } from "@/config/features";
 import { useAuth } from "@/hooks/useAuth";
 import { LogoUploadModal } from "@/components/LogoUploadModal";
 import {
@@ -105,7 +103,8 @@ export default function Settings() {
       setConnections(connectionsData.connections);
     } catch (error: any) {
       console.error("Failed to load settings:", error);
-      toast.error("Failed to load settings");
+      const errorMsg = handlePageError(error, "Failed to load settings");
+      if (errorMsg) toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -175,7 +174,50 @@ export default function Settings() {
 
   return (
     <div className="flex-1 overflow-y-auto scrollbar-hide p-4 space-y-6">
-        {/* (a) Farm Logo */}
+        {/* (a) User Profile - Identity first */}
+        <Section>
+          <div className="flex items-center gap-4 mb-4">
+            <User className="h-8 w-8 text-farm-accent" />
+            <div className="flex-1">
+              <h2 className="font-semibold text-lg text-farm-text">
+                {profile.first_name && profile.last_name 
+                  ? `${profile.first_name} ${profile.last_name}`
+                  : profile.email}
+              </h2>
+              <p className="text-sm text-farm-muted">{profile.email}</p>
+              {profile.phone_number && (
+                <p className="text-sm text-farm-muted">{profile.phone_number}</p>
+              )}
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            className="w-full border-farm-accent/20 text-farm-accent hover:bg-farm-accent/10 flex items-center justify-between"
+            onClick={() => navigate("/settings/profile")}
+          >
+            <span>Edit Profile</span>
+            <ChevronRight className="h-4 w-4 text-farm-accent flex-shrink-0" />
+          </Button>
+        </Section>
+
+        {/* (b) Farm Details - Your farm */}
+        <Section>
+          <button
+            onClick={() => navigate("/settings/farm")}
+            className="w-full flex items-center gap-3 hover:bg-farm-accent/5 transition-colors text-left -m-4 p-4 rounded-lg"
+          >
+            <Building2 className="h-6 w-6 text-farm-accent flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-farm-text">Farm Details</h3>
+              <p className="text-sm text-farm-muted">
+                {profile.farm_name || "Not set"} • {profile.total_acres_range || "Unknown acres"}
+              </p>
+            </div>
+            <ChevronRight className="h-5 w-5 text-farm-text flex-shrink-0" />
+          </button>
+        </Section>
+
+        {/* (c) Farm Logo - Personalization */}
         <Section title="Farm Logo" description="Personalize your dashboard">
           {profile.farm_logo_url ? (
             <div className="space-y-3">
@@ -235,7 +277,7 @@ export default function Settings() {
           )}
         </Section>
 
-        {/* (b) My Contacts */}
+        {/* (d) My Contacts - People */}
         <Section>
           <button
             onClick={() => navigate("/settings/contacts")}
@@ -252,7 +294,7 @@ export default function Settings() {
           </button>
         </Section>
 
-        {/* (c) John Deere Ops Connectivity */}
+        {/* (e) John Deere Ops Connectivity - Integrations */}
         <Section>
           <button
             onClick={() => navigate(`/settings/connections/johndeere`)}
@@ -269,9 +311,8 @@ export default function Settings() {
           </button>
         </Section>
 
-        {/* (d) Notifications */}
+        {/* (f) Notifications - Preferences */}
         <Section title="Notifications" description="Manage alerts">
-
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex-1">
@@ -289,64 +330,50 @@ export default function Settings() {
               />
             </div>
 
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <Label htmlFor="sms-notif" className="text-sm font-medium text-farm-text">
-                    SMS Notifications
-                  </Label>
-                  <div className="mt-2 space-y-1.5 text-xs text-farm-muted">
-                    <p>
-                      Receive field updates, task alerts, and shared plans from <strong>Lanova AI</strong>.
-                    </p>
-                    <p>
-                      Typically 5-20 messages/month. <span className="font-medium">Message and data rates may apply.</span>
-                    </p>
-                    <p>
-                      Reply <strong>STOP</strong> to opt out anytime. Reply <strong>HELP</strong> for help.
-                    </p>
-                    <p className="text-[11px]">
-                      <a href="/terms" target="_blank" className="underline hover:text-farm-accent">Terms</a>
-                      {' • '}
-                      <a href="/privacy" target="_blank" className="underline hover:text-farm-accent">Privacy Policy</a>
-                    </p>
+            {/* SMS Notifications - Behind feature flag until A2P 10DLC approved */}
+            {FEATURES.SMS_ENABLED && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <Label htmlFor="sms-notif" className="text-sm font-medium text-farm-text">
+                      SMS Notifications
+                    </Label>
+                    <div className="mt-2 space-y-1.5 text-xs text-farm-muted">
+                      <p>
+                        Receive field updates, task alerts, and shared plans from <strong>Lanova AI</strong>.
+                      </p>
+                      <p>
+                        Typically 5-20 messages/month. <span className="font-medium">Message and data rates may apply.</span>
+                      </p>
+                      <p>
+                        Reply <strong>STOP</strong> to opt out anytime. Reply <strong>HELP</strong> for help.
+                      </p>
+                      <p className="text-[11px]">
+                        <a href="/terms" target="_blank" className="underline hover:text-farm-accent">Terms</a>
+                        {' • '}
+                        <a href="/privacy" target="_blank" className="underline hover:text-farm-accent">Privacy Policy</a>
+                      </p>
+                    </div>
                   </div>
+                  <Switch
+                    id="sms-notif"
+                    checked={profile.notification_preferences?.sms ?? false}
+                    onCheckedChange={(checked) => handleNotificationToggle('sms', checked)}
+                    disabled={!profile.phone_number}
+                  />
                 </div>
-                <Switch
-                  id="sms-notif"
-                  checked={profile.notification_preferences?.sms ?? false}
-                  onCheckedChange={(checked) => handleNotificationToggle('sms', checked)}
-                  disabled={!profile.phone_number}
-                />
-              </div>
 
-              {!profile.phone_number && (
-                <p className="text-xs text-farm-muted">
-                  Add a phone number to enable SMS notifications
-                </p>
-              )}
-            </div>
+                {!profile.phone_number && (
+                  <p className="text-xs text-farm-muted">
+                    Add a phone number to enable SMS notifications
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </Section>
 
-        {/* (e) Farm Details */}
-        <Section>
-          <button
-            onClick={() => navigate("/settings/farm")}
-            className="w-full flex items-center gap-3 hover:bg-farm-accent/5 transition-colors text-left -m-4 p-4 rounded-lg"
-          >
-            <Building2 className="h-6 w-6 text-farm-accent flex-shrink-0" />
-            <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-farm-text">Farm Details</h3>
-              <p className="text-sm text-farm-muted">
-                {profile.farm_name || "Not set"} • {profile.total_acres_range || "Unknown acres"}
-              </p>
-            </div>
-            <ChevronRight className="h-5 w-5 text-farm-text flex-shrink-0" />
-          </button>
-        </Section>
-
-        {/* (f) Change Password */}
+        {/* (g) Change Password - Security */}
         <Section>
           <button
             onClick={() => navigate("/settings/change-password")}
@@ -363,30 +390,26 @@ export default function Settings() {
           </button>
         </Section>
 
-        {/* (g) User Profile */}
+        {/* (h) Contact Support - Help (at bottom) */}
         <Section>
-          <div className="flex items-center gap-4 mb-4">
-            <User className="h-8 w-8 text-farm-accent" />
-            <div className="flex-1">
-              <h2 className="font-semibold text-lg text-farm-text">
-                {profile.first_name && profile.last_name 
-                  ? `${profile.first_name} ${profile.last_name}`
-                  : profile.email}
-              </h2>
-              <p className="text-sm text-farm-muted">{profile.email}</p>
-              {profile.phone_number && (
-                <p className="text-sm text-farm-muted">{profile.phone_number}</p>
-              )}
-            </div>
-          </div>
-          <Button
-            variant="outline"
-            className="w-full border-farm-accent/20 text-farm-accent hover:bg-farm-accent/10 flex items-center justify-between"
-            onClick={() => navigate("/settings/profile")}
+          <button
+            onClick={() => {
+              // Open email with helpful pre-filled template
+              const device = navigator.userAgent.includes('iPhone') ? 'iPhone' : 
+                            navigator.userAgent.includes('Android') ? 'Android' : 'Desktop';
+              window.location.href = `mailto:contact@askmyfarm.us?subject=AskMyFarm Support&body=Hi AskMyFarm Team,%0D%0A%0D%0APlease describe your question or issue:%0D%0A%0D%0A%0D%0A---%0D%0ADevice: ${device}%0D%0AUser: ${profile?.email || 'Unknown'}`;
+            }}
+            className="w-full flex items-center gap-3 hover:bg-farm-accent/5 transition-colors text-left -m-4 p-4 rounded-lg"
           >
-            <span>Edit Profile</span>
-            <ChevronRight className="h-4 w-4 text-farm-accent flex-shrink-0" />
-          </Button>
+            <HelpCircle className="h-6 w-6 text-farm-accent flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-farm-text">Contact Support</h3>
+              <p className="text-sm text-farm-muted">
+                Questions, feedback, or issues
+              </p>
+            </div>
+            <ChevronRight className="h-5 w-5 text-farm-text flex-shrink-0" />
+          </button>
         </Section>
 
         {/* Logout */}

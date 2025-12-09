@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useSearchParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { fieldsAPI, fieldOperationsAPI, FieldOperationYearlySummary, OperationTimelineSummary, userAPI, Field } from "@/lib/api";
+import { fieldsAPI, fieldOperationsAPI, FieldOperationYearlySummary, OperationTimelineSummary, userAPI, Field, handlePageError } from "@/lib/api";
 import { toast } from "sonner";
 import {
   RefreshCw,
@@ -261,9 +261,10 @@ export default function FarmReports() {
           setSelectedFieldId(jdField.field_id);
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to load fields:", error);
-      toast.error("Failed to load fields");
+      const errorMsg = handlePageError(error, "Failed to load fields");
+      if (errorMsg) toast.error(errorMsg);
     }
   };
   
@@ -308,7 +309,8 @@ export default function FarmReports() {
       if (error?.status === 404) {
         setYearlySummary(null);
       } else {
-        toast.error("Failed to load field report");
+        const errorMsg = handlePageError(error, "Failed to load field report");
+        if (errorMsg) toast.error(errorMsg);
       }
     } finally {
       setFieldLoading(false);

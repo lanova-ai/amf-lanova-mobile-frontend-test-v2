@@ -28,7 +28,7 @@ const PhoneAuth = () => {
   });
   const [verificationCode, setVerificationCode] = useState(["", "", "", "", "", ""]);
   const [verificationId, setVerificationId] = useState("");
-  const [resendTimer, setResendTimer] = useState(45);
+  const [resendTimer, setResendTimer] = useState(60);
   const [isLoading, setIsLoading] = useState(false);
   const [sentChannels, setSentChannels] = useState({ sms: false, email: false });
   const [codeValidated, setCodeValidated] = useState(false);
@@ -172,7 +172,7 @@ const PhoneAuth = () => {
       }
       
       setStep("verify");
-      setResendTimer(45);
+      setResendTimer(60);
     } catch (error: any) {
       // Handle specific error cases
       if (error?.message?.includes("already registered") || error?.status === 409) {

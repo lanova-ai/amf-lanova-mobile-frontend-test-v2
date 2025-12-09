@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { fieldsAPI, tasksAPI, fieldPlansAPI, observationsAPI, userAPI, fieldOperationsAPI, scoutingNotesAPI } from "@/lib/api";
+import { fieldsAPI, tasksAPI, fieldPlansAPI, observationsAPI, userAPI, fieldOperationsAPI, scoutingNotesAPI, handlePageError } from "@/lib/api";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { ChevronDown, ChevronUp, Mic, UserPlus, FileText, Image as ImageIcon, BarChart3, Brain, Search, Tractor, Sprout, Loader2, Leaf, Plus } from "lucide-react";
@@ -170,7 +170,8 @@ const Home = () => {
         setRecentFieldNotes(scoutingNoteActivities);
       } catch (error: any) {
         console.error("Error fetching data:", error);
-        toast.error("Failed to load dashboard data");
+        const errorMsg = handlePageError(error, "Failed to load dashboard data");
+        if (errorMsg) toast.error(errorMsg);
       } finally {
         setLoading(false);
         isFetchingRef.current = false;

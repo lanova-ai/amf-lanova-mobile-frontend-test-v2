@@ -1,9 +1,15 @@
 /**
  * Environment Configuration
  * 
- * Create a .env file in the root with:
+ * Create a .env file in the mobile-ui/ root with:
+ * 
+ * # Required
  * VITE_API_BASE_URL=http://localhost:8000
  * VITE_APP_ENV=development
+ * 
+ * # Optional - Analytics
+ * VITE_HOTJAR_ID=e7de77d4c620a        # Hotjar/ContentSquare site ID
+ * VITE_HOTJAR_DEV_ENABLED=false       # Enable Hotjar in dev (default: false)
  */
 
 export const env = {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { scoutingNotesAPI, type ScoutingNote } from "@/lib/api";
+import { scoutingNotesAPI, type ScoutingNote, handlePageError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

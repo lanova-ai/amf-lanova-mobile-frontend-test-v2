@@ -46,12 +46,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(currentUser);
         } catch (error: any) {
           console.error('Failed to fetch current user:', error);
-          // Only clear tokens on authentication errors (401), not network errors
-          if (error?.message?.includes('401') || error?.message?.includes('Unauthorized')) {
+          // Only clear tokens on authentication errors (401), not network/offline errors
+          const isOffline = error?.details?.offline === true || 
+                           (typeof navigator !== 'undefined' && !navigator.onLine) ||
+                           error?.message?.toLowerCase()?.includes('offline') ||
+                           error?.message?.includes('Failed to fetch');
+          
+          if (isOffline) {
+            console.log('Offline or network error, keeping tokens for retry');
+            // User stays "logged in" but can't load data
+          } else if (error?.status === 401 || error?.message?.includes('401') || error?.message?.includes('Unauthorized') || error?.details?.sessionExpired) {
             console.log('Token expired or invalid, clearing tokens');
             tokenManager.clearTokens();
           } else {
-            console.log('Network or other error, keeping tokens for retry');
+            console.log('Other error, keeping tokens for retry');
           }
         }
       }
@@ -98,12 +106,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(currentUser);
     } catch (error: any) {
       console.error('Failed to refresh user:', error);
-      // Only logout on authentication errors (401), not network errors
-      if (error?.message?.includes('401') || error?.message?.includes('Unauthorized')) {
+      // Only logout on authentication errors (401), not network/offline errors
+      const isOffline = error?.details?.offline === true || 
+                       (typeof navigator !== 'undefined' && !navigator.onLine) ||
+                       error?.message?.toLowerCase()?.includes('offline') ||
+                       error?.message?.includes('Failed to fetch');
+      
+      if (isOffline) {
+        console.log('Offline or network error during refresh, keeping session');
+      } else if (error?.status === 401 || error?.message?.includes('401') || error?.message?.includes('Unauthorized') || error?.details?.sessionExpired) {
         console.log('Token expired or invalid during refresh, logging out');
         logout();
       } else {
-        console.log('Network or other error during refresh, keeping session');
+        console.log('Other error during refresh, keeping session');
       }
     }
   };

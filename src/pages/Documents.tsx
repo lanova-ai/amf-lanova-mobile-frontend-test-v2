@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
-import { documentsAPI, Document, fieldsAPI, shareTimelinesAPI } from "@/lib/api";
+import { documentsAPI, Document, fieldsAPI, shareTimelinesAPI, handlePageError } from "@/lib/api";
 import { toast } from "sonner";
 import DocumentUploadModal from "@/components/DocumentUploadModal";
 import ReactMarkdown from "react-markdown";
@@ -494,10 +494,11 @@ export default function Documents() {
         console.error('Error extracting years from documents:', error);
         setAvailableYears([]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to load documents:", error);
       if (showLoading) {
-        toast.error("Failed to load documents");
+        const errorMsg = handlePageError(error, "Failed to load documents");
+        if (errorMsg) toast.error(errorMsg);
       }
     } finally {
       if (showLoading) {

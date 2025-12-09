@@ -164,7 +164,7 @@ export default function Privacy() {
               <li>Withdraw consent where processing is based on consent</li>
             </ul>
             <p className="body-text mb-4">
-              To exercise these rights, please contact us at contact@lanova.ai.
+              To exercise these rights, please contact us at contact@askmyfarm.us.
             </p>
           </section>
 
@@ -202,7 +202,7 @@ export default function Privacy() {
               If you have any questions about this Privacy Policy or our data practices, please contact us at:
             </p>
             <p className="body-text mb-2">
-              <strong>Email:</strong> contact@lanova.ai
+              <strong>Email:</strong> contact@askmyfarm.us
             </p>
             <p className="body-text mb-2">
               <strong>Website:</strong> https://www.askmyfarm.us

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
-import { scoutingNotesAPI, fieldsAPI, shareScoutingSummariesAPI, type ScoutingNote, type Field } from "@/lib/api";
+import { scoutingNotesAPI, fieldsAPI, shareScoutingSummariesAPI, type ScoutingNote, type Field, handlePageError } from "@/lib/api";
 import { ScoutingNoteCard } from "@/components/scouting/ScoutingNoteCard";
 import { ScoutingSummaryCard } from "@/components/scouting/ScoutingSummaryCard";
 import { Plus, MapPin, FileText, MoreVertical, Eye, Trash2, ArrowLeft } from "lucide-react";
@@ -250,7 +250,8 @@ export default function ScoutingNotes() {
       setAvailableYears(Array.from(years).sort((a, b) => b - a));
     } catch (error: any) {
       console.error("Failed to load scouting notes:", error);
-      toast.error("Failed to load scouting notes: " + (error.message || "Unknown error"));
+      const errorMsg = handlePageError(error, "Failed to load scouting notes");
+      if (errorMsg) toast.error(errorMsg);
     } finally {
       // Always turn off loading spinner
       setLoading(false);
@@ -281,7 +282,8 @@ export default function ScoutingNotes() {
       setAvailableYears(Array.from(years).sort((a, b) => b - a));
     } catch (error: any) {
       console.error("Failed to load summaries:", error);
-      toast.error("Failed to load summaries: " + (error.message || "Unknown error"));
+      const errorMsg = handlePageError(error, "Failed to load summaries");
+      if (errorMsg) toast.error(errorMsg);
     } finally {
       // Always turn off spinner
       setSummariesLoading(false);

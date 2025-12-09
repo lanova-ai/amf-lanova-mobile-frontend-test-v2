@@ -15,6 +15,7 @@ import {
 import { contactsAPI, fieldReportsAPI } from "@/lib/api";
 import type { Contact, FieldReportGenerated } from "@/lib/api";
 import { toast } from "sonner";
+import { FEATURES } from "@/config/features";
 
 const CONTEXT_SUGGESTIONS = [
   "Please review this field report",
@@ -360,10 +361,11 @@ export default function ShareFieldReport() {
                   variant={communicationMethod === "sms" ? "default" : "outline"}
                   onClick={() => setCommunicationMethod("sms")}
                   className={`flex-1 ${communicationMethod === "sms" ? "bg-farm-accent hover:bg-farm-accent/90 text-farm-dark" : "border-farm-accent/30"}`}
-                  disabled={selectedContactData && !selectedContactData.phone}
+                  disabled={!FEATURES.SMS_ENABLED || (selectedContactData && !selectedContactData.phone)}
+                  title={!FEATURES.SMS_ENABLED ? FEATURES.SMS_DISABLED_MESSAGE : undefined}
                 >
                   <MessageSquare className="w-4 h-4 mr-2" />
-                  SMS
+                  SMS {!FEATURES.SMS_ENABLED && <span className="text-xs ml-1">(Soon)</span>}
                 </Button>
               </div>
             </div>

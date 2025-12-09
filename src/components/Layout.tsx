@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Menu, Home, Map, CheckSquare, FileText, BarChart3, Mic, Settings, LogOut, FolderOpen, MapPin, Brain, FileBarChart2, Leaf } from "lucide-react";
+import { Menu, Home, BarChart3, Mic, Settings, LogOut, FolderOpen, MapPin, Brain, FileBarChart2, Leaf, HelpCircle } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { MobileFirstIndicator } from "@/components/MobileFirstIndicator";
+import { NetworkStatusIndicator } from "@/components/NetworkStatusIndicator";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -13,6 +14,7 @@ const Layout = ({ children }: LayoutProps) => {
   const location = useLocation();
   const { user, logout } = useAuth();
   const [showMenu, setShowMenu] = useState(false);
+  const [showSupportMenu, setShowSupportMenu] = useState(false);
 
   const handleLogout = () => {
     setShowMenu(false);
@@ -98,17 +100,60 @@ const Layout = ({ children }: LayoutProps) => {
           ) : (
             <h1 className="text-xl font-bold text-farm-text">{pageTitle}</h1>
           )}
-          <button 
-            onClick={() => navigate('/map')} 
-            className={`p-2 rounded-lg transition-colors ${
-              location.pathname === '/map' 
-                ? 'bg-primary/10 text-primary' 
-                : 'hover:bg-muted'
-            }`}
-            title="View Map"
-          >
-            <MapPin className="h-6 w-6" />
-          </button>
+          <div className="flex items-center gap-1">
+            {/* Network Status Indicator - Always show */}
+            <NetworkStatusIndicator showOnlineStatus={true} />
+            
+            {/* Support Button with Dropdown */}
+            <div className="relative">
+              <button 
+                onClick={() => setShowSupportMenu(!showSupportMenu)}
+                className={`p-2 rounded-lg transition-colors ${showSupportMenu ? 'bg-muted' : 'hover:bg-muted'}`}
+                title="Support"
+              >
+                <HelpCircle className="h-5 w-5 text-farm-muted" />
+              </button>
+              
+              {/* Support Dropdown */}
+              {showSupportMenu && (
+                <>
+                  {/* Backdrop to close dropdown */}
+                  <div 
+                    className="fixed inset-0 z-[150]" 
+                    onClick={() => setShowSupportMenu(false)}
+                  />
+                  {/* Dropdown Menu */}
+                  <div className="absolute right-0 top-full mt-1 w-48 bg-farm-card border border-farm-accent/20 rounded-lg shadow-lg z-[151] overflow-hidden">
+                    <button
+                      onClick={() => {
+                        setShowSupportMenu(false);
+                        const device = navigator.userAgent.includes('iPhone') ? 'iPhone' : 
+                                      navigator.userAgent.includes('Android') ? 'Android' : 'Desktop';
+                        window.location.href = `mailto:contact@askmyfarm.us?subject=AskMyFarm Support&body=Hi AskMyFarm Team,%0D%0A%0D%0APlease describe your question or issue:%0D%0A%0D%0A%0D%0A---%0D%0ADevice: ${device}%0D%0AUser: ${user?.email || 'Unknown'}`;
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-farm-accent/10 transition-colors"
+                    >
+                      <HelpCircle className="h-4 w-4 text-farm-accent" />
+                      <span className="text-sm text-farm-text">Contact Support</span>
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+            
+            {/* Map Button */}
+            <button 
+              onClick={() => navigate('/map')} 
+              className={`p-2 rounded-lg transition-colors ${
+                location.pathname === '/map' 
+                  ? 'bg-primary/10 text-primary' 
+                  : 'hover:bg-muted'
+              }`}
+              title="View Map"
+            >
+              <MapPin className="h-6 w-6" />
+            </button>
+          </div>
         </div>
       </header>
 

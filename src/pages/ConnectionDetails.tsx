@@ -13,7 +13,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { userAPI, connectionAPI, ConnectionStatus } from "@/lib/api";
+import { userAPI, connectionAPI, ConnectionStatus, handlePageError } from "@/lib/api";
 import { formatDistanceToNow } from "date-fns";
 
 export default function ConnectionDetails() {
@@ -44,7 +44,8 @@ export default function ConnectionDetails() {
       }
     } catch (error: any) {
       console.error("Failed to load connections:", error);
-      toast.error("Failed to load connection details");
+      const errorMsg = handlePageError(error, "Failed to load connection details");
+      if (errorMsg) toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
