@@ -31,6 +31,41 @@ const Layout = ({ children }: LayoutProps) => {
   // Check if current route is active
   const isActive = (path: string) => location.pathname === path;
 
+  // Route-based page titles for main navigation pages
+  const getPageTitle = (): string | null => {
+    const pageTitles: Record<string, string> = {
+      '/documents': 'Docs & Photos',
+      '/recordings': 'Recordings',
+      '/field-plans': 'Field Plans',
+      '/scouting-notes': 'Scouting Notes',
+      '/field-notes': 'Field Notes',
+      '/tasks': 'Tasks',
+      '/settings': 'Settings',
+      '/settings/profile': 'Edit Profile',
+      '/settings/farm': 'Farm Details',
+      '/settings/contacts': 'Contacts',
+      '/settings/contacts/new': 'New Contact',
+      '/settings/change-password': 'Change Password',
+      '/settings/connections/johndeere': 'JD Connection',
+      '/jd-reports': 'JD Ops Reports',
+      '/farm-memory': 'Farm Memory',
+    };
+    
+    // Check exact match first
+    if (pageTitles[location.pathname]) {
+      return pageTitles[location.pathname];
+    }
+    
+    // Check dynamic routes
+    if (location.pathname.match(/^\/settings\/contacts\/[^/]+\/edit$/)) {
+      return 'Edit Contact';
+    }
+    
+    return null;
+  };
+
+  const pageTitle = getPageTitle();
+
   return (
     <div className="h-screen bg-background flex lg:justify-center overflow-hidden">
       {/* Left Mobile Indicator - Desktop Only */}
@@ -46,12 +81,23 @@ const Layout = ({ children }: LayoutProps) => {
           <button onClick={() => setShowMenu(true)} className="p-2">
             <Menu className="h-6 w-6" />
           </button>
-          {/* Consistent AskMyFarm branding across all pages */}
-          <h1 className="text-xl font-bold">
-            <span className="text-primary">Ask</span>
-            <span className="text-yellow-400">My</span>
-            <span className="text-primary">Farm</span>
-          </h1>
+          {/* Show page title for main nav pages, AskMyFarm branding for home/map/detail pages */}
+          {location.pathname === '/home' || location.pathname === '/map' || !pageTitle ? (
+            <h1 className="text-xl font-bold">
+              <span className="text-primary">Ask</span>
+              <span className="text-yellow-400">My</span>
+              <span className="text-primary">Farm</span>
+            </h1>
+          ) : location.pathname === '/amf-reports' ? (
+            <h1 className="text-xl font-bold">
+              <span className="text-primary">A</span>
+              <span className="text-yellow-400">M</span>
+              <span className="text-primary">F</span>
+              <span className="text-farm-text"> Reports</span>
+            </h1>
+          ) : (
+            <h1 className="text-xl font-bold text-farm-text">{pageTitle}</h1>
+          )}
           <button 
             onClick={() => navigate('/map')} 
             className={`p-2 rounded-lg transition-colors ${

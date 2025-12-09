@@ -20,8 +20,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Play, Pause, Pencil, Check, X } from "lucide-react";
-import { voiceAPI, fieldsAPI } from "@/lib/api";
+import { ArrowLeft, Play, Pause, Pencil, Check, X, RefreshCw, Sparkles, FileSpreadsheet, Loader2 } from "lucide-react";
+import { voiceAPI, fieldsAPI, fieldPlansAPI } from "@/lib/api";
 
 interface VoiceNoteDetail {
   id: string;
@@ -78,6 +78,11 @@ const RecordingDetail = () => {
   
   const [showFieldPlanResult, setShowFieldPlanResult] = useState(false);
   const [fieldPlanResult, setFieldPlanResult] = useState<any>(null);
+
+  // Linked plans modal state
+  const [showLinkedPlansModal, setShowLinkedPlansModal] = useState(false);
+  const [linkedPlans, setLinkedPlans] = useState<any[]>([]);
+  const [loadingLinkedPlans, setLoadingLinkedPlans] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -602,6 +607,33 @@ const RecordingDetail = () => {
       }, 3000);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // Fetch all field plans linked to this recording
+  const handleViewLinkedPlans = async () => {
+    if (!id) return;
+    
+    try {
+      setLoadingLinkedPlans(true);
+      const plans = await fieldPlansAPI.getFieldPlans({ source_voice_note_id: id });
+      
+      if (plans.length === 1) {
+        // Only one plan - navigate directly
+        navigate(`/field-plans/${plans[0].id}`);
+      } else if (plans.length > 1) {
+        // Multiple plans - show modal
+        setLinkedPlans(plans);
+        setShowLinkedPlansModal(true);
+      } else {
+        // No plans found
+        toast.error("No linked field plans found");
+      }
+    } catch (error) {
+      console.error("Failed to fetch linked plans:", error);
+      toast.error("Failed to load linked plans");
+    } finally {
+      setLoadingLinkedPlans(false);
     }
   };
 
@@ -1193,9 +1225,10 @@ const RecordingDetail = () => {
                   onClick={() => setShowReprocessConfirm(true)}
                   disabled={isSaving}
                   variant="outline"
-                  className="w-full justify-start h-auto py-3 bg-farm-accent/10 hover:bg-farm-accent/20 border-farm-accent/20 text-farm-accent shadow-sm"
+                  className="w-full"
                 >
-                  🔄 Reprocess with AI
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Reprocess with AI
                 </Button>
                 {/* Create Field Notes - DEPRECATED: Use Scouting Notes instead */}
                 {/* <Button
@@ -1219,19 +1252,45 @@ const RecordingDetail = () => {
                   onClick={handleCreatePlan}
                   disabled={isSaving || creationStatus.fieldPlan === 'creating'}
                   variant="outline"
-                  className="w-full justify-start h-auto py-3 bg-farm-accent/10 hover:bg-farm-accent/20 border-farm-accent/20 text-farm-accent shadow-sm"
+                  className="w-full"
                 >
                   {creationStatus.fieldPlan === 'creating' ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Creating Field Plans...
                     </>
                   ) : recording.field_plan_creation_status === 'completed' ? (
-                    <>🔄 Re-Create Field Plans</>
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Re-Create Field Plans
+                    </>
                   ) : (
-                    <>📋 Create Field Plans</>
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Create Field Plans
+                    </>
                   )}
                 </Button>
+                {/* Show View Linked Plans button when plans exist */}
+                {recording.field_plan_creation_status === 'completed' && (
+                  <Button
+                    onClick={handleViewLinkedPlans}
+                    disabled={loadingLinkedPlans}
+                    className="w-full bg-farm-accent hover:bg-farm-accent/90 text-farm-dark font-semibold"
+                  >
+                    {loadingLinkedPlans ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      <>
+                        <FileSpreadsheet className="mr-2 h-4 w-4" />
+                        View Linked Field Plans
+                      </>
+                    )}
+                  </Button>
+                )}
                 {/* <Button
                   onClick={handleCreateTasks}
                   disabled={isSaving || creationStatus.tasks === 'creating'}
@@ -1398,6 +1457,71 @@ const RecordingDetail = () => {
               View Plans
             </Button>
             <Button variant="outline" onClick={() => setShowFieldPlanResult(false)} className="flex-1">
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Linked Plans Modal */}
+      <Dialog open={showLinkedPlansModal} onOpenChange={setShowLinkedPlansModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="text-2xl">📋</span>
+              Linked Field Plans ({linkedPlans.length})
+            </DialogTitle>
+            <DialogDescription>
+              This recording has been used to create {linkedPlans.length} field plans. Select one to view details.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-2 max-h-80 overflow-y-auto">
+            {linkedPlans.map((plan) => (
+              <button
+                key={plan.id}
+                onClick={() => {
+                  setShowLinkedPlansModal(false);
+                  navigate(`/field-plans/${plan.id}`);
+                }}
+                className="w-full bg-card border rounded-lg p-3 space-y-2 hover:bg-muted/50 transition-colors text-left"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🌾</span>
+                    <span className="font-medium">{plan.field_name || plan.plan_name || 'Unnamed Plan'}</span>
+                  </div>
+                  {plan.passes_count > 0 && (
+                    <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                      {plan.passes_count} passes
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3 text-xs text-farm-muted">
+                  {plan.plan_year && <span>Year: {plan.plan_year}</span>}
+                  {plan.crop_type && <span>• {plan.crop_type}</span>}
+                  {plan.plan_status && (
+                    <span className={`px-1.5 py-0.5 rounded ${
+                      plan.plan_status === 'active' ? 'bg-green-500/10 text-green-600' :
+                      plan.plan_status === 'completed' ? 'bg-blue-500/10 text-blue-600' :
+                      'bg-yellow-500/10 text-yellow-600'
+                    }`}>
+                      {plan.plan_status}
+                    </span>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+          
+          <DialogFooter className="flex gap-2">
+            <Button 
+              onClick={() => navigate('/field-plans')} 
+              className="flex-1 bg-farm-accent hover:bg-farm-accent/90 text-farm-dark"
+            >
+              View All Plans
+            </Button>
+            <Button variant="outline" onClick={() => setShowLinkedPlansModal(false)} className="flex-1">
               Close
             </Button>
           </DialogFooter>

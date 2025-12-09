@@ -1144,7 +1144,7 @@ export default function DocumentDetail() {
             <Button
               onClick={handleViewLinkedPlans}
               disabled={loadingLinkedPlans}
-              className="w-full bg-green-600 hover:bg-green-700 text-white"
+              className="w-full bg-farm-accent hover:bg-farm-accent/90 text-farm-dark font-semibold"
             >
               {loadingLinkedPlans ? (
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading...</>

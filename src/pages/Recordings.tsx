@@ -69,7 +69,6 @@ const Recordings = () => {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [reprocessing, setReprocessing] = useState<string | null>(null);
   const [errorModal, setErrorModal] = useState<{ title: string; message: string } | null>(null);
-  const [viewPlansConfirm, setViewPlansConfirm] = useState<string | null>(null);
   const [fabMenuOpen, setFabMenuOpen] = useState(false);
   
   // Filter states - initialize from URL params
@@ -568,15 +567,9 @@ const Recordings = () => {
                       {recording.field_plan_creation_status === 'completed' && (
                         <>
                           <span>•</span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setViewPlansConfirm(recording.id);
-                            }}
-                            className="text-xs px-2 py-0.5 bg-green-500/10 text-green-600 dark:text-green-400 rounded-full hover:bg-green-500/20 transition-colors"
-                          >
-                            Field Plans Created ✓
-                          </button>
+                          <span className="text-xs px-2 py-0.5 bg-green-500/10 text-green-600 dark:text-green-400 rounded-full">
+                            Field Plans ✓
+                          </span>
                         </>
                       )}
                     </div>
@@ -679,30 +672,6 @@ const Recordings = () => {
           </div>
         </PopoverContent>
       </Popover>
-
-      {/* View Field Plans Confirmation Modal */}
-      <AlertDialog open={!!viewPlansConfirm} onOpenChange={(open) => !open && setViewPlansConfirm(null)}>
-        <AlertDialogContent className="max-w-sm">
-          <AlertDialogHeader>
-            <AlertDialogTitle>View Field Plans</AlertDialogTitle>
-            <AlertDialogDescription>
-              Field plans have been created from this recording. Would you like to view them now?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (viewPlansConfirm) {
-                  navigate(`/recordings/${viewPlansConfirm}`);
-                }
-              }}
-            >
-              View Plans
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };
