@@ -270,9 +270,6 @@ export default function Settings() {
                 <Upload className="h-4 w-4 mr-2" />
                 Upload Farm Logo
               </Button>
-              <p className="text-xs text-farm-muted text-center">
-                Recommended: Square image, min 200x200px • Max 5MB
-              </p>
             </div>
           )}
         </Section>

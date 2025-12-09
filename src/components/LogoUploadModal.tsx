@@ -73,11 +73,20 @@ export function LogoUploadModal({ open, onClose, onUploadSuccess }: LogoUploadMo
   };
 
   const handleFileSelection = async (file: File) => {
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
+    // Validate file type - check MIME type OR file extension (Android sometimes has weird MIME types)
+    const validExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif', '.gif'];
+    const fileName = file.name.toLowerCase();
+    const hasValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
+    const hasValidMime = file.type.startsWith('image/') || file.type === '' || file.type === 'application/octet-stream';
+    
+    if (!hasValidMime && !hasValidExtension) {
       toast.error("Invalid file type. Please select an image file (PNG, JPG, WEBP)");
       return;
     }
+    
+    // Log for debugging
+    console.log(`[Logo] File selected: ${file.name}, type: ${file.type}, size: ${file.size}`);
+    
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
@@ -394,7 +403,7 @@ export function LogoUploadModal({ open, onClose, onUploadSuccess }: LogoUploadMo
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif"
+                accept="image/*"
                 onChange={handleFileInputChange}
                 className="hidden"
               />
