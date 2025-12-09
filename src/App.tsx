@@ -55,6 +55,7 @@ import FarmMemory from "./pages/FarmMemory";
 import FarmReports from "./pages/FarmReports";
 import FoundingFarmerApply from "./pages/FoundingFarmerApply";
 import FoundingFarmerSignup from "./pages/FoundingFarmerSignup";
+import SignupSuccess from "./pages/SignupSuccess";
 import ScoutingNotes from "./pages/ScoutingNotes";
 import ScoutingNoteDetail from "./pages/ScoutingNoteDetail";
 import ScoutingNoteCreate from "./pages/ScoutingNoteCreate";
@@ -204,6 +205,7 @@ const App = () => (
             <Route path="/shared/field-report/:shareToken" element={<SharedFieldReport />} />
             <Route path="/founding-farmers/apply" element={<FoundingFarmerApply />} />
             <Route path="/founding-farmers/signup" element={<FoundingFarmerSignup />} />
+            <Route path="/founding-farmers/success" element={<SignupSuccess />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
 

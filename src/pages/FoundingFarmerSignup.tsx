@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Loader2, KeyRound, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Loader2, CheckCircle2 } from "lucide-react";
 import { MobileFirstIndicator } from "@/components/MobileFirstIndicator";
 import { authAPI, foundingFarmerAPI } from "@/lib/api";
 import { toast } from "sonner";
@@ -68,12 +68,13 @@ export default function FoundingFarmerSignup() {
   // Handle token submission
   const handleTokenSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanToken = tokenInput.trim().toUpperCase();
-    if (!cleanToken) {
-      toast.error("Please enter your approval token");
+    const cleanCode = tokenInput.trim().toUpperCase();
+    if (!cleanCode || cleanCode.length !== 4) {
+      toast.error("Please enter the 4-character code");
       return;
     }
-    validateToken(cleanToken);
+    // Prepend "AMF-" to the code
+    validateToken(`AMF-${cleanCode}`);
   };
 
   // Password validation helper
@@ -125,8 +126,9 @@ export default function FoundingFarmerSignup() {
         password: formData.password || undefined,
       });
 
-      toast.success("Account created successfully! Please log in to continue.");
-      navigate("/auth/login");
+      // Navigate to success page with user's name
+      const nameParam = formData.firstName ? `?name=${encodeURIComponent(formData.firstName)}` : "";
+      navigate(`/founding-farmers/success${nameParam}`);
     } catch (error: any) {
       const errorMessage = error?.details?.detail || error?.message || "Sign-up failed. Please try again.";
       toast.error(errorMessage);
@@ -139,7 +141,7 @@ export default function FoundingFarmerSignup() {
   if (step === "token") {
     return (
       <div className="min-h-screen page-background flex flex-col overflow-y-auto scrollbar-hide">
-        <main className="flex-1 flex flex-col lg:flex-row items-center justify-center px-6 py-12 lg:px-0">
+        <main className="flex-1 flex flex-col lg:flex-row items-start justify-center px-6 pt-8 pb-12 lg:px-0">
           {/* Left Mobile Indicator - Desktop Only */}
           <MobileFirstIndicator />
 
@@ -160,57 +162,61 @@ export default function FoundingFarmerSignup() {
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4">
               <span className="text-5xl">🌾</span>
             </div>
-            <h2 className="text-xl font-semibold mb-4">
+            <h2 className="text-xl font-semibold mb-8">
               <span className="text-primary">Ask</span>
               <span className="text-yellow-400">My</span>
               <span className="text-primary">Farm</span>
             </h2>
             
-            <h1 className="text-2xl font-bold text-primary mb-3">
-              Enter Your Token
+            <h1 className="text-2xl font-bold text-primary">
+              Enter Sign-Up Token
             </h1>
-            <p className="text-sm text-farm-muted">
-              Enter the approval token from your email to continue sign-up.
-            </p>
           </div>
 
           <form onSubmit={handleTokenSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="token" className="text-foreground">Approval Token</Label>
-              <div className="relative">
-                <KeyRound className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-farm-muted" />
+            <div className="space-y-3">
+              <div className="flex items-center justify-center gap-2">
+                <Input
+                  type="text"
+                  value="AMF-"
+                  disabled
+                  className="bg-card border-border text-center text-lg font-mono text-farm-muted w-20"
+                  readOnly
+                />
                 <Input
                   id="token"
                   type="text"
-                  placeholder="AMF-XXXX"
+                  placeholder="XXXX"
                   value={tokenInput}
-                  onChange={(e) => setTokenInput(e.target.value.toUpperCase())}
+                  onChange={(e) => setTokenInput(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
                   disabled={isValidating}
-                  className="bg-card border-border pl-10 text-center text-lg font-mono tracking-widest uppercase"
-                  maxLength={10}
+                  className="bg-card border-border text-center text-lg font-mono tracking-[0.3em] uppercase w-28"
+                  maxLength={4}
                   autoFocus
                 />
               </div>
               <p className="text-xs text-farm-muted text-center">
-                Check your approval email for the token (e.g., AMF-K7X3)
+                Enter the 4-character code from your email
               </p>
             </div>
 
-            <Button
-              type="submit"
-              className="w-full bg-farm-accent hover:bg-farm-accent/90 text-farm-dark"
-              size="lg"
-              disabled={isValidating || !tokenInput.trim()}
-            >
-              {isValidating ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Verifying...
-                </>
-              ) : (
-                "Continue"
-              )}
-            </Button>
+            <div className="flex justify-center">
+              <Button
+                type="submit"
+                className="px-12 bg-farm-accent hover:bg-farm-accent/90 text-farm-dark font-semibold"
+                size="lg"
+                disabled={isValidating || tokenInput.trim().length !== 4}
+              >
+                {isValidating ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  "Continue"
+                )}
+              </Button>
+            </div>
           </form>
 
           <p className="text-xs text-farm-muted text-center mt-6">
