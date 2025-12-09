@@ -695,8 +695,21 @@ export default function AMFReports() {
                 <Skeleton className="h-20 w-full bg-farm-card" />
               </div>
             ) : !selectedFieldId ? (
-              <div className="text-center py-12 text-muted-foreground">
-                Select a field to view the report
+              <div className="flex flex-col items-center justify-center py-16 px-6">
+                {/* Report Icon */}
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-farm-accent/20 to-farm-gold/20 flex items-center justify-center mb-4">
+                  <FileBarChart2 className="w-8 h-8 text-farm-accent" />
+                </div>
+                
+                {/* Status */}
+                <h3 className="text-lg font-semibold text-farm-text mb-2">
+                  No Report Selected
+                </h3>
+                
+                {/* Description */}
+                <p className="text-sm text-farm-muted text-center max-w-xs">
+                  Select a field above to view your unified report combining voice notes, documents, scouting, and JD Ops data.
+                </p>
               </div>
             ) : reportSummary ? (
               <>

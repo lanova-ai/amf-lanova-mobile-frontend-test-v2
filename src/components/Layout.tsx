@@ -14,7 +14,6 @@ const Layout = ({ children }: LayoutProps) => {
   const location = useLocation();
   const { user, logout } = useAuth();
   const [showMenu, setShowMenu] = useState(false);
-  const [showSupportMenu, setShowSupportMenu] = useState(false);
 
   const handleLogout = () => {
     setShowMenu(false);
@@ -49,7 +48,7 @@ const Layout = ({ children }: LayoutProps) => {
       '/settings/contacts/new': 'New Contact',
       '/settings/change-password': 'Change Password',
       '/settings/connections/johndeere': 'JD Connection',
-      '/jd-reports': 'JD Ops Reports',
+      '/farm-reports': 'JD Ops Reports',
       '/farm-memory': 'Farm Memory',
     };
     
@@ -103,43 +102,6 @@ const Layout = ({ children }: LayoutProps) => {
           <div className="flex items-center gap-1">
             {/* Network Status Indicator - Always show */}
             <NetworkStatusIndicator showOnlineStatus={true} />
-            
-            {/* Support Button with Dropdown */}
-            <div className="relative">
-              <button 
-                onClick={() => setShowSupportMenu(!showSupportMenu)}
-                className={`p-2 rounded-lg transition-colors ${showSupportMenu ? 'bg-muted' : 'hover:bg-muted'}`}
-                title="Support"
-              >
-                <HelpCircle className="h-5 w-5 text-farm-muted" />
-              </button>
-              
-              {/* Support Dropdown */}
-              {showSupportMenu && (
-                <>
-                  {/* Backdrop to close dropdown */}
-                  <div 
-                    className="fixed inset-0 z-[150]" 
-                    onClick={() => setShowSupportMenu(false)}
-                  />
-                  {/* Dropdown Menu */}
-                  <div className="absolute right-0 top-full mt-1 w-48 bg-farm-card border border-farm-accent/20 rounded-lg shadow-lg z-[151] overflow-hidden">
-                    <button
-                      onClick={() => {
-                        setShowSupportMenu(false);
-                        const device = navigator.userAgent.includes('iPhone') ? 'iPhone' : 
-                                      navigator.userAgent.includes('Android') ? 'Android' : 'Desktop';
-                        window.location.href = `mailto:contact@askmyfarm.us?subject=AskMyFarm Support&body=Hi AskMyFarm Team,%0D%0A%0D%0APlease describe your question or issue:%0D%0A%0D%0A%0D%0A---%0D%0ADevice: ${device}%0D%0AUser: ${user?.email || 'Unknown'}`;
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-farm-accent/10 transition-colors"
-                    >
-                      <HelpCircle className="h-4 w-4 text-farm-accent" />
-                      <span className="text-sm text-farm-text">Contact Support</span>
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
             
             {/* Map Button */}
             <button 
@@ -362,6 +324,18 @@ const Layout = ({ children }: LayoutProps) => {
                 >
                   <Settings className="w-5 h-5 flex-shrink-0 text-farm-accent" />
                   <span>Settings</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    const device = navigator.userAgent.includes('iPhone') ? 'iPhone' : 
+                                  navigator.userAgent.includes('Android') ? 'Android' : 'Desktop';
+                    window.location.href = `mailto:contact@askmyfarm.us?subject=AskMyFarm Support&body=Hi AskMyFarm Team,%0D%0A%0D%0APlease describe your question or issue:%0D%0A%0D%0A%0D%0A---%0D%0ADevice: ${device}%0D%0AUser: ${user?.email || 'Unknown'}`;
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors text-left text-sm"
+                >
+                  <HelpCircle className="w-5 h-5 flex-shrink-0 text-farm-accent" />
+                  <span>Contact Support</span>
                 </button>
                 <button
                   onClick={handleLogout}
