@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Menu, Home, BarChart3, Mic, Settings, LogOut, FolderOpen, MapPin, Brain, FileBarChart2, Leaf, HelpCircle } from "lucide-react";
+import { Menu, Home, BarChart3, Mic, Settings, LogOut, FolderOpen, MapPin, Brain, FileBarChart2, Leaf } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { MobileFirstIndicator } from "@/components/MobileFirstIndicator";
@@ -324,18 +324,6 @@ const Layout = ({ children }: LayoutProps) => {
                 >
                   <Settings className="w-5 h-5 flex-shrink-0 text-farm-accent" />
                   <span>Settings</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setShowMenu(false);
-                    const device = navigator.userAgent.includes('iPhone') ? 'iPhone' : 
-                                  navigator.userAgent.includes('Android') ? 'Android' : 'Desktop';
-                    window.location.href = `mailto:contact@askmyfarm.us?subject=AskMyFarm Support&body=Hi AskMyFarm Team,%0D%0A%0D%0APlease describe your question or issue:%0D%0A%0D%0A%0D%0A---%0D%0ADevice: ${device}%0D%0AUser: ${user?.email || 'Unknown'}`;
-                  }}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors text-left text-sm"
-                >
-                  <HelpCircle className="w-5 h-5 flex-shrink-0 text-farm-accent" />
-                  <span>Contact Support</span>
                 </button>
                 <button
                   onClick={handleLogout}
