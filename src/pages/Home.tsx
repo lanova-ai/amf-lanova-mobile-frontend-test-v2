@@ -497,11 +497,11 @@ const Home = () => {
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => navigate("/settings/contacts/new")}
-              className="relative bg-farm-card hover:bg-farm-accent/10 text-farm-accent border border-farm-accent/20 rounded-lg transition-all active:scale-98 flex flex-col items-center justify-center py-4 px-4"
+              className="relative bg-farm-accent hover:bg-farm-accent/90 border border-farm-accent/20 rounded-lg transition-all active:scale-98 flex flex-col items-center justify-center py-4 px-4"
             >
-              <Plus className="absolute top-2 right-2 h-4 w-4 stroke-[2] text-farm-accent" />
-              <UserPlus className="h-10 w-10 mb-3 text-farm-accent" />
-              <h3 className="card-title mb-0 text-sm text-farm-text">Contact</h3>
+              <Plus className="absolute top-2 right-2 h-4 w-4 stroke-[2] text-farm-dark" />
+              <UserPlus className="h-10 w-10 mb-3 text-farm-dark" />
+              <h3 className="card-title mb-0 text-sm text-farm-dark font-semibold">Contact</h3>
             </button>
 
             <button
