@@ -83,8 +83,8 @@ const Layout = ({ children }: LayoutProps) => {
           <button onClick={() => setShowMenu(true)} className="p-2 z-10">
             <Menu className="h-6 w-6" />
           </button>
-          {/* Title - absolutely positioned to be truly centered */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          {/* Title - absolutely positioned to be truly centered, with max-width to avoid icon overlap */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-16">
             {location.pathname === '/home' || location.pathname === '/map' || !pageTitle ? (
               <h1 className="text-xl font-bold">
                 <span className="text-primary">Ask</span>
@@ -99,7 +99,7 @@ const Layout = ({ children }: LayoutProps) => {
                 <span className="text-farm-text"> Reports</span>
               </h1>
             ) : (
-              <h1 className="text-xl font-bold text-farm-text">{pageTitle}</h1>
+              <h1 className="text-xl font-bold text-farm-text truncate max-w-[200px]">{pageTitle}</h1>
             )}
           </div>
           <div className="flex items-center gap-0 z-10">
