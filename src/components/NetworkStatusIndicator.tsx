@@ -30,7 +30,7 @@ export function NetworkStatusIndicator({
     return (
       <div 
         className={cn(
-          "p-1.5 rounded-lg transition-all",
+          "p-1 rounded-lg transition-all",
           isOnline 
             ? "text-green-500" 
             : "text-orange-500 bg-orange-500/10 animate-pulse",

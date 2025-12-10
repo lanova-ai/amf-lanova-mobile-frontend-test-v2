@@ -64,7 +64,7 @@ export function UpdateStatusIndicator({ className }: UpdateStatusIndicatorProps)
       onClick={handleClick}
       disabled={updating || checking}
       className={cn(
-        "p-1.5 rounded-lg transition-all",
+        "p-1 rounded-lg transition-all",
         updateAvailable
           ? "text-orange-500 bg-orange-500/10 hover:bg-orange-500/20"
           : "text-green-500 hover:bg-green-500/10",
