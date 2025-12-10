@@ -102,15 +102,23 @@ export function LogoUploadModal({ open, onClose, onUploadSuccess }: LogoUploadMo
     // Create preview with error handling
     const reader = new FileReader();
     
-    // Check if file is HEIC/HEIF (iPhone photos)
-    const isHeic = file.type === 'image/heic' || file.type === 'image/heif' || 
-                   file.name.toLowerCase().endsWith('.heic') || 
-                   file.name.toLowerCase().endsWith('.heif');
+    // Check if file is HEIC/HEIF - be very permissive on detection
+    // Android often reports HEIC with weird MIME types or no extension
+    const fileNameLower = file.name.toLowerCase();
+    const mimeType = file.type.toLowerCase();
+    const isHeic = mimeType === 'image/heic' || 
+                   mimeType === 'image/heif' || 
+                   mimeType.includes('heic') ||
+                   mimeType.includes('heif') ||
+                   fileNameLower.endsWith('.heic') || 
+                   fileNameLower.endsWith('.heif') ||
+                   // Samsung/Android often uses numeric names with no extension for HEIC
+                   (mimeType === '' && !fileNameLower.match(/\.(jpg|jpeg|png|webp|gif)$/));
 
     // HEIC files: Skip preview entirely, upload directly to backend for conversion
     if (isHeic) {
       console.log('[Logo] HEIC file detected, skipping preview (browser cannot display HEIC)');
-      toast.info("HEIC photo detected. Uploading for conversion...", { duration: 3000 });
+      toast.info("HEIC photo detected. Image will be converted on upload.", { duration: 3000 });
       setLoadingPreview(false);
       // Don't try to preview - just keep the file selected for direct upload
       return;
@@ -148,9 +156,13 @@ export function LogoUploadModal({ open, onClose, onUploadSuccess }: LogoUploadMo
     
     reader.onerror = () => {
       console.error('[Logo] FileReader error:', reader.error);
-      toast.error("Failed to read file. Please try again.");
-      setSelectedFile(null);
+      // FileReader failed - this often happens with HEIC on Android
+      // Treat as potential HEIC and allow direct upload
+      console.log('[Logo] FileReader failed, treating as HEIC for server-side conversion');
+      toast.info("Preview not available. Image will be converted on upload.", { duration: 3000 });
+      // Keep the file selected but skip preview
       setLoadingPreview(false);
+      // Don't clear selectedFile - allow upload attempt
     };
 
     reader.readAsDataURL(file);
@@ -371,7 +383,7 @@ export function LogoUploadModal({ open, onClose, onUploadSuccess }: LogoUploadMo
                     </div>
                   </div>
                   <p className="text-center text-sm text-muted-foreground">
-                    HEIC preview not available in browser.<br/>
+                    Preview not available for this image format.<br/>
                     Image will be converted and auto-cropped to square on upload.
                   </p>
                   <div className="flex items-start gap-3">
