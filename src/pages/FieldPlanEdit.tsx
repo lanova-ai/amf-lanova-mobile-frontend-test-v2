@@ -184,7 +184,7 @@ const FieldPlanEdit = () => {
             </button>
             <h1 className="text-lg font-semibold">{isCreateMode ? 'Create' : 'Edit'} Field Plan</h1>
           </div>
-          <Button onClick={handleSave} disabled={saving}>
+          <Button onClick={handleSave} disabled={saving} className="bg-farm-accent hover:bg-farm-accent/90 text-farm-dark font-semibold">
             {saving ? (isCreateMode ? "Creating..." : "Saving...") : (isCreateMode ? "Create Plan" : "Save")}
           </Button>
         </div>
@@ -325,7 +325,7 @@ const FieldPlanEdit = () => {
             <Button
               onClick={handleSave}
               disabled={saving}
-              className="flex-1"
+              className="flex-1 bg-farm-accent hover:bg-farm-accent/90 text-farm-dark font-semibold"
             >
               {saving ? "Saving..." : "Save Changes"}
             </Button>

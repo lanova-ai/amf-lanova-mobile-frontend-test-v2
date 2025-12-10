@@ -149,7 +149,7 @@ export default function FieldPlanSummaryDetail() {
                 size="sm"
                 onClick={handleSave}
                 disabled={saving}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 bg-farm-accent hover:bg-farm-accent/90 text-farm-dark font-semibold"
               >
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                 Save

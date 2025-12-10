@@ -190,7 +190,7 @@ export function ScoutingLocationPicker({
   const loadFields = async () => {
     try {
       setLoadingFields(true);
-      const response = await fieldsAPI.getFields();
+      const response = await fieldsAPI.getFields({ include_geometry: true });
       
       // Filter fields that have geometry and sort alphabetically
       const fieldsWithBoundaries = (response.fields || [])

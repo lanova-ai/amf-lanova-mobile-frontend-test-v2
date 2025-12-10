@@ -210,7 +210,7 @@ const FieldsMap = () => {
         
         // Fetch fields and field notes in parallel
         const [fieldsData, fieldNotesData] = await Promise.all([
-          fieldsAPI.getFields(),
+          fieldsAPI.getFields({ include_geometry: true }),
           fieldNotesAPI.listFieldNotes({ limit: 500 }).catch(() => ({ field_notes: [], total: 0 }))
         ]);
         

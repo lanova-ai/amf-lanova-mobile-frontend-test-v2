@@ -266,7 +266,9 @@ const FieldPlans = () => {
       await loadSummaries();
     } catch (error: any) {
       console.error("Error generating summary:", error);
-      toast.error(error?.response?.data?.detail || "Failed to generate summary");
+      // API errors have .message property with the detail
+      const errorMessage = error?.message || error?.details?.detail || "Failed to generate summary";
+      toast.error(errorMessage, { duration: 6000 });
     } finally {
       setGeneratingSummary(false);
     }
@@ -413,10 +415,11 @@ const FieldPlans = () => {
                   size="sm"
                   onClick={handleGenerateSummary}
                   disabled={selectedPlans.size === 0 || generatingSummary}
+                  className="bg-farm-accent hover:bg-farm-accent/90 text-farm-dark font-semibold"
                 >
                   {generatingSummary ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground mr-2"></div>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-farm-dark mr-2"></div>
                       Generating...
                     </>
                   ) : (
@@ -833,7 +836,7 @@ const FieldPlans = () => {
                         setViewMode('plans');
                         setIsSelectionMode(true);
                       }} 
-                      className="mt-4"
+                      className="mt-4 bg-farm-accent hover:bg-farm-accent/90 text-farm-dark font-semibold"
                     >
                       <Plus className="mr-2 h-4 w-4" />
                       Generate Summary

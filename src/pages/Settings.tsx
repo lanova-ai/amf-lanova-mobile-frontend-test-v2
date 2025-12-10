@@ -222,7 +222,7 @@ export default function Settings() {
           {profile.farm_logo_url ? (
             <div className="space-y-3">
               <div className="flex items-center gap-4">
-                <div className="h-24 w-24 rounded-lg border-2 border-farm-accent/20 overflow-hidden bg-farm-dark flex items-center justify-center">
+                <div className="h-24 w-24 rounded-lg border border-white/10 overflow-hidden bg-farm-dark flex items-center justify-center">
                   <img 
                     src={profile.farm_logo_url} 
                     alt="Farm logo" 

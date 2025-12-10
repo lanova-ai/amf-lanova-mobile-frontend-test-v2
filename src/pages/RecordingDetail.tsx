@@ -411,7 +411,7 @@ const RecordingDetail = () => {
         ? await voiceAPI.recreateFieldPlan(recording.id)
         : await voiceAPI.createFieldPlan(recording.id);
       
-      // Check for duplicate plan error (success: false)
+      // Check for errors (success: false)
       if (response.success === false) {
         if (response.error === 'duplicate_plan') {
           const existingPlan = response.existing_plan || response.existing_plans?.[0];
@@ -422,11 +422,36 @@ const RecordingDetail = () => {
             { duration: 8000 }
           );
           await loadRecording(false);
+          // Reset to idle after showing error
+          setTimeout(() => {
+            setCreationStatus(prev => ({ ...prev, fieldPlan: 'idle' }));
+          }, 3000);
           return;
         }
+        
+        // Validation failed - not enough field planning content
+        if (response.error === 'validation_failed') {
+          setCreationStatus(prev => ({ ...prev, fieldPlan: 'error' }));
+          toast.error(
+            "This recording doesn't contain enough field planning details to create a plan. Try adding crop types, products, or application rates.",
+            { duration: 8000 }
+          );
+          await loadRecording(false);
+          // Reset to idle after showing error
+          setTimeout(() => {
+            setCreationStatus(prev => ({ ...prev, fieldPlan: 'idle' }));
+          }, 3000);
+          return;
+        }
+        
         // Other errors
         setCreationStatus(prev => ({ ...prev, fieldPlan: 'error' }));
-        toast.error(response.message || "Failed to create field plan");
+        toast.error(response.message || "Failed to create field plan", { duration: 5000 });
+        await loadRecording(false);
+        // Reset to idle after showing error
+        setTimeout(() => {
+          setCreationStatus(prev => ({ ...prev, fieldPlan: 'idle' }));
+        }, 3000);
         return;
       }
       

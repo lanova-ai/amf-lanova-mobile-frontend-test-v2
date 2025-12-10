@@ -295,7 +295,7 @@ const Layout = ({ children }: LayoutProps) => {
               {/* User Profile */}
               <div className="flex items-center gap-3 mb-3">
                 {user?.farm_logo_url ? (
-                  <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted border-2 border-primary/20">
+                  <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted border border-white/10">
                     <img 
                       src={user.farm_logo_url} 
                       alt="Farm logo" 

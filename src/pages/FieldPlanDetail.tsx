@@ -1669,14 +1669,14 @@ const FieldPlanDetail = () => {
                                             <button
                                               onClick={() => handleSaveProduct(pass.id, product.id!)}
                                               disabled={saving}
-                                              className="flex-1 px-3 py-1.5 text-xs bg-farm-accent text-white rounded hover:bg-farm-accent/90 disabled:opacity-50"
+                                              className="flex-1 px-3 py-1.5 text-xs bg-farm-accent hover:bg-farm-accent/90 text-farm-dark font-semibold rounded disabled:opacity-50"
                                             >
                                               {saving ? "Saving..." : "Save"}
                                             </button>
                                             <button
                                               onClick={handleCancelProductEdit}
                                               disabled={saving}
-                                              className="flex-1 px-3 py-1.5 text-xs border rounded hover:bg-muted disabled:opacity-50"
+                                              className="flex-1 px-3 py-1.5 text-xs border border-farm-accent/30 rounded hover:bg-farm-accent/10 disabled:opacity-50"
                                             >
                                               Cancel
                                             </button>
@@ -2283,7 +2283,7 @@ const FieldPlanDetail = () => {
             >
               Cancel
             </Button>
-            <Button onClick={handleAddPass} disabled={saving}>
+            <Button onClick={handleAddPass} disabled={saving} className="bg-farm-accent hover:bg-farm-accent/90 text-farm-dark font-semibold">
               {saving ? "Adding..." : `Add Pass${newPassProducts.length > 0 ? ` with ${newPassProducts.length} Product(s)` : ""}`}
             </Button>
           </DialogFooter>
@@ -2351,7 +2351,7 @@ const FieldPlanDetail = () => {
             <Button variant="outline" onClick={() => setShowAddProductDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleAddProduct} disabled={saving}>
+            <Button onClick={handleAddProduct} disabled={saving} className="bg-farm-accent hover:bg-farm-accent/90 text-farm-dark font-semibold">
               {saving ? "Adding..." : "Add Product"}
             </Button>
           </DialogFooter>

@@ -873,15 +873,29 @@ export interface Field {
 }
 
 export const fieldsAPI = {
+  // Get lightweight summary (total_fields, total_acres only) - fast for dashboards
+  getFieldsSummary: async () => {
+    return apiFetch<{
+      total_fields: number;
+      total_acres: number;
+    }>('/api/v1/fields/summary');
+  },
+
   // Get all fields for the authenticated user
-  getFields: async () => {
+  // include_geometry: Set to true only for map views that need field boundaries (large payload)
+  getFields: async (options?: { include_geometry?: boolean }) => {
+    const params = new URLSearchParams();
+    if (options?.include_geometry) {
+      params.append('include_geometry', 'true');
+    }
+    const queryString = params.toString();
     return apiFetch<{
       total_fields: number;
       total_acres: number;
       crop_distribution: any;
       farms_count: number;
       fields: Field[];
-    }>('/api/v1/fields/');
+    }>(`/api/v1/fields/${queryString ? `?${queryString}` : ''}`);
   },
 
   // Detect which field contains a given lat/lon coordinate

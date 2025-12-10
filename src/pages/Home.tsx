@@ -38,7 +38,13 @@ const Home = () => {
     try {
       setLoading(true);
       
-      // First check JD sync status
+      // Load fields summary first (fast) and show immediately
+      // Don't wait for other slower APIs
+      fieldsAPI.getFieldsSummary()
+        .then(response => setFieldsData(response))
+        .catch(err => console.error("Failed to load fields summary:", err));
+      
+      // Check JD sync status (fast)
       let jdSyncEnabledFlag = true;
       try {
         const connections = await userAPI.getConnections();
@@ -52,9 +58,8 @@ const Home = () => {
         setJdSyncEnabled(true);
       }
       
-      // Conditionally fetch JD Reports OR Prescriptions based on jd_sync_enabled
-      const [fieldsResponse, tasksResponse, fieldPlansResponse, scoutingNotesResponse, reportsOrPrescriptions] = await Promise.all([
-        fieldsAPI.getFields(),
+      // Load remaining data in parallel (slower APIs)
+      const [tasksResponse, fieldPlansResponse, scoutingNotesResponse, reportsOrPrescriptions] = await Promise.all([
         tasksAPI.getTasks({ limit: 100 }),
         fieldPlansAPI.getFieldPlans({ limit: 3 }).catch(() => []),
         scoutingNotesAPI.listScoutingNotes({ limit: 3 }).catch(() => ({ notes: [] })),
@@ -62,8 +67,6 @@ const Home = () => {
           ? fieldOperationsAPI.getRecentSummaries(3).catch(() => [])
           : fieldPlansAPI.getPrescriptions({ limit: 3 }).catch(() => [])
       ]);
-        
-        setFieldsData(fieldsResponse);
         
         // Filter for urgent/high priority tasks that are not completed
         const urgent = (tasksResponse.tasks || [])
@@ -256,7 +259,7 @@ const Home = () => {
               
               // Start a slower background poll to check for fields every 30 seconds
               const backgroundPoll = setInterval(async () => {
-                const data = await fieldsAPI.getFields().catch(() => null);
+                const data = await fieldsAPI.getFieldsSummary().catch(() => null);
                 if (data && data.total_fields > 0) {
                   // Only update fields data, don't refresh entire page
                   setFieldsData(data);
@@ -381,7 +384,7 @@ const Home = () => {
           <div className="px-6 py-6">
           <div className="flex items-center gap-4 mb-1">
             {user?.farm_logo_url ? (
-              <div className="h-14 w-14 rounded-lg overflow-hidden bg-muted border-2 border-farm-accent/30 flex-shrink-0">
+              <div className="h-14 w-14 rounded-lg overflow-hidden bg-muted border border-white/10 flex-shrink-0">
                 <img 
                   src={user.farm_logo_url} 
                   alt="Farm logo" 
@@ -397,8 +400,11 @@ const Home = () => {
               <h2 className="section-heading mb-0">
                 {user?.farm_name || "Welcome back"}
               </h2>
-              {loading ? (
-                <p className="body-text text-farm-muted">Loading fields...</p>
+              {/* Show fields data immediately if available (progressive loading) */}
+              {fieldsData && fieldsData.total_fields > 0 ? (
+                <p className="body-text text-farm-muted">
+                  {fieldsData.total_fields} fields • {Math.round(fieldsData.total_acres).toLocaleString()} acres
+                </p>
               ) : isSyncing ? (
                 <div className="flex items-center gap-2 body-text text-farm-muted">
                   <Loader2 className="h-4 w-4 animate-spin text-farm-accent" />
@@ -409,10 +415,8 @@ const Home = () => {
                   <Loader2 className="h-4 w-4 animate-spin text-farm-accent" />
                   <span>Processing fields...</span>
                 </div>
-              ) : fieldsData && fieldsData.total_fields > 0 ? (
-                <p className="body-text text-farm-muted">
-                  {fieldsData.total_fields} fields • {Math.round(fieldsData.total_acres).toLocaleString()} acres
-                </p>
+              ) : loading && !fieldsData ? (
+                <p className="body-text text-farm-muted">Loading fields...</p>
               ) : jdConnected && (!fieldsData || fieldsData.total_fields === 0) ? (
                 <p className="body-text text-farm-muted">Ready to sync fields from John Deere</p>
               ) : (
