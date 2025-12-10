@@ -64,7 +64,6 @@ export function LogoUploadModal({ open, onClose, onUploadSuccess }: LogoUploadMo
         
         // Convert to dataURL (use JPEG for smaller size)
         const resizedDataUrl = canvas.toDataURL('image/jpeg', 0.9);
-        console.log(`[Logo] Resized from ${img.width}x${img.height} to ${newWidth}x${newHeight}`);
         resolve(resizedDataUrl);
       };
       img.onerror = () => reject(new Error('Failed to load image for resizing'));
@@ -83,10 +82,6 @@ export function LogoUploadModal({ open, onClose, onUploadSuccess }: LogoUploadMo
       toast.error("Invalid file type. Please select an image file (PNG, JPG, WEBP)");
       return;
     }
-    
-    // Log for debugging
-    console.log(`[Logo] File selected: ${file.name}, type: ${file.type}, size: ${file.size}`);
-    
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
@@ -117,7 +112,6 @@ export function LogoUploadModal({ open, onClose, onUploadSuccess }: LogoUploadMo
 
     // HEIC files: Skip preview entirely, upload directly to backend for conversion
     if (isHeic) {
-      console.log('[Logo] HEIC file detected, skipping preview (browser cannot display HEIC)');
       toast.info("HEIC photo detected. Image will be converted on upload.", { duration: 3000 });
       setLoadingPreview(false);
       // Don't try to preview - just keep the file selected for direct upload
@@ -137,12 +131,10 @@ export function LogoUploadModal({ open, onClose, onUploadSuccess }: LogoUploadMo
         setPreviewUrl(resizedDataUrl);
         setShowCrop(true);
         setLoadingPreview(false);
-      } catch (error) {
-        console.error('[Logo] Error processing image:', error);
+      } catch {
         // If resize fails, try using original
         const dataUrl = e.target?.result as string;
         if (dataUrl) {
-          console.log('[Logo] Resize failed, using original image');
           setPreviewUrl(dataUrl);
           setShowCrop(true);
           setLoadingPreview(false);
@@ -155,10 +147,8 @@ export function LogoUploadModal({ open, onClose, onUploadSuccess }: LogoUploadMo
     };
     
     reader.onerror = () => {
-      console.error('[Logo] FileReader error:', reader.error);
       // FileReader failed - this often happens with HEIC on Android
       // Treat as potential HEIC and allow direct upload
-      console.log('[Logo] FileReader failed, treating as HEIC for server-side conversion');
       toast.info("Preview not available. Image will be converted on upload.", { duration: 3000 });
       // Keep the file selected but skip preview
       setLoadingPreview(false);
@@ -234,8 +224,7 @@ export function LogoUploadModal({ open, onClose, onUploadSuccess }: LogoUploadMo
       setCroppedImageBlob(croppedBlob);
       setShowCrop(false);
       toast.success("Image cropped! Ready to upload.");
-    } catch (error) {
-      console.error("Failed to crop image:", error);
+    } catch {
       toast.error("Failed to crop image");
     }
   };
@@ -251,23 +240,18 @@ export function LogoUploadModal({ open, onClose, onUploadSuccess }: LogoUploadMo
 
     try {
       setUploading(true);
-      console.log('[Logo] Starting upload, file:', selectedFile.name, 'size:', selectedFile.size, 'type:', selectedFile.type);
 
       let fileToUpload: File;
 
       if (croppedImageBlob) {
         // Use cropped image
         fileToUpload = new File([croppedImageBlob], selectedFile.name, { type: "image/png" });
-        console.log('[Logo] Using cropped image');
       } else {
         // For HEIC and other files where preview failed, upload original file directly
         // Don't try to read it - Android browsers can corrupt HEIC File objects when read
-        console.log('[Logo] No cropped image, uploading original file directly');
-        console.log('[Logo] File details - name:', selectedFile.name, 'size:', selectedFile.size, 'type:', selectedFile.type);
         fileToUpload = selectedFile;
       }
 
-      console.log('[Logo] Uploading file:', fileToUpload.name, 'size:', fileToUpload.size);
       const result = await userAPI.uploadFarmLogo(fileToUpload);
 
       toast.success("Farm logo uploaded successfully!");
@@ -279,7 +263,6 @@ export function LogoUploadModal({ open, onClose, onUploadSuccess }: LogoUploadMo
       onUploadSuccess(result.farm_logo_url);
 
     } catch (err: any) {
-      console.error("[Logo] Failed to upload:", err);
       // Provide more specific error messages
       if (err.message?.includes('timeout') || err.message?.includes('taking too long')) {
         toast.error("Upload timed out. Please try again with a stable connection.");
@@ -437,13 +420,13 @@ export function LogoUploadModal({ open, onClose, onUploadSuccess }: LogoUploadMo
                 >
                   {uploading ? (
                     <>
-                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      Converting & Uploading...
+                      <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                      Uploading...
                     </>
                   ) : (
                     <>
-                      <Upload className="w-5 h-5 mr-2" />
-                      Upload & Convert
+                      <Upload className="w-4 h-4 mr-1.5" />
+                      Upload
                     </>
                   )}
                 </Button>
