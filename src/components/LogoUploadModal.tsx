@@ -291,7 +291,7 @@ export function LogoUploadModal({ open, onClose, onUploadSuccess }: LogoUploadMo
 
   return (
     <Dialog open={open} onOpenChange={handleCancel}>
-      <DialogContent className="max-w-md w-[calc(100vw-2rem)] sm:w-full">
+      <DialogContent className="max-w-md w-[calc(100vw-2rem)] sm:w-full max-h-[calc(100vh-4rem)] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">Upload Farm Logo</DialogTitle>
         </DialogHeader>
