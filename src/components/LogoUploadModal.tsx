@@ -260,21 +260,11 @@ export function LogoUploadModal({ open, onClose, onUploadSuccess }: LogoUploadMo
         fileToUpload = new File([croppedImageBlob], selectedFile.name, { type: "image/png" });
         console.log('[Logo] Using cropped image');
       } else {
-        // For files where preview failed (HEIC, etc), read as ArrayBuffer first
-        // This helps with "stale" file handles on mobile browsers
-        console.log('[Logo] No cropped image, reading original file as ArrayBuffer');
-        try {
-          const arrayBuffer = await selectedFile.arrayBuffer();
-          console.log('[Logo] ArrayBuffer read successfully, size:', arrayBuffer.byteLength);
-          
-          // Determine MIME type - use original or default to octet-stream
-          const mimeType = selectedFile.type || 'application/octet-stream';
-          fileToUpload = new File([arrayBuffer], selectedFile.name, { type: mimeType });
-        } catch (readError) {
-          console.error('[Logo] Failed to read file as ArrayBuffer:', readError);
-          toast.error("Unable to read the file. Please try selecting the image again.");
-          return;
-        }
+        // For HEIC and other files where preview failed, upload original file directly
+        // Don't try to read it - Android browsers can corrupt HEIC File objects when read
+        console.log('[Logo] No cropped image, uploading original file directly');
+        console.log('[Logo] File details - name:', selectedFile.name, 'size:', selectedFile.size, 'type:', selectedFile.type);
+        fileToUpload = selectedFile;
       }
 
       console.log('[Logo] Uploading file:', fileToUpload.name, 'size:', fileToUpload.size);
