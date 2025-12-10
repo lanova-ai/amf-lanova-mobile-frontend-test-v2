@@ -97,7 +97,7 @@ export default function FoundingFarmerApply() {
           </div>
           <h2 className="text-xl font-semibold mb-6">
             <span className="text-primary">Ask</span>
-            <span className="text-yellow-400">My</span>
+            <span className="text-farm-gold">My</span>
             <span className="text-primary">Farm</span>
           </h2>
           

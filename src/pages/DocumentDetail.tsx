@@ -962,7 +962,7 @@ export default function DocumentDetail() {
                 <span className={`text-sm px-2 py-1 rounded ${
                   document.visual_analysis.condition_assessment === 'Excellent' ? 'bg-green-500/10 text-green-400' :
                   document.visual_analysis.condition_assessment === 'Good' ? 'bg-blue-500/10 text-blue-400' :
-                  document.visual_analysis.condition_assessment === 'Fair' ? 'bg-yellow-500/10 text-yellow-400' :
+                  document.visual_analysis.condition_assessment === 'Fair' ? 'bg-yellow-500/10 text-farm-gold' :
                   document.visual_analysis.condition_assessment === 'Poor' ? 'bg-orange-500/10 text-orange-400' :
                   document.visual_analysis.condition_assessment === 'Critical' ? 'bg-red-500/10 text-red-400' :
                   'bg-farm-accent/10 text-farm-muted'

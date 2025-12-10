@@ -43,7 +43,7 @@ export function ScoutingNoteCard({ note, onClick, onReprocess, onDelete }: Scout
       case 'syncing':
         return <Badge variant="outline" className="bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20">Syncing</Badge>;
       case 'pending':
-        return <Badge variant="outline" className="bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20">Pending</Badge>;
+        return <Badge variant="outline" className="bg-yellow-500/10 text-yellow-700 dark:text-farm-gold border-yellow-500/20">Pending</Badge>;
       case 'error':
         return <Badge variant="outline" className="bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20">Error</Badge>;
       default:

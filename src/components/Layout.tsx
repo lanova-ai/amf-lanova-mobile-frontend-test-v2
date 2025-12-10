@@ -86,13 +86,13 @@ const Layout = ({ children }: LayoutProps) => {
           {location.pathname === '/home' || location.pathname === '/map' || !pageTitle ? (
             <h1 className="text-xl font-bold">
               <span className="text-primary">Ask</span>
-              <span className="text-yellow-400">My</span>
+              <span className="text-farm-gold">My</span>
               <span className="text-primary">Farm</span>
             </h1>
           ) : location.pathname === '/amf-reports' ? (
             <h1 className="text-xl font-bold">
               <span className="text-primary">A</span>
-              <span className="text-yellow-400">M</span>
+              <span className="text-farm-gold">M</span>
               <span className="text-primary">F</span>
               <span className="text-farm-text"> Reports</span>
             </h1>

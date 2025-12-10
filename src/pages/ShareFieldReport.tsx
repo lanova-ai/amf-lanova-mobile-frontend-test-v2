@@ -274,7 +274,7 @@ export default function ShareFieldReport() {
           {!loadingContacts && contacts.length === 0 && (
             <div className="border-2 border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20 dark:border-yellow-800 rounded-lg p-4 space-y-3">
               <div className="flex items-start gap-3">
-                <UserPlus className="h-5 w-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+                <UserPlus className="h-5 w-5 text-yellow-600 dark:text-farm-gold flex-shrink-0 mt-0.5" />
                 <div className="flex-1 space-y-2">
                   <h4 className="font-semibold text-sm">No Contacts Found</h4>
                   <p className="text-sm text-farm-muted">

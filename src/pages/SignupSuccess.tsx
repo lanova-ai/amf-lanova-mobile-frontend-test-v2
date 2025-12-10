@@ -27,7 +27,7 @@ export default function SignupSuccess() {
           <div className="mb-8">
             <h2 className="text-xl font-semibold mb-2">
               <span className="text-primary">Ask</span>
-              <span className="text-yellow-400">My</span>
+              <span className="text-farm-gold">My</span>
               <span className="text-primary">Farm</span>
             </h2>
           </div>

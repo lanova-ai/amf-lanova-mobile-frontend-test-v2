@@ -67,7 +67,7 @@ const BriefingView = () => {
             <div>
               <h1 className="text-xl font-bold">
                 <span className="text-primary">Ask</span>
-                <span className="text-yellow-400">My</span>
+                <span className="text-farm-gold">My</span>
                 <span className="text-primary">Farm</span>
               </h1>
               <p className="text-sm text-farm-muted">Planning Briefing</p>

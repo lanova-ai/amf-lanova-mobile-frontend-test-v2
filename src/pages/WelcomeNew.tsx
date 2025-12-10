@@ -20,7 +20,7 @@ const WelcomeNew = () => {
             </div>
             <h1 className="page-title">
               <span className="text-primary">Ask</span>
-              <span className="text-yellow-400">My</span>
+              <span className="text-farm-gold">My</span>
               <span className="text-primary">Farm</span>
             </h1>
             <p className="page-subtitle mt-4">

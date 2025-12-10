@@ -164,7 +164,7 @@ export default function FoundingFarmerSignup() {
             </div>
             <h2 className="text-xl font-semibold mb-8">
               <span className="text-primary">Ask</span>
-              <span className="text-yellow-400">My</span>
+              <span className="text-farm-gold">My</span>
               <span className="text-primary">Farm</span>
             </h2>
             
@@ -269,7 +269,7 @@ export default function FoundingFarmerSignup() {
           </div>
           <h2 className="text-lg font-semibold mb-4">
             <span className="text-primary">Ask</span>
-            <span className="text-yellow-400">My</span>
+            <span className="text-farm-gold">My</span>
             <span className="text-primary">Farm</span>
           </h2>
           

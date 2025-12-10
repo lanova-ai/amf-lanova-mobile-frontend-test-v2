@@ -969,7 +969,7 @@ const RecordingDetail = () => {
                             {insight.field_match_confidence !== undefined && insight.field_match_confidence > 0 ? (
                               <span className={`text-xs px-2 py-1 rounded ${
                                 insight.field_match_confidence >= 0.8 ? 'bg-green-600/20 text-green-400' :
-                                insight.field_match_confidence >= 0.5 ? 'bg-yellow-600/20 text-yellow-400' :
+                                insight.field_match_confidence >= 0.5 ? 'bg-yellow-600/20 text-farm-gold' :
                                 'bg-red-600/20 text-red-400'
                               }`}>
                                 {Math.round(insight.field_match_confidence * 100)}% match
