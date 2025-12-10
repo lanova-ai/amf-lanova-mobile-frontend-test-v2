@@ -525,6 +525,7 @@ export const userAPI = {
   },
 
   // Upload farm logo
+  // Longer timeout for HEIC conversion + resize + GCS upload on slow mobile networks
   uploadFarmLogo: async (file: File): Promise<{ message: string; farm_logo_url: string }> => {
     const formData = new FormData();
     formData.append('file', file);
@@ -532,7 +533,7 @@ export const userAPI = {
     return apiFetch('/api/v1/users/me/farm-logo', {
       method: 'POST',
       body: formData,
-    });
+    }, 90000); // 90 second timeout for HEIC conversion + upload
   },
 
   // Delete farm logo
