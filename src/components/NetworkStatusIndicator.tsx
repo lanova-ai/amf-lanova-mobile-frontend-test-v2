@@ -39,9 +39,9 @@ export function NetworkStatusIndicator({
         title={isOnline ? "Connected to internet" : "No internet connection - some features may be limited"}
       >
         {isOnline ? (
-          <Wifi className="h-5 w-5" />
+          <Wifi className="h-3.5 w-3.5" strokeWidth={1.5} />
         ) : (
-          <WifiOff className="h-5 w-5" />
+          <WifiOff className="h-3.5 w-3.5" strokeWidth={1.5} />
         )}
       </div>
     );

@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { MobileFirstIndicator } from "@/components/MobileFirstIndicator";
 import { NetworkStatusIndicator } from "@/components/NetworkStatusIndicator";
+import { UpdateStatusIndicator } from "@/components/UpdateStatusIndicator";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -100,6 +101,9 @@ const Layout = ({ children }: LayoutProps) => {
             <h1 className="text-xl font-bold text-farm-text">{pageTitle}</h1>
           )}
           <div className="flex items-center gap-1">
+            {/* Update Status Indicator */}
+            <UpdateStatusIndicator />
+            
             {/* Network Status Indicator - Always show */}
             <NetworkStatusIndicator showOnlineStatus={true} />
             

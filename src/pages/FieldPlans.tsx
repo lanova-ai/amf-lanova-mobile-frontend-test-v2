@@ -770,7 +770,7 @@ const FieldPlans = () => {
                                   </>
                                 )}
                                 <span>•</span>
-                                <span>{share.total_plans} plans • {share.total_fields} fields</span>
+                                <span>{share.total_plans} {share.total_plans === 1 ? 'plan' : 'plans'} • {share.total_fields} {share.total_fields === 1 ? 'field' : 'fields'}</span>
                               </div>
                             </div>
                             
