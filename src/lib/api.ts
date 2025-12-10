@@ -525,15 +525,26 @@ export const userAPI = {
   },
 
   // Upload farm logo
-  // Longer timeout for HEIC conversion + resize + GCS upload on slow mobile networks
+  // Uses fetchWithTimeout directly (like document upload) for better Android compatibility
   uploadFarmLogo: async (file: File): Promise<{ message: string; farm_logo_url: string }> => {
     const formData = new FormData();
     formData.append('file', file);
     
-    return apiFetch('/api/v1/users/me/farm-logo', {
+    const token = tokenManager.getAccessToken();
+    const response = await fetchWithTimeout(`${env.API_BASE_URL}/api/v1/users/me/farm-logo`, {
       method: 'POST',
+      headers: {
+        ...(token && { Authorization: `Bearer ${token}` }),
+        // Don't set Content-Type - let browser set it with boundary
+      },
       body: formData,
     }, 90000); // 90 second timeout for HEIC conversion + upload
+
+    if (!response.ok) {
+      throw await handleErrorResponse(response);
+    }
+
+    return await response.json();
   },
 
   // Delete farm logo
