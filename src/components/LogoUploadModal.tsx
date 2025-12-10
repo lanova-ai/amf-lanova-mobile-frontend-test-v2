@@ -241,27 +241,14 @@ export function LogoUploadModal({ open, onClose, onUploadSuccess }: LogoUploadMo
     try {
       setUploading(true);
 
-      let fileToUpload: File | Blob;
-      let fileName = selectedFile.name;
+      // Simple approach: just pass the file directly like uploadDocument does
+      // For cropped images, create a File from the blob
+      // For HEIC/uncropped, pass the original file - backend handles conversion
+      const fileToUpload = croppedImageBlob 
+        ? new File([croppedImageBlob], selectedFile.name, { type: "image/png" })
+        : selectedFile;
 
-      if (croppedImageBlob) {
-        // Use cropped image - already a Blob
-        fileToUpload = new File([croppedImageBlob], selectedFile.name, { type: "image/png" });
-      } else {
-        // For HEIC and other files: Use Blob approach for better Android compatibility
-        // Read file as ArrayBuffer, create fresh Blob, preserves filename explicitly
-        try {
-          const arrayBuffer = await selectedFile.arrayBuffer();
-          const mimeType = selectedFile.type || 'application/octet-stream';
-          fileToUpload = new Blob([arrayBuffer], { type: mimeType });
-          // fileName is already set from selectedFile.name
-        } catch {
-          // Fallback to original file if ArrayBuffer read fails
-          fileToUpload = selectedFile;
-        }
-      }
-
-      const result = await userAPI.uploadFarmLogo(fileToUpload, fileName);
+      const result = await userAPI.uploadFarmLogo(fileToUpload);
 
       toast.success("Farm logo uploaded successfully!");
       setSelectedFile(null);

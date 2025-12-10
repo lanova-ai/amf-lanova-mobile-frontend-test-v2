@@ -525,63 +525,26 @@ export const userAPI = {
   },
 
   // Upload farm logo
-  // Uses fetchWithTimeout directly (like document upload) for better Android compatibility
-  // Accepts File or Blob with explicit filename for HEIC support on Android
-  // Includes retry logic for slow mobile networks
-  uploadFarmLogo: async (file: File | Blob, fileName?: string): Promise<{ message: string; farm_logo_url: string }> => {
-    const maxRetries = 2;
-    const timeout = 60000; // 60 seconds - plenty for a logo
-    let lastError: Error | null = null;
-    // Get filename - use provided name, or extract from File, or default
-    const name = fileName || (file instanceof File ? file.name : 'image.jpg');
+  // Uses exact same pattern as uploadDocument for Android compatibility
+  uploadFarmLogo: async (file: File): Promise<{ message: string; farm_logo_url: string }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const token = tokenManager.getAccessToken();
+    const response = await fetchWithTimeout(`${env.API_BASE_URL}/api/v1/users/me/farm-logo`, {
+      method: 'POST',
+      headers: {
+        ...(token && { Authorization: `Bearer ${token}` }),
+        // Don't set Content-Type - let browser set it with boundary
+      },
+      body: formData,
+    }, 60000); // 60 second timeout
 
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        // Create fresh FormData for each attempt
-        const formData = new FormData();
-        // Pass filename explicitly as 3rd argument - critical for Blob uploads on Android
-        formData.append('file', file, name);
-        
-        const token = tokenManager.getAccessToken();
-        
-        const response = await fetchWithTimeout(`${env.API_BASE_URL}/api/v1/users/me/farm-logo`, {
-          method: 'POST',
-          headers: {
-            ...(token && { Authorization: `Bearer ${token}` }),
-            // Don't set Content-Type - let browser set it with boundary
-          },
-          body: formData,
-        }, timeout);
-
-        if (!response.ok) {
-          throw await handleErrorResponse(response);
-        }
-
-        return await response.json();
-      } catch (error: any) {
-        lastError = error;
-        
-        // Don't retry on auth errors or server rejections
-        if (error.status === 401 || error.status === 403 || error.status === 400) {
-          throw error;
-        }
-        
-        // Only retry on network/timeout errors
-        const isRetryable = !error.status || 
-          error.message?.includes('timeout') || 
-          error.message?.includes('Failed to fetch') ||
-          error.message?.includes('Unable to connect');
-        
-        if (!isRetryable || attempt === maxRetries) {
-          throw error;
-        }
-        
-        // Wait before retry (exponential backoff: 2s, 4s)
-        await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
-      }
+    if (!response.ok) {
+      throw await handleErrorResponse(response);
     }
 
-    throw lastError || new Error('Upload failed after retries');
+    return await response.json();
   },
 
   // Delete farm logo
