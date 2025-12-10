@@ -102,7 +102,7 @@ const Layout = ({ children }: LayoutProps) => {
               <h1 className="text-xl font-bold text-farm-text">{pageTitle}</h1>
             )}
           </div>
-          <div className="flex items-center gap-1 z-10">
+          <div className="flex items-center gap-0 z-10">
             {/* Update Status Indicator */}
             <UpdateStatusIndicator />
             
