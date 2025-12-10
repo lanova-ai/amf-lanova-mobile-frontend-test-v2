@@ -251,12 +251,33 @@ export function LogoUploadModal({ open, onClose, onUploadSuccess }: LogoUploadMo
 
     try {
       setUploading(true);
+      console.log('[Logo] Starting upload, file:', selectedFile.name, 'size:', selectedFile.size, 'type:', selectedFile.type);
 
-      // Use cropped image if available, otherwise use original
-      const fileToUpload = croppedImageBlob 
-        ? new File([croppedImageBlob], selectedFile.name, { type: "image/png" })
-        : selectedFile;
+      let fileToUpload: File;
 
+      if (croppedImageBlob) {
+        // Use cropped image
+        fileToUpload = new File([croppedImageBlob], selectedFile.name, { type: "image/png" });
+        console.log('[Logo] Using cropped image');
+      } else {
+        // For files where preview failed (HEIC, etc), read as ArrayBuffer first
+        // This helps with "stale" file handles on mobile browsers
+        console.log('[Logo] No cropped image, reading original file as ArrayBuffer');
+        try {
+          const arrayBuffer = await selectedFile.arrayBuffer();
+          console.log('[Logo] ArrayBuffer read successfully, size:', arrayBuffer.byteLength);
+          
+          // Determine MIME type - use original or default to octet-stream
+          const mimeType = selectedFile.type || 'application/octet-stream';
+          fileToUpload = new File([arrayBuffer], selectedFile.name, { type: mimeType });
+        } catch (readError) {
+          console.error('[Logo] Failed to read file as ArrayBuffer:', readError);
+          toast.error("Unable to read the file. Please try selecting the image again.");
+          return;
+        }
+      }
+
+      console.log('[Logo] Uploading file:', fileToUpload.name, 'size:', fileToUpload.size);
       const result = await userAPI.uploadFarmLogo(fileToUpload);
 
       toast.success("Farm logo uploaded successfully!");
@@ -268,8 +289,15 @@ export function LogoUploadModal({ open, onClose, onUploadSuccess }: LogoUploadMo
       onUploadSuccess(result.farm_logo_url);
 
     } catch (err: any) {
-      console.error("Failed to upload logo:", err);
-      toast.error(err.message || "Failed to upload logo");
+      console.error("[Logo] Failed to upload:", err);
+      // Provide more specific error messages
+      if (err.message?.includes('timeout') || err.message?.includes('taking too long')) {
+        toast.error("Upload timed out. Please try again with a stable connection.");
+      } else if (err.message?.includes('Unable to connect') || err.message?.includes('Failed to fetch')) {
+        toast.error("Connection failed. Please check your internet and try again.");
+      } else {
+        toast.error(err.message || "Failed to upload logo");
+      }
     } finally {
       setUploading(false);
     }
