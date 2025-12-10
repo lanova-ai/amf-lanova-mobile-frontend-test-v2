@@ -79,28 +79,30 @@ const Layout = ({ children }: LayoutProps) => {
         <header className={`sticky top-0 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b z-[100] ${
           location.pathname === '/map' ? 'bg-background/70' : 'bg-background/95'
         }`}>
-          <div className="flex items-center justify-between px-4 py-4">
-          <button onClick={() => setShowMenu(true)} className="p-2">
+          <div className="relative flex items-center justify-between px-4 py-4">
+          <button onClick={() => setShowMenu(true)} className="p-2 z-10">
             <Menu className="h-6 w-6" />
           </button>
-          {/* Show page title for main nav pages, AskMyFarm branding for home/map/detail pages */}
-          {location.pathname === '/home' || location.pathname === '/map' || !pageTitle ? (
-            <h1 className="text-xl font-bold">
-              <span className="text-primary">Ask</span>
-              <span className="text-farm-gold">My</span>
-              <span className="text-primary">Farm</span>
-            </h1>
-          ) : location.pathname === '/amf-reports' ? (
-            <h1 className="text-xl font-bold">
-              <span className="text-primary">A</span>
-              <span className="text-farm-gold">M</span>
-              <span className="text-primary">F</span>
-              <span className="text-farm-text"> Reports</span>
-            </h1>
-          ) : (
-            <h1 className="text-xl font-bold text-farm-text">{pageTitle}</h1>
-          )}
-          <div className="flex items-center gap-1">
+          {/* Title - absolutely positioned to be truly centered */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            {location.pathname === '/home' || location.pathname === '/map' || !pageTitle ? (
+              <h1 className="text-xl font-bold">
+                <span className="text-primary">Ask</span>
+                <span className="text-farm-gold">My</span>
+                <span className="text-primary">Farm</span>
+              </h1>
+            ) : location.pathname === '/amf-reports' ? (
+              <h1 className="text-xl font-bold">
+                <span className="text-primary">A</span>
+                <span className="text-farm-gold">M</span>
+                <span className="text-primary">F</span>
+                <span className="text-farm-text"> Reports</span>
+              </h1>
+            ) : (
+              <h1 className="text-xl font-bold text-farm-text">{pageTitle}</h1>
+            )}
+          </div>
+          <div className="flex items-center gap-1 z-10">
             {/* Update Status Indicator */}
             <UpdateStatusIndicator />
             

@@ -107,22 +107,21 @@ export function LogoUploadModal({ open, onClose, onUploadSuccess }: LogoUploadMo
                    file.name.toLowerCase().endsWith('.heic') || 
                    file.name.toLowerCase().endsWith('.heif');
 
+    // HEIC files: Skip preview entirely, upload directly to backend for conversion
+    if (isHeic) {
+      console.log('[Logo] HEIC file detected, skipping preview (browser cannot display HEIC)');
+      toast.info("HEIC photo detected. Uploading for conversion...", { duration: 3000 });
+      setLoadingPreview(false);
+      // Don't try to preview - just keep the file selected for direct upload
+      return;
+    }
+
     reader.onload = async (e) => {
       try {
         const dataUrl = e.target?.result as string;
         
         if (!dataUrl) {
           throw new Error('Failed to read file');
-        }
-
-        // Skip resize for HEIC files - browser canvas can't handle them
-        // Safari can display HEIC natively, other browsers may not
-        if (isHeic) {
-          console.log('[Logo] HEIC file detected, skipping resize');
-          setPreviewUrl(dataUrl);
-          setShowCrop(true);
-          setLoadingPreview(false);
-          return;
         }
 
         // Resize large images for better cropper performance
@@ -153,11 +152,6 @@ export function LogoUploadModal({ open, onClose, onUploadSuccess }: LogoUploadMo
       setSelectedFile(null);
       setLoadingPreview(false);
     };
-
-    // Notify user about HEIC processing
-    if (isHeic) {
-      toast.info("iPhone photo detected. For best results, use JPG or PNG.");
-    }
 
     reader.readAsDataURL(file);
   };
@@ -363,6 +357,65 @@ export function LogoUploadModal({ open, onClose, onUploadSuccess }: LogoUploadMo
                 >
                   <Crop className="w-5 h-5 mr-2" />
                   Apply Crop
+                </Button>
+              </div>
+            </>
+          ) : selectedFile && !previewUrl && !showCrop ? (
+            <>
+              {/* HEIC file selected - no preview available, direct upload */}
+              <div className="bg-gradient-to-r from-primary/10 to-primary/5 border-2 border-primary/30 rounded-xl p-4 shadow-md">
+                <div className="space-y-4">
+                  <div className="flex justify-center">
+                    <div className="w-24 h-24 bg-farm-dark rounded-lg flex items-center justify-center border border-white/10">
+                      <ImageIcon className="w-10 h-10 text-farm-muted" />
+                    </div>
+                  </div>
+                  <p className="text-center text-sm text-muted-foreground">
+                    HEIC preview not available in browser.<br/>
+                    Image will be converted and auto-cropped to square on upload.
+                  </p>
+                  <div className="flex items-start gap-3">
+                    <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <ImageIcon className="w-6 h-6 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0 px-2">
+                      <h3 className="font-semibold text-base text-foreground mb-1" title={selectedFile.name}>
+                        {truncateFileName(selectedFile.name)}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">{formatFileSize(selectedFile.size)}</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setSelectedFile(null);
+                        setPreviewUrl(null);
+                      }}
+                      className="text-muted-foreground hover:text-destructive transition-colors p-1.5 hover:bg-destructive/10 rounded-md flex-shrink-0"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <Button onClick={handleCancel} variant="outline" className="flex-1 h-12" disabled={uploading}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleUpload}
+                  className="flex-1 h-12 text-base font-semibold bg-farm-accent hover:bg-farm-accent/90 text-farm-dark"
+                  disabled={uploading}
+                >
+                  {uploading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      Converting & Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-5 h-5 mr-2" />
+                      Upload & Convert
+                    </>
+                  )}
                 </Button>
               </div>
             </>
