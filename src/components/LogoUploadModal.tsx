@@ -241,18 +241,27 @@ export function LogoUploadModal({ open, onClose, onUploadSuccess }: LogoUploadMo
     try {
       setUploading(true);
 
-      let fileToUpload: File;
+      let fileToUpload: File | Blob;
+      let fileName = selectedFile.name;
 
       if (croppedImageBlob) {
-        // Use cropped image
+        // Use cropped image - already a Blob
         fileToUpload = new File([croppedImageBlob], selectedFile.name, { type: "image/png" });
       } else {
-        // For HEIC and other files where preview failed, upload original file directly
-        // Don't try to read it - Android browsers can corrupt HEIC File objects when read
-        fileToUpload = selectedFile;
+        // For HEIC and other files: Use Blob approach for better Android compatibility
+        // Read file as ArrayBuffer, create fresh Blob, preserves filename explicitly
+        try {
+          const arrayBuffer = await selectedFile.arrayBuffer();
+          const mimeType = selectedFile.type || 'application/octet-stream';
+          fileToUpload = new Blob([arrayBuffer], { type: mimeType });
+          // fileName is already set from selectedFile.name
+        } catch {
+          // Fallback to original file if ArrayBuffer read fails
+          fileToUpload = selectedFile;
+        }
       }
 
-      const result = await userAPI.uploadFarmLogo(fileToUpload);
+      const result = await userAPI.uploadFarmLogo(fileToUpload, fileName);
 
       toast.success("Farm logo uploaded successfully!");
       setSelectedFile(null);
