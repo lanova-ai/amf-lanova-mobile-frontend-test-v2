@@ -18,21 +18,36 @@ export const isSessionExpiredError = (error: any): boolean => {
 };
 
 // Helper to check if error is likely due to being offline
+// Enhanced for mobile/spotty connections
 export const isOfflineError = (error: any): boolean => {
-  if (typeof navigator !== 'undefined' && !navigator.onLine) return true;
-  
-  // Check common offline error patterns
-  if (error instanceof TypeError && error.message?.includes('Failed to fetch')) {
-    return true;
-  }
-  if (error?.message?.toLowerCase()?.includes('network')) {
-    return true;
-  }
-  if (error?.message?.toLowerCase()?.includes('offline')) {
+  // Check navigator.onLine first
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
     return true;
   }
   
-  return false;
+  // Check for AbortError (timeout)
+  if (error?.name === 'AbortError') {
+    return true;
+  }
+  
+  // Check error message for network-related strings
+  const message = error?.message?.toLowerCase() || '';
+  const networkErrorPatterns = [
+    'failed to fetch',
+    'network request failed',
+    'network error',
+    'networkerror',
+    'timeout',
+    'aborted',
+    'connection refused',
+    'connection reset',
+    'econnrefused',
+    'econnreset',
+    'enotfound',
+    'offline',
+  ];
+  
+  return networkErrorPatterns.some(pattern => message.includes(pattern));
 };
 
 // Helper for consistent error handling in pages
@@ -61,6 +76,10 @@ export interface AuthTokens {
 // Token Management
 const TOKEN_KEY = 'amf_access_token';
 const REFRESH_TOKEN_KEY = 'amf_refresh_token';
+const TOKEN_EXPIRY_KEY = 'amf_token_expiry';
+
+// Mutex for refresh - prevents race conditions
+let refreshPromise: Promise<{ success: boolean; reason?: 'offline' | 'invalid' | 'no_token' | 'server_error' }> | null = null;
 
 export const tokenManager = {
   getAccessToken: (): string | null => {
@@ -70,21 +89,39 @@ export const tokenManager = {
   getRefreshToken: (): string | null => {
     return localStorage.getItem(REFRESH_TOKEN_KEY);
   },
+  
+  getTokenExpiry: (): number | null => {
+    const expiry = localStorage.getItem(TOKEN_EXPIRY_KEY);
+    return expiry ? parseInt(expiry, 10) : null;
+  },
 
   setTokens: (tokens: AuthTokens) => {
     localStorage.setItem(TOKEN_KEY, tokens.access_token);
-    if (tokens.refresh_token) {
-      localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refresh_token);
-    }
+    // Always set refresh token - use provided one or fall back to access_token
+    // (Backend currently uses same token for both)
+    const refreshToken = tokens.refresh_token || tokens.access_token;
+    localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+    // Store expiry time (30 minutes from now, matching backend ACCESS_TOKEN_EXPIRE_MINUTES)
+    const expiryTime = Date.now() + (30 * 60 * 1000);
+    localStorage.setItem(TOKEN_EXPIRY_KEY, expiryTime.toString());
   },
 
   clearTokens: () => {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem(TOKEN_EXPIRY_KEY);
   },
 
   hasToken: (): boolean => {
     return !!localStorage.getItem(TOKEN_KEY);
+  },
+  
+  // Check if token will expire within given minutes
+  isTokenExpiringSoon: (withinMinutes: number = 5): boolean => {
+    const expiry = tokenManager.getTokenExpiry();
+    if (!expiry) return false;
+    const bufferMs = withinMinutes * 60 * 1000;
+    return Date.now() > (expiry - bufferMs);
   },
 };
 
@@ -120,7 +157,30 @@ async function apiFetch<T>(
   timeoutMs?: number
 ): Promise<T> {
   const url = `${env.API_BASE_URL}${endpoint}`;
-  const token = tokenManager.getAccessToken();
+  let token = tokenManager.getAccessToken();
+
+  // PROACTIVE REFRESH: If token is expiring within 5 minutes, refresh before the call
+  // This prevents 401 errors in most cases
+  if (token && tokenManager.isTokenExpiringSoon(5)) {
+    console.log('[Auth] Token expiring soon, proactively refreshing...');
+    const refreshResult = await refreshAccessToken();
+    if (refreshResult.success) {
+      token = tokenManager.getAccessToken(); // Get the new token
+    } else if (refreshResult.reason === 'invalid' || refreshResult.reason === 'no_token') {
+      // FAIL FAST: Token is invalid or missing - logout immediately
+      console.warn('[Auth] Proactive refresh failed with fatal error:', refreshResult.reason);
+      tokenManager.clearTokens();
+      window.location.href = '/';
+      // Throw to prevent the API call from proceeding
+      const sessionError: APIError = {
+        message: 'Session expired. Please login again.',
+        status: 401,
+        details: { sessionExpired: true }
+      };
+      throw sessionError;
+    }
+    // For 'offline' or 'server_error', continue with old token - might still work
+  }
 
   const headers: HeadersInit = {
     ...options.headers,
@@ -161,8 +221,16 @@ async function apiFetch<T>(
       const refreshResult = await refreshAccessToken();
       if (refreshResult.success) {
         // Retry original request with new token
-        headers['Authorization'] = `Bearer ${tokenManager.getAccessToken()}`;
-        const retryResponse = await fetchWithTimeout(url, { ...config, headers }, timeoutMs);
+        // IMPORTANT: Clone headers to avoid mutating original config
+        const retryHeaders = {
+          ...headers,
+          'Authorization': `Bearer ${tokenManager.getAccessToken()}`
+        };
+        const retryConfig: RequestInit = {
+          ...config,
+          headers: retryHeaders,
+        };
+        const retryResponse = await fetchWithTimeout(url, retryConfig, timeoutMs);
         if (!retryResponse.ok) {
           throw await handleErrorResponse(retryResponse);
         }
@@ -204,29 +272,25 @@ async function apiFetch<T>(
     }
 
     return await response.json();
-  } catch (error) {
+  } catch (error: any) {
     // Re-throw APIError objects as-is
     if (error && typeof error === 'object' && 'status' in error) {
       throw error;
     }
     
-    // Check if offline and provide helpful error
-    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    // Check if this is an offline/network error using our improved detection
+    if (isOfflineError(error)) {
       const offlineError: APIError = {
         message: "You're offline. This action requires an internet connection.",
         status: 0,
-        details: { offline: true }
+        details: { offline: true, originalError: error?.message }
       };
       throw offlineError;
     }
     
     // Re-throw Error instances with better message
     if (error instanceof Error) {
-      // Check for fetch errors that indicate network issues
-      if (error.message?.includes('Failed to fetch')) {
-        throw new Error('Unable to connect. Please check your internet connection.');
-      }
-      throw error;
+      throw new Error('Unable to connect. Please check your internet connection.');
     }
     throw new Error('Network error. Please check your connection.');
   }
@@ -254,53 +318,81 @@ async function handleErrorResponse(response: Response): Promise<APIError> {
   return error;
 }
 
-// Refresh access token
+// Refresh access token with mutex to prevent race conditions
 // Returns { success: true } if refreshed, { success: false, reason: ... } if failed
 // Only 'invalid' or 'no_token' should trigger logout - 'offline' and 'server_error' should NOT
 async function refreshAccessToken(): Promise<{ success: boolean; reason?: 'offline' | 'invalid' | 'no_token' | 'server_error' }> {
+  // Mutex: If already refreshing, wait for that result
+  if (refreshPromise) {
+    console.log('[Auth] Refresh already in progress, waiting...');
+    return refreshPromise;
+  }
+  
+  // Start refresh with mutex
+  refreshPromise = doRefreshAccessToken();
+  try {
+    const result = await refreshPromise;
+    return result;
+  } finally {
+    refreshPromise = null; // Clear mutex
+  }
+}
+
+// Actual refresh implementation
+async function doRefreshAccessToken(): Promise<{ success: boolean; reason?: 'offline' | 'invalid' | 'no_token' | 'server_error' }> {
   const refreshToken = tokenManager.getRefreshToken();
   if (!refreshToken) return { success: false, reason: 'no_token' };
 
   try {
-    const response = await fetch(`${env.API_BASE_URL}/api/v1/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh_token: refreshToken }),
-    });
+    console.log('[Auth] Refreshing access token...');
+    // Use 10s timeout to prevent app lockup on spotty mobile networks
+    const response = await fetchWithTimeout(
+      `${env.API_BASE_URL}/api/v1/refresh`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      },
+      10000 // 10 second timeout for refresh
+    );
 
     if (response.ok) {
       const tokens: AuthTokens = await response.json();
       tokenManager.setTokens(tokens);
+      console.log('[Auth] Token refreshed successfully');
       return { success: true };
     }
     
     // Only 401/403 means the token is actually invalid
     if (response.status === 401 || response.status === 403) {
+      console.warn('[Auth] Refresh token invalid (401/403)');
       return { success: false, reason: 'invalid' };
     }
     
     // 5xx errors are server issues - don't logout, just report as temporary error
     if (response.status >= 500) {
-      console.warn('Token refresh failed due to server error:', response.status);
+      console.warn('[Auth] Token refresh failed due to server error:', response.status);
       return { success: false, reason: 'server_error' };
     }
     
     // Other 4xx errors (400, 404, etc.) - treat as invalid for safety
+    console.warn('[Auth] Token refresh failed with status:', response.status);
     return { success: false, reason: 'invalid' };
-  } catch (error) {
-    console.error('Token refresh failed:', error);
-    // Network error - likely offline
-    if (error instanceof TypeError && (error.message?.includes('Failed to fetch') || error.message?.includes('Network'))) {
+  } catch (error: any) {
+    console.error('[Auth] Token refresh failed:', error);
+    
+    // Detect offline/network errors more aggressively
+    const isOffline = isOfflineError(error);
+    if (isOffline) {
+      console.warn('[Auth] Refresh failed - appears to be offline');
       return { success: false, reason: 'offline' };
     }
-    // Check navigator.onLine as fallback
-    if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      return { success: false, reason: 'offline' };
-    }
+    
     // Unknown error - treat as temporary server issue, not invalid token
     return { success: false, reason: 'server_error' };
   }
 }
+
 
 // ================================
 // AUTH APIs
