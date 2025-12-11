@@ -65,8 +65,13 @@ const FieldPlans = () => {
   const [planToDelete, setPlanToDelete] = useState<FieldPlan | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   
-  // View mode toggle - persist in sessionStorage
+  // View mode toggle - URL param takes precedence, then sessionStorage
   const [viewMode, setViewMode] = useState<'plans' | 'shared' | 'summary'>(() => {
+    // URL param takes precedence (e.g., /field-plans?view=plans)
+    const viewParam = searchParams.get('view');
+    if (viewParam && ['plans', 'shared', 'summary'].includes(viewParam)) {
+      return viewParam as 'plans' | 'shared' | 'summary';
+    }
     const saved = sessionStorage.getItem('fieldPlansViewMode');
     return (saved as 'plans' | 'shared' | 'summary') || 'plans';
   });

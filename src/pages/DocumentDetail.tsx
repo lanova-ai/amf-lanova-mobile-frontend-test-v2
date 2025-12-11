@@ -1203,7 +1203,7 @@ export default function DocumentDetail() {
           
           <DialogFooter className="flex gap-2">
             <Button 
-              onClick={() => navigate('/field-plans')} 
+              onClick={() => navigate('/field-plans?view=plans')} 
               className="flex-1 bg-farm-accent hover:bg-farm-accent/90 text-farm-dark"
             >
               View All Plans
@@ -1268,7 +1268,7 @@ export default function DocumentDetail() {
           
           <DialogFooter className="flex gap-2">
             <Button 
-              onClick={() => navigate('/field-plans')} 
+              onClick={() => navigate('/field-plans?view=plans')} 
               className="flex-1 bg-farm-accent hover:bg-farm-accent/90 text-farm-dark"
             >
               View All Plans
