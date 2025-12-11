@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useSearchParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useVisibilityRefresh } from "@/hooks/useVisibilityRefresh";
 import { fieldsAPI, fieldOperationsAPI, FieldOperationYearlySummary, OperationTimelineSummary, userAPI, Field, handlePageError } from "@/lib/api";
 import { toast } from "sonner";
 import {
@@ -140,6 +141,49 @@ export default function FarmReports() {
       }
     };
   }, [pollIntervalId]);
+
+  // Auto-refresh sync status when app returns to foreground (PWA visibility change)
+  // Uses useRef internally so callback always has fresh state
+  useVisibilityRefresh(async () => {
+    if (!selectedOperationId || !timelineYear) return;
+    
+    try {
+      const status = await fieldOperationsAPI.getSyncStatus(selectedOperationId, timelineYear);
+      
+      if (status.status === 'in_progress' && status.current < status.total) {
+        // Sync is still running
+        if (!syncingAllFields) {
+          // Resume tracking if we weren't already
+          console.log(`[PWA] Detected ongoing sync: ${status.current}/${status.total}`);
+          setSyncingAllFields(true);
+          setSyncProgress({
+            current: status.current,
+            total: status.total,
+            percentage: status.percentage
+          });
+          startSyncPolling();
+          toast.info(`🔄 Sync still in progress (${status.current}/${status.total} fields)`, { duration: 3000 });
+        } else {
+          // Already tracking - just update progress silently
+          setSyncProgress({
+            current: status.current,
+            total: status.total,
+            percentage: status.percentage
+          });
+        }
+      } else if (status.status === 'completed' && syncingAllFields) {
+        // Sync completed while app was backgrounded
+        console.log('[PWA] Sync completed while in background');
+        setSyncingAllFields(false);
+        setSyncProgress(null);
+        syncingRef.current = { operationId: null, operationName: null };
+        toast.success('✅ Sync completed!', { duration: 4000 });
+      }
+    } catch (error) {
+      // Silently handle - user can refresh if needed
+      console.log('[PWA] Could not check sync status:', error);
+    }
+  });
 
   // State to track if we should auto-load after navigation
   const [shouldAutoLoad, setShouldAutoLoad] = useState(false);
@@ -1281,23 +1325,23 @@ export default function FarmReports() {
                 </Select>
               </div>
 
-              {/* Action Buttons - Inline */}
-              <div className="flex gap-2 pt-2">
+              {/* Action Buttons - Inline with proper mobile constraints */}
+              <div className="flex gap-2 pt-2 w-full">
                 <Button 
                   onClick={handleSyncField} 
                   disabled={!selectedFieldId || fieldSyncing || !jdSyncEnabled}
-                  className="flex-1 border-farm-accent/20 text-farm-accent hover:bg-farm-accent/10"
+                  className="flex-1 min-w-0 border-farm-accent/20 text-farm-accent hover:bg-farm-accent/10 text-sm"
                   variant="outline"
                 >
                   {fieldSyncing ? (
                     <>
-                      <LoadingSpinner size="sm" className="mr-2" />
-                      Syncing...
+                      <LoadingSpinner size="sm" className="mr-1.5 flex-shrink-0" />
+                      <span className="truncate">Syncing...</span>
                     </>
                   ) : (
                     <>
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Sync from JD Ops
+                      <RefreshCw className="mr-1.5 h-4 w-4 flex-shrink-0" />
+                      <span className="truncate">Sync from JD Ops</span>
                     </>
                   )}
                 </Button>
@@ -1305,15 +1349,15 @@ export default function FarmReports() {
                 <Button 
                   onClick={loadYearlySummary} 
                   disabled={!selectedFieldId || fieldLoading || !jdSyncEnabled}
-                  className="flex-1 bg-farm-accent hover:bg-farm-accent/90 text-farm-dark"
+                  className="flex-1 min-w-0 bg-farm-accent hover:bg-farm-accent/90 text-farm-dark text-sm"
                 >
                   {fieldLoading ? (
                     <>
-                      <LoadingSpinner size="sm" className="mr-2" />
-                      Loading...
+                      <LoadingSpinner size="sm" className="mr-1.5 flex-shrink-0" />
+                      <span className="truncate">Loading...</span>
                     </>
                   ) : (
-                    'View Report'
+                    <span className="truncate">View Report</span>
                   )}
                 </Button>
               </div>
@@ -1424,22 +1468,22 @@ export default function FarmReports() {
                 </Select>
               </div>
 
-              {/* Action Buttons - Inline */}
-              <div className="flex gap-2 pt-2">
+              {/* Action Buttons - Inline with proper mobile constraints */}
+              <div className="flex gap-2 pt-2 w-full">
                 <Button 
                   onClick={handleSyncAllFieldsClick} 
                   disabled={!selectedOperationId || syncingAllFields || !jdSyncEnabled}
-                  className="flex-1 bg-farm-accent hover:bg-farm-accent/90 text-farm-dark"
+                  className="flex-1 min-w-0 bg-farm-accent hover:bg-farm-accent/90 text-farm-dark text-sm"
                 >
                   {syncingAllFields ? (
                     <>
-                      <LoadingSpinner size="sm" className="mr-2" />
-                      Syncing All Fields...
+                      <LoadingSpinner size="sm" className="mr-1.5 flex-shrink-0" />
+                      <span className="truncate">Syncing...</span>
                     </>
                   ) : (
                     <>
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Sync All Fields
+                      <RefreshCw className="mr-1.5 h-4 w-4 flex-shrink-0" />
+                      <span className="truncate">Sync from JD Ops</span>
                     </>
                   )}
                 </Button>
@@ -1447,18 +1491,18 @@ export default function FarmReports() {
                 <Button 
                   onClick={() => loadTimeline()} 
                   disabled={!selectedOperationId || timelineLoading || !jdSyncEnabled || syncingAllFields}
-                  className="flex-1 border-farm-accent/20 text-farm-accent hover:bg-farm-accent/10"
+                  className="flex-1 min-w-0 border-farm-accent/20 text-farm-accent hover:bg-farm-accent/10 text-sm"
                   variant="outline"
                 >
                   {timelineLoading ? (
                     <>
-                      <LoadingSpinner size="sm" className="mr-2" />
-                      Loading...
+                      <LoadingSpinner size="sm" className="mr-1.5 flex-shrink-0" />
+                      <span className="truncate">Loading...</span>
                     </>
                   ) : syncingAllFields ? (
-                    'Sync in progress...'
+                    <span className="truncate">Sync in progress...</span>
                   ) : (
-                    'View Timeline'
+                    <span className="truncate">View Timeline</span>
                   )}
                 </Button>
               </div>
