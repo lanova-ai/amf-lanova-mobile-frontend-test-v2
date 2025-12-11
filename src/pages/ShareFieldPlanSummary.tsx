@@ -215,7 +215,7 @@ export default function ShareFieldPlanSummary() {
             <div>
               <h2 className="font-semibold">Share Field Plan Summary</h2>
               <p className="text-xs text-farm-muted">
-                {summary.summary_name || `${summary.year} Field Plans Summary`} • {summary.year} • {summary.total_plans} plans
+                {summary.summary_name || `${summary.year} Field Plans Summary`} • {summary.year} • {summary.total_plans} {summary.total_plans === 1 ? 'plan' : 'plans'}
               </p>
             </div>
           </div>

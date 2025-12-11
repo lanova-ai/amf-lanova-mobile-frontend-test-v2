@@ -119,11 +119,11 @@ const SharedFieldPlanSummaryPage = () => {
             </div>
             <div className="flex items-center gap-2">
               <FileText className="h-4 w-4 text-farm-muted" />
-              <span>{summary.total_plans} Plans</span>
+              <span>{summary.total_plans} {summary.total_plans === 1 ? 'Plan' : 'Plans'}</span>
             </div>
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4 text-farm-muted" />
-              <span>{summary.total_fields} Fields</span>
+              <span>{summary.total_fields} {summary.total_fields === 1 ? 'Field' : 'Fields'}</span>
             </div>
           </div>
         </div>
