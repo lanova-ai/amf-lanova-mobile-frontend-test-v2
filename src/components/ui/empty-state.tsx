@@ -1,4 +1,3 @@
-import React from "react";
 import { LucideIcon } from "lucide-react";
 import { Button } from "./button";
 import { cn } from "@/lib/utils";
@@ -25,7 +24,10 @@ export function EmptyState({ icon: Icon, title, description, action, className }
       <h3 className="font-semibold text-lg text-farm-text mb-1">{title}</h3>
       <p className="text-sm text-farm-muted mb-4">{description}</p>
       {action && (
-        <Button onClick={action.onClick}>
+        <Button 
+          onClick={action.onClick}
+          className="bg-farm-accent hover:bg-farm-accent/90 text-farm-dark font-semibold"
+        >
           {action.icon && <action.icon className="h-4 w-4 mr-2" />}
           {action.label}
         </Button>
