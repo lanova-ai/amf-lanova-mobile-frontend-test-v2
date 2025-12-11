@@ -167,16 +167,18 @@ async function apiFetch<T>(
           throw await handleErrorResponse(retryResponse);
         }
         return await retryResponse.json();
-      } else if (refreshResult.reason === 'offline') {
-        // Network error during refresh - don't logout, just show offline message
-        const offlineError: APIError = {
-          message: "You're offline. Please check your internet connection.",
+      } else if (refreshResult.reason === 'offline' || refreshResult.reason === 'server_error') {
+        // Network error or server error during refresh - don't logout, just show error message
+        const tempError: APIError = {
+          message: refreshResult.reason === 'offline' 
+            ? "You're offline. Please check your internet connection."
+            : "Server temporarily unavailable. Please try again.",
           status: 0,
-          details: { offline: true }
+          details: { offline: refreshResult.reason === 'offline', serverError: refreshResult.reason === 'server_error' }
         };
-        throw offlineError;
+        throw tempError;
       } else {
-        // Refresh failed due to invalid token - clear tokens and redirect to welcome page
+        // Refresh failed due to invalid/expired token - clear tokens and redirect to welcome page
         tokenManager.clearTokens();
         // Use a small delay to allow any pending operations to complete
         setTimeout(() => {
@@ -253,8 +255,9 @@ async function handleErrorResponse(response: Response): Promise<APIError> {
 }
 
 // Refresh access token
-// Returns { success: true } if refreshed, { success: false, reason: 'offline' | 'invalid' } if failed
-async function refreshAccessToken(): Promise<{ success: boolean; reason?: 'offline' | 'invalid' | 'no_token' }> {
+// Returns { success: true } if refreshed, { success: false, reason: ... } if failed
+// Only 'invalid' or 'no_token' should trigger logout - 'offline' and 'server_error' should NOT
+async function refreshAccessToken(): Promise<{ success: boolean; reason?: 'offline' | 'invalid' | 'no_token' | 'server_error' }> {
   const refreshToken = tokenManager.getRefreshToken();
   if (!refreshToken) return { success: false, reason: 'no_token' };
 
@@ -271,7 +274,18 @@ async function refreshAccessToken(): Promise<{ success: boolean; reason?: 'offli
       return { success: true };
     }
     
-    // Server rejected the refresh token - it's invalid
+    // Only 401/403 means the token is actually invalid
+    if (response.status === 401 || response.status === 403) {
+      return { success: false, reason: 'invalid' };
+    }
+    
+    // 5xx errors are server issues - don't logout, just report as temporary error
+    if (response.status >= 500) {
+      console.warn('Token refresh failed due to server error:', response.status);
+      return { success: false, reason: 'server_error' };
+    }
+    
+    // Other 4xx errors (400, 404, etc.) - treat as invalid for safety
     return { success: false, reason: 'invalid' };
   } catch (error) {
     console.error('Token refresh failed:', error);
@@ -283,7 +297,8 @@ async function refreshAccessToken(): Promise<{ success: boolean; reason?: 'offli
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
       return { success: false, reason: 'offline' };
     }
-    return { success: false, reason: 'invalid' };
+    // Unknown error - treat as temporary server issue, not invalid token
+    return { success: false, reason: 'server_error' };
   }
 }
 
