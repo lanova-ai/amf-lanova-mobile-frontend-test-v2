@@ -14,8 +14,6 @@ import {
   Eye,
   FileText,
   Tag,
-  Lightbulb,
-  TrendingUp,
   ChevronDown,
   ChevronUp,
   Check,
@@ -927,76 +925,6 @@ export default function DocumentDetail() {
                 </span>
               ))}
             </div>
-          </div>
-        )}
-
-        {/* Visual Analysis */}
-        {document.visual_analysis && (
-          <div className="bg-farm-card rounded-lg border border-farm-accent/20 p-4 space-y-4">
-            <div className="flex items-center gap-2">
-              <Eye className="h-4 w-4 text-farm-muted" />
-              <h3 className="font-semibold text-farm-text">Visual Analysis</h3>
-            </div>
-
-            {/* Description */}
-            {document.visual_analysis.description && (
-              <div>
-                <h4 className="text-sm font-medium text-farm-muted mb-1">Description</h4>
-                <p className="text-sm text-farm-text">{document.visual_analysis.description}</p>
-              </div>
-            )}
-
-            {/* Agricultural Insights */}
-            {document.visual_analysis.agricultural_insights && (
-              <div>
-                <h4 className="text-sm font-medium text-farm-muted mb-1">Agricultural Insights</h4>
-                <p className="text-sm text-farm-text">{document.visual_analysis.agricultural_insights}</p>
-              </div>
-            )}
-
-            {/* Condition Assessment */}
-            {document.visual_analysis.condition_assessment && (
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-farm-muted" />
-                <span className="text-sm font-medium text-farm-text">Condition:</span>
-                <span className={`text-sm px-2 py-1 rounded ${
-                  document.visual_analysis.condition_assessment === 'Excellent' ? 'bg-green-500/10 text-green-400' :
-                  document.visual_analysis.condition_assessment === 'Good' ? 'bg-blue-500/10 text-blue-400' :
-                  document.visual_analysis.condition_assessment === 'Fair' ? 'bg-yellow-500/10 text-farm-gold' :
-                  document.visual_analysis.condition_assessment === 'Poor' ? 'bg-orange-500/10 text-orange-400' :
-                  document.visual_analysis.condition_assessment === 'Critical' ? 'bg-red-500/10 text-red-400' :
-                  'bg-farm-accent/10 text-farm-muted'
-                }`}>
-                  {document.visual_analysis.condition_assessment}
-                </span>
-              </div>
-            )}
-
-            {/* Recommended Actions */}
-            {document.visual_analysis.recommended_actions && document.visual_analysis.recommended_actions.length > 0 && (
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Lightbulb className="h-4 w-4 text-farm-muted" />
-                  <h4 className="text-sm font-medium text-farm-text">Recommended Actions</h4>
-                </div>
-                <ul className="space-y-1">
-                  {document.visual_analysis.recommended_actions.map((action, idx) => (
-                    <li key={idx} className="text-sm text-farm-text flex items-start gap-2">
-                      <span className="text-farm-accent mt-0.5">•</span>
-                      <span>{action}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Confidence */}
-            {document.visual_analysis.confidence !== undefined && (
-              <div className="flex items-center gap-2 text-sm text-farm-muted">
-                <span>Confidence:</span>
-                <span className="font-medium">{(document.visual_analysis.confidence * 100).toFixed(0)}%</span>
-              </div>
-            )}
           </div>
         )}
 
