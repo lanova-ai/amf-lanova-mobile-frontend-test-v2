@@ -101,6 +101,11 @@ export default function FarmReports() {
           );
         }
         
+        // Always reset timeline loading state when switching org/year
+        // (timeline loading is specific to each org/year combination)
+        setTimelineLoading(false);
+        setTimelineSummary(null);
+        
         setCheckingSyncStatus(true);
         
         // Check sync status first
@@ -108,12 +113,9 @@ export default function FarmReports() {
         
         setCheckingSyncStatus(false);
         
-        // Only clear timeline if no sync is in progress
+        // Only reset sync state if no sync is in progress for this org/year
         // If sync IS in progress, checkAndResumeSyncIfNeeded already set the state
         if (!syncDetected) {
-          // Clear existing timeline summary (will show "No Timeline" state)
-          setTimelineSummary(null);
-          
           // Stop any existing sync polling when switching org/year
           if (pollIntervalId) {
             clearInterval(pollIntervalId);
@@ -361,6 +363,14 @@ export default function FarmReports() {
   const loadTimeline = async (retryCount = 0, maxRetries = 2) => {
     if (!selectedOperationId) return;
     
+    // Prevent timeline generation while sync is in progress
+    if (syncingAllFields) {
+      console.log("Sync in progress, skipping timeline load");
+      toast.info("Please wait for sync to complete before viewing the timeline.", { duration: 3000 });
+      setTimelineLoading(false);
+      return;
+    }
+    
     // Prevent concurrent calls - only allow if not already loading (unless it's a retry)
     if (timelineLoading && retryCount === 0) {
       console.log("Timeline already loading, skipping duplicate call");
@@ -369,8 +379,44 @@ export default function FarmReports() {
     
     try {
       setTimelineLoading(true);
-      const timeline = await fieldOperationsAPI.getOperationTimeline(selectedOperationId, timelineYear);
-      setTimelineSummary(timeline);
+      
+      // Step 1: Check status first WITHOUT triggering generation
+      const statusCheck = await fieldOperationsAPI.getOperationTimeline(selectedOperationId, timelineYear, false);
+      
+      // Handle based on status
+      if (statusCheck.generation_status === 'completed') {
+        // Timeline exists and is ready
+        setTimelineSummary(statusCheck);
+        return;
+      }
+      
+      if (statusCheck.generation_status === 'generating') {
+        // Already generating - start polling
+        console.log("Timeline is being generated, polling for completion...");
+        toast.info(statusCheck.message || "Generating timeline... This may take 1-2 minutes.", { duration: 5000 });
+        await pollForTimeline();
+        return;
+      }
+      
+      // Status is 'not_found', 'pending', or 'failed' - need to trigger generation
+      console.log(`Timeline status: ${statusCheck.generation_status}. Triggering generation...`);
+      toast.info("Starting timeline generation... This may take 1-2 minutes.", { duration: 5000 });
+      
+      // Step 2: Trigger generation
+      const triggerResult = await fieldOperationsAPI.getOperationTimeline(selectedOperationId, timelineYear, true);
+      
+      if (triggerResult.generation_status === 'generating') {
+        // Generation started - poll for completion
+        await pollForTimeline();
+      } else if (triggerResult.generation_status === 'completed') {
+        // Rare case - completed immediately
+        setTimelineSummary(triggerResult);
+        toast.success("Timeline loaded!");
+      } else {
+        toast.error("Failed to start timeline generation. Please try again.");
+        setTimelineSummary(null);
+      }
+      
     } catch (error: any) {
       console.error("Failed to load timeline:", error);
       
@@ -407,6 +453,39 @@ export default function FarmReports() {
     } finally {
       setTimelineLoading(false);
     }
+  };
+  
+  // Helper function to poll for timeline completion
+  const pollForTimeline = async () => {
+    const maxPolls = 18; // 3 minutes with 10s intervals
+    
+    for (let poll = 0; poll < maxPolls; poll++) {
+      await new Promise(resolve => setTimeout(resolve, 10000)); // 10s interval
+      
+      try {
+        // Poll WITHOUT triggering (trigger=false)
+        const pollResult = await fieldOperationsAPI.getOperationTimeline(selectedOperationId!, timelineYear, false);
+        
+        if (pollResult.generation_status === 'completed') {
+          setTimelineSummary(pollResult);
+          toast.success("Timeline generated successfully!");
+          return;
+        } else if (pollResult.generation_status === 'failed') {
+          setTimelineSummary(null);
+          toast.error("Timeline generation failed. Please try again.");
+          return;
+        }
+        // Still generating, continue polling
+        console.log(`Polling for timeline... (${poll + 1}/${maxPolls})`);
+      } catch (pollError) {
+        console.error("Poll error:", pollError);
+        // Continue polling on error
+      }
+    }
+    
+    // Timeout after max polls
+    toast.info("Timeline is still generating. Please refresh in a moment.");
+    setTimelineSummary(null);
   };
 
   const checkAndResumeSyncIfNeeded = async (): Promise<boolean> => {
@@ -696,13 +775,10 @@ export default function FarmReports() {
         )
       ]) as any;
       
-      // Show initial toast with estimated time and warning about clearing summaries
+      // Show simple toast - detailed warning already shown in modal
       toast.info(
-        `🔄 Force refreshing ${result.total_fields} fields for ${orgName} (${timelineYear})...\n\n` +
-        `⚠️ Existing summaries will be cleared and re-synced from John Deere.\n\n` +
-        `Estimated time: ${Math.round(result.estimated_duration_minutes)} minutes\n\n` +
-        `Progress will be shown below.`,
-        { duration: 10000 }
+        `Syncing ${result.total_fields} fields (~${Math.round(result.estimated_duration_minutes)} min)`,
+        { duration: 5000 }
       );
       
       // Initialize progress
@@ -1370,7 +1446,7 @@ export default function FarmReports() {
                 
                 <Button 
                   onClick={() => loadTimeline()} 
-                  disabled={!selectedOperationId || timelineLoading || !jdSyncEnabled}
+                  disabled={!selectedOperationId || timelineLoading || !jdSyncEnabled || syncingAllFields}
                   className="flex-1 border-farm-accent/20 text-farm-accent hover:bg-farm-accent/10"
                   variant="outline"
                 >
@@ -1379,6 +1455,8 @@ export default function FarmReports() {
                       <LoadingSpinner size="sm" className="mr-2" />
                       Loading...
                     </>
+                  ) : syncingAllFields ? (
+                    'Sync in progress...'
                   ) : (
                     'View Timeline'
                   )}
@@ -1454,7 +1532,7 @@ export default function FarmReports() {
                 <div className="space-y-2">
                   <h3 className="font-semibold text-lg text-farm-text">Syncing Operations Data</h3>
                   <p className="text-sm text-farm-muted max-w-md mx-auto">
-                    Importing field operations from John Deere Operations Center. Your timeline will be generated automatically when the sync completes.
+                    Importing field operations from John Deere Operations Center. Click "View Timeline" after sync completes to generate the summary.
                   </p>
                 </div>
               </div>

@@ -2697,6 +2697,8 @@ export interface OperationTimelineSummary {
   fields_by_crop: Record<string, number>;
   summary_text: string;
   last_computed_at: string;
+  generation_status?: 'not_found' | 'pending' | 'generating' | 'completed' | 'failed';  // Track generation progress
+  message?: string;  // Status message for generating/failed/not_found/pending states
 }
 
 export interface SyncOperationsResponse {
@@ -2738,8 +2740,8 @@ export const fieldOperationsAPI = {
   // - Small ops (<15 fields): ~30-60s
   // - Large ops (30+ fields): 2-4 minutes (chunked processing)
   // Subsequent calls are instant (cached in DB)
-  getOperationTimeline: async (operationId: string, year: number): Promise<OperationTimelineSummary> => {
-    return apiFetch(`/api/v1/operations/${operationId}/timeline-summary?year=${year}`, {}, 300000); // 5 minutes
+  getOperationTimeline: async (operationId: string, year: number, trigger: boolean = false): Promise<OperationTimelineSummary> => {
+    return apiFetch(`/api/v1/operations/${operationId}/timeline-summary?year=${year}&trigger=${trigger}`, {}, 300000); // 5 minutes
   },
 
   // Regenerate operation timeline summary
