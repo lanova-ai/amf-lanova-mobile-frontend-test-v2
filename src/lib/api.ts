@@ -2870,6 +2870,8 @@ export const fieldOperationsAPI = {
     operation_id: string;
     operation_name: string;
     year: number;
+    failed_fields?: number;  // Number of fields that failed to sync (JD API errors)
+    timeline_generated?: boolean;
   }> => {
     return apiFetch(`/api/v1/operations/${operationId}/sync-status?year=${year}`);
   },

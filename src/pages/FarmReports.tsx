@@ -102,9 +102,8 @@ export default function FarmReports() {
           );
         }
         
-        // Always reset timeline loading state when switching org/year
-        // (timeline loading is specific to each org/year combination)
-        setTimelineLoading(false);
+        // Show loading state while checking (prevents "No Timeline" flash)
+        setTimelineLoading(true);
         setTimelineSummary(null);
         
         setCheckingSyncStatus(true);
@@ -126,6 +125,28 @@ export default function FarmReports() {
           // Reset sync state (but keep syncingRef for background warning)
           setSyncingAllFields(false);
           setSyncProgress(null);
+          
+          // Auto-load timeline if it exists (check without triggering generation)
+          try {
+            const existingTimeline = await fieldOperationsAPI.getOperationTimeline(selectedOperationId, timelineYear, false);
+            if (existingTimeline.generation_status === 'completed') {
+              console.log("Auto-loaded existing timeline for", selectedOperationId, timelineYear);
+              setTimelineSummary(existingTimeline);
+            } else if (existingTimeline.generation_status === 'generating') {
+              // Timeline is being generated - show generating state
+              console.log("Timeline is generating, will poll for completion");
+              setTimelineGenerating(true);
+            }
+            // If 'not_found' or 'failed', leave timelineSummary as null (shows "No Timeline")
+          } catch (error) {
+            console.log("Could not check existing timeline:", error);
+            // Silent fail - user can click "View Timeline" manually
+          } finally {
+            setTimelineLoading(false);
+          }
+        } else {
+          // Sync is in progress, don't show loading for timeline
+          setTimelineLoading(false);
         }
       };
       
@@ -177,7 +198,14 @@ export default function FarmReports() {
         setSyncingAllFields(false);
         setSyncProgress(null);
         syncingRef.current = { operationId: null, operationName: null };
-        toast.success('✅ Sync completed!', { duration: 4000 });
+        
+        // Check for partial failures
+        const failedCount = status.failed_fields || (status.total - status.current);
+        if (failedCount > 0) {
+          toast.warning(`⚠️ Sync completed: ${status.current}/${status.total} fields (${failedCount} failed)`, { duration: 6000 });
+        } else {
+          toast.success('✅ Sync completed!', { duration: 4000 });
+        }
       }
     } catch (error) {
       // Silently handle - user can refresh if needed
@@ -647,13 +675,27 @@ export default function FarmReports() {
             setPollIntervalId(null);
           }
           
-          // Show success message
-          toast.success(
-            `✅ Sync complete!\n\n` +
-            `${status.current}/${status.total} fields synced successfully.\n\n` +
-            `Loading timeline...`,
-            { duration: 5000 }
-          );
+          // Check for partial failures
+          const failedCount = (status as any).failed_fields || (status.total - status.current);
+          
+          if (failedCount > 0) {
+            // Partial success - some fields failed (likely JD API errors)
+            toast.warning(
+              `⚠️ Sync completed with issues\n\n` +
+              `${status.current}/${status.total} fields synced.\n` +
+              `${failedCount} field(s) failed (likely JD API errors).\n\n` +
+              `Timeline will be generated with available data.`,
+              { duration: 8000 }
+            );
+          } else {
+            // Full success
+            toast.success(
+              `✅ Sync complete!\n\n` +
+              `${status.current}/${status.total} fields synced successfully.\n\n` +
+              `Loading timeline...`,
+              { duration: 5000 }
+            );
+          }
           
           // Reset state
           setSyncingAllFields(false);
@@ -843,10 +885,35 @@ export default function FarmReports() {
       
     } catch (error: any) {
       console.error("Failed to start sync:", error);
-      const errorMessage = error?.message || "Failed to start sync";
-      toast.error(errorMessage, { duration: 6000 });
       
-      // Reset state on error
+      // Handle 409 Conflict - sync is already in progress
+      if (error?.status === 409) {
+        toast.warning(
+          `Sync is already in progress.\n\nResuming progress tracking...`,
+          { duration: 4000 }
+        );
+        
+        // Try to resume tracking the existing sync
+        try {
+          const status = await fieldOperationsAPI.getSyncStatus(selectedOperationId, timelineYear);
+          if (status.status === 'in_progress') {
+            setSyncProgress({
+              current: status.current,
+              total: status.total,
+              percentage: status.percentage
+            });
+            startSyncPolling();
+            return; // Keep syncingAllFields = true
+          }
+        } catch (resumeError) {
+          console.error("Failed to resume sync tracking:", resumeError);
+        }
+      } else {
+        const errorMessage = error?.message || "Failed to start sync";
+        toast.error(errorMessage, { duration: 6000 });
+      }
+      
+      // Reset state on error (if we didn't resume)
       setSyncingAllFields(false);
       setSyncProgress(null);
       syncingRef.current = { operationId: null, operationName: null };
