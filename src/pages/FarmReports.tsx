@@ -647,11 +647,11 @@ export default function FarmReports() {
             setPollIntervalId(null);
           }
           
-          // Show success message - user can click "View Timeline" to generate
+          // Show success message
           toast.success(
             `✅ Sync complete!\n\n` +
             `${status.current}/${status.total} fields synced successfully.\n\n` +
-            `Click "View Timeline" to generate the summary.`,
+            `Loading timeline...`,
             { duration: 5000 }
           );
           
@@ -659,6 +659,12 @@ export default function FarmReports() {
           setSyncingAllFields(false);
           setSyncProgress(null);
           syncingRef.current = { operationId: null, operationName: null };
+          
+          // Auto-load timeline after sync completes (small delay to let backend start generation)
+          setTimeout(() => {
+            console.log("Auto-loading timeline after sync completion...");
+            loadTimeline();
+          }, 1000);
           
           return true; // Indicate completion
         }
@@ -1576,7 +1582,7 @@ export default function FarmReports() {
                 <div className="space-y-2">
                   <h3 className="font-semibold text-lg text-farm-text">Syncing Operations Data</h3>
                   <p className="text-sm text-farm-muted max-w-md mx-auto">
-                    Importing field operations from John Deere Operations Center. Click "View Timeline" after sync completes to generate the summary.
+                    Importing field operations from John Deere Operations Center. Timeline will be generated automatically after sync completes.
                   </p>
                 </div>
               </div>
