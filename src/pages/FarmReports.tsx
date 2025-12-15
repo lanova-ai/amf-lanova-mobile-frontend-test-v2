@@ -67,6 +67,7 @@ export default function FarmReports() {
   
   // Sync All Fields State
   const [showSyncConfirmation, setShowSyncConfirmation] = useState(false);
+  const [showRegenerateConfirmation, setShowRegenerateConfirmation] = useState(false);
   const [syncingAllFields, setSyncingAllFields] = useState(false);
   const [syncProgress, setSyncProgress] = useState<{current: number; total: number; percentage: number} | null>(null);
   const [pollIntervalId, setPollIntervalId] = useState<NodeJS.Timeout | null>(null);
@@ -529,7 +530,7 @@ export default function FarmReports() {
   
   // Helper function to poll for timeline completion
   const pollForTimeline = async () => {
-    const maxPolls = 18; // 3 minutes with 10s intervals
+    const maxPolls = 60; // 10 minutes with 10s intervals (regeneration takes 5-10 min)
     
     for (let poll = 0; poll < maxPolls; poll++) {
       await new Promise(resolve => setTimeout(resolve, 10000)); // 10s interval
@@ -540,10 +541,14 @@ export default function FarmReports() {
         
         if (pollResult.generation_status === 'completed') {
           setTimelineSummary(pollResult);
+          setTimelineLoading(false);
+          setTimelineGenerating(false);
           toast.success("Timeline generated successfully!");
           return;
         } else if (pollResult.generation_status === 'failed') {
           setTimelineSummary(null);
+          setTimelineLoading(false);
+          setTimelineGenerating(false);
           toast.error("Timeline generation failed. Please try again.");
           return;
         }
@@ -558,6 +563,8 @@ export default function FarmReports() {
     // Timeout after max polls
     toast.info("Timeline is still generating. Please refresh in a moment.");
     setTimelineSummary(null);
+    setTimelineLoading(false);
+    setTimelineGenerating(false);
   };
 
   const checkAndResumeSyncIfNeeded = async (): Promise<boolean> => {
@@ -1631,6 +1638,14 @@ export default function FarmReports() {
                 <div className="flex items-center text-xs text-farm-muted pt-1">
                   <Clock className="h-3 w-3 mr-1" />
                   <span>Last computed: {formatTimeAgo(timelineSummary.last_computed_at)}</span>
+                  <button
+                    onClick={() => setShowRegenerateConfirmation(true)}
+                    disabled={timelineLoading}
+                    className="ml-2 p-1 hover:bg-farm-accent/10 rounded transition-colors"
+                    title="Regenerate timeline"
+                  >
+                    <RefreshCw className={`h-3 w-3 text-farm-accent ${timelineLoading ? 'animate-spin' : ''}`} />
+                  </button>
                 </div>
               )}
             </div>
@@ -1659,6 +1674,17 @@ export default function FarmReports() {
                 {(() => {
                   const orgFields = jdFields.filter(f => f.operation_id === selectedOperationId);
                   const fieldCount = orgFields.length;
+                  
+                  // Show different message for regeneration vs. initial loading
+                  if (timelineGenerating) {
+                    return (
+                      <>
+                        <p className="text-sm text-farm-muted">🔄 Regenerating timeline with AI...</p>
+                        <p className="text-xs text-farm-muted/70">Processing {fieldCount} fields - this may take 5-10 minutes</p>
+                      </>
+                    );
+                  }
+                  
                   if (fieldCount > 30) {
                     return (
                       <>
@@ -1732,6 +1758,68 @@ export default function FarmReports() {
             )}
           </TabsContent>
         </Tabs>
+
+        {/* Regenerate Timeline Confirmation Modal */}
+        <AlertDialog open={showRegenerateConfirmation} onOpenChange={setShowRegenerateConfirmation}>
+          <AlertDialogContent className="max-w-md">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <RefreshCw className="h-5 w-5 text-farm-accent" />
+                  Regenerate Timeline for {timelineYear}?
+                </h3>
+                <p className="text-sm text-farm-muted">
+                  This will regenerate the annual timeline summary for{" "}
+                  <strong>{organizations.find(org => org.id === selectedOperationId)?.name || 'this organization'}</strong>.
+                </p>
+                <p className="text-sm text-farm-muted">
+                  For large operations, this may take <strong>5-10 minutes</strong>.
+                </p>
+              </div>
+
+              <AlertDialogFooter className="mt-4">
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={async () => {
+                    setShowRegenerateConfirmation(false);
+                    setTimelineGenerating(true);  // Use generating state, not loading
+                    setTimelineLoading(true);
+                    setTimelineSummary(null);
+                    try {
+                      // Force regeneration by calling the regenerate endpoint
+                      const token = localStorage.getItem('amf_access_token');
+                      const response = await fetch(
+                        `${import.meta.env.VITE_API_BASE_URL || ''}/api/v1/operations/${selectedOperationId}/timeline-summary/${timelineYear}/regenerate`,
+                        {
+                          method: 'POST',
+                          headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                          }
+                        }
+                      );
+                      if (response.ok) {
+                        toast.info('Timeline regeneration started. This may take several minutes...', { duration: 8000 });
+                        // Poll for completion
+                        await pollForTimeline();
+                      } else {
+                        throw new Error('Failed to start regeneration');
+                      }
+                    } catch (error) {
+                      console.error('Regeneration failed:', error);
+                      toast.error('Failed to regenerate timeline');
+                      setTimelineLoading(false);
+                      setTimelineGenerating(false);
+                    }
+                  }}
+                  className="bg-farm-accent hover:bg-farm-accent/90 text-farm-dark"
+                >
+                  Regenerate
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </div>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Sync All Fields Confirmation Modal */}
         <AlertDialog open={showSyncConfirmation} onOpenChange={setShowSyncConfirmation}>
