@@ -1,7 +1,13 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Eye, Trash2, MoreVertical, Calendar, Share2, ArrowLeft, X, ChevronRight } from "lucide-react";
+import { Plus, Eye, Trash2, MoreVertical, Calendar, Share2, ArrowLeft, X, ChevronRight, Mic, Upload, PenLine } from "lucide-react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import DocumentUploadModal from "@/components/DocumentUploadModal";
 import { toast } from "sonner";
 import { fieldPlansAPI, sharePlansAPI, fieldPlanSummariesAPI, FieldPlanSummaryListItem, FieldPlanSummaryResponse, handlePageError } from "@/lib/api";
 import {
@@ -101,6 +107,10 @@ const FieldPlans = () => {
   const [yearFilter, setYearFilter] = useState<string>(searchParams.get('year') || "all");
   const [availableFields, setAvailableFields] = useState<{field_id: string, field_name: string}[]>([]);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
+  
+  // FAB menu state
+  const [fabMenuOpen, setFabMenuOpen] = useState(false);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
 
   // Fetch plans from API
   useEffect(() => {
@@ -926,16 +936,57 @@ const FieldPlans = () => {
           )}
         </main>
 
-        {/* FAB Action Button - Only show on Field Plans tab */}
+        {/* FAB Action Button with Menu - Only show on Field Plans tab */}
         {viewMode === 'plans' && (
-          <button
-            onClick={() => navigate("/field-plans/new")}
-            className="fixed bottom-6 right-6 lg:right-[calc(50%-256px+1.5rem)] w-14 h-14 rounded-full bg-farm-accent text-farm-dark shadow-lg hover:shadow-xl transition-all hover:scale-110 z-20 flex items-center justify-center"
-            style={{ boxShadow: "var(--shadow-elevated)" }}
-            aria-label="Create new field plan"
-          >
-            <Plus className="h-6 w-6" />
-          </button>
+          <Popover open={fabMenuOpen} onOpenChange={setFabMenuOpen}>
+            <PopoverTrigger asChild>
+              <button
+                className="fixed bottom-6 right-6 lg:right-[calc(50%-256px+1.5rem)] w-14 h-14 rounded-full bg-farm-accent text-farm-dark shadow-lg hover:shadow-xl transition-all hover:scale-110 z-20 flex items-center justify-center"
+                style={{ boxShadow: "var(--shadow-elevated)" }}
+                aria-label="Create new field plan"
+              >
+                <Plus className="h-6 w-6" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent 
+              side="top" 
+              align="end" 
+              className="w-52 p-2 mb-2 bg-farm-card border border-farm-accent/20"
+            >
+              <div className="space-y-1">
+                <button
+                  onClick={() => {
+                    setFabMenuOpen(false);
+                    navigate("/voice-capture");
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-farm-accent/10 transition-colors text-left"
+                >
+                  <Mic className="h-5 w-5 text-farm-accent" />
+                  <span className="text-sm font-medium text-farm-text">Record</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setFabMenuOpen(false);
+                    setUploadModalOpen(true);
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-farm-accent/10 transition-colors text-left"
+                >
+                  <Upload className="h-5 w-5 text-farm-accent" />
+                  <span className="text-sm font-medium text-farm-text">Upload Document</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setFabMenuOpen(false);
+                    navigate("/field-plans/new");
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-farm-accent/10 transition-colors text-left"
+                >
+                  <PenLine className="h-5 w-5 text-farm-accent" />
+                  <span className="text-sm font-medium text-farm-text">Manual</span>
+                </button>
+              </div>
+            </PopoverContent>
+          </Popover>
         )}
       </div>
 
@@ -1103,6 +1154,17 @@ const FieldPlans = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Document Upload Modal */}
+      <DocumentUploadModal
+        open={uploadModalOpen}
+        onClose={() => setUploadModalOpen(false)}
+        onUploadComplete={() => {
+          setUploadModalOpen(false);
+          toast.success("Document uploaded successfully!");
+          navigate("/documents");
+        }}
+      />
     </div>
   );
 };

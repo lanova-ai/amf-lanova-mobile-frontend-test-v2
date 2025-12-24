@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { MapContainer, TileLayer, Polygon, Marker, Popup, useMap, Circle } from "react-leaflet";
-import { Loader2, ChevronDown, ChevronUp, Camera, Mic, FileText, Trash2, Layers, Navigation } from "lucide-react";
-import { fieldsAPI, fieldNotesAPI, FieldNote, voiceAPI, documentsAPI, handlePageError } from "@/lib/api";
+import { Loader2, ChevronDown, ChevronUp, Camera, Mic, FileText, Trash2, Layers, Navigation, Tractor } from "lucide-react";
+import { fieldsAPI, fieldNotesAPI, FieldNote, voiceAPI, documentsAPI, equipmentAPI, Equipment, handlePageError } from "@/lib/api";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import L from "leaflet";
@@ -55,6 +55,51 @@ const currentLocationIcon = new L.DivIcon({
   iconSize: [20, 20],
   iconAnchor: [10, 10],
 });
+
+// Create equipment icon with dynamic color (uses tractor SVG for all types)
+const createEquipmentIcon = (color: string) => {
+  // Tractor SVG from Lucide icons
+  const tractorSvg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 4h9l1 7"/>
+      <path d="M4 11V4"/>
+      <path d="M8 10V4"/>
+      <path d="M18 5c-.6 0-1 .4-1 1v5.6"/>
+      <path d="m10 11 11 .9c.6 0 .9.5.8 1.1l-.8 5h-1"/>
+      <circle cx="7" cy="15" r="4"/>
+      <circle cx="7" cy="15" r="2"/>
+      <circle cx="16" cy="18" r="3"/>
+      <circle cx="16" cy="18" r="1"/>
+    </svg>
+  `;
+  
+  return new L.DivIcon({
+    html: `
+      <div style="
+        width: 32px; 
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      ">
+        <div style="
+          width: 28px;
+          height: 28px;
+          background: ${color};
+          border: 2px solid white;
+          border-radius: 50%;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        ">${tractorSvg}</div>
+      </div>
+    `,
+    className: 'equipment-marker',
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+  });
+};
 
 // Component to fit map bounds to all fields
 function FitBounds({ bounds }: { bounds: L.LatLngBoundsExpression | null }) {
@@ -148,6 +193,12 @@ const FieldsMap = () => {
   // Field notes state
   const [fieldNotes, setFieldNotes] = useState<FieldNote[]>([]);
   
+  // Equipment state
+  const [equipment, setEquipment] = useState<Equipment[]>([]);
+  const [showEquipment, setShowEquipment] = useState(true);
+  const [equipmentSyncing, setEquipmentSyncing] = useState(false);
+  const [equipmentSyncError, setEquipmentSyncError] = useState<string | null>(null);
+  
   // Map zoom state
   const [currentZoom, setCurrentZoom] = useState(10);
   const MIN_ZOOM_FOR_MARKERS = 13; // Show markers only when zoomed in to level 13 or more
@@ -208,7 +259,7 @@ const FieldsMap = () => {
       try {
         setLoading(true);
         
-        // Fetch fields and field notes in parallel
+        // Fetch fields and field notes first (equipment syncs separately)
         const [fieldsData, fieldNotesData] = await Promise.all([
           fieldsAPI.getFields({ include_geometry: true }),
           fieldNotesAPI.listFieldNotes({ limit: 500 }).catch(() => ({ field_notes: [], total: 0 }))
@@ -259,7 +310,12 @@ const FieldsMap = () => {
         // Store field notes
         setFieldNotes(fieldNotesData.field_notes);
 
-        toast.success(`Loaded ${fieldsWithBoundaries.length} fields${fieldNotesData.field_notes.length > 0 ? ` and ${fieldNotesData.field_notes.length} location notes` : ''}`);
+        // Build success message (equipment syncs separately)
+        let loadedMsg = `Loaded ${fieldsWithBoundaries.length} fields`;
+        if (fieldNotesData.field_notes.length > 0) {
+          loadedMsg += ` and ${fieldNotesData.field_notes.length} notes`;
+        }
+        toast.success(loadedMsg);
       } catch (error: any) {
         console.error("Error fetching fields:", error);
         const errorMsg = handlePageError(error, "Failed to load fields");
@@ -270,6 +326,50 @@ const FieldsMap = () => {
     };
 
     fetchFieldsAndNotes();
+  }, []);
+
+  // Sync equipment from John Deere (runs after map loads)
+  useEffect(() => {
+    const syncEquipment = async () => {
+      try {
+        setEquipmentSyncing(true);
+        setEquipmentSyncError(null);
+        
+        // First, sync with John Deere to get fresh data
+        const syncResult = await equipmentAPI.syncEquipment().catch((err) => {
+          console.warn('Equipment sync failed, will show cached data:', err);
+          return null; // Don't throw - we'll still try to fetch cached data
+        });
+        
+        // Check for "no access" warning from backend
+        if (syncResult?.warning === 'no_equipment_access') {
+          toast.warning(
+            'Equipment access not granted. Visit JD Operations Center → Connections → AskMyFarm → Edit to enable Equipment access.',
+            { duration: 10000 }
+          );
+        }
+        
+        // Then fetch the equipment (fresh or cached)
+        const equipmentData = await equipmentAPI.getEquipment();
+        
+        // Filter to only those with locations
+        const equipmentWithLocation = (equipmentData.equipment || []).filter(
+          (e: Equipment) => e.last_known_lat && e.last_known_lon
+        );
+        setEquipment(equipmentWithLocation);
+        
+        if (equipmentWithLocation.length > 0 && !syncResult?.warning) {
+          toast.success(`${equipmentWithLocation.length} equipment synced`);
+        }
+      } catch (err: any) {
+        console.error('Equipment fetch error:', err);
+        setEquipmentSyncError('Failed to load equipment');
+      } finally {
+        setEquipmentSyncing(false);
+      }
+    };
+
+    syncEquipment();
   }, []);
 
   // Track user's current location
@@ -839,6 +939,61 @@ const FieldsMap = () => {
             );
           })}
           
+          {/* Render equipment markers */}
+          {showEquipment && equipment.map((equip) => {
+            if (!equip.last_known_lat || !equip.last_known_lon) return null;
+            
+            const position = L.latLng(equip.last_known_lat, equip.last_known_lon);
+            const icon = createEquipmentIcon(equip.icon_color || '#367C2B');
+            
+            return (
+              <Marker
+                key={equip.id}
+                position={position}
+                icon={icon}
+                zIndexOffset={500}
+              >
+                <Popup className="custom-popup" minWidth={220}>
+                  <div className="p-2">
+                    {/* Equipment Name - Build clean display name */}
+                    <h3 className="text-sm font-semibold text-foreground mb-0.5">
+                      {equip.model_year && equip.make && equip.model 
+                        ? `${equip.model_year} ${equip.make} ${equip.model}`
+                        : equip.model && equip.make
+                        ? `${equip.make} ${equip.model}`
+                        : equip.model || equip.name}
+                    </h3>
+                    
+                    {/* Category / Type */}
+                    <p className="text-[11px] text-farm-muted mb-2 capitalize">
+                      {equip.machine_type || equip.category || 'Equipment'}
+                    </p>
+                    
+                    {/* Engine Hours - Main highlight */}
+                    {equip.current_engine_hours && (
+                      <div className="bg-farm-accent/10 rounded-md p-2 mb-2">
+                        <div className="text-xl font-bold text-farm-accent">
+                          {equip.current_engine_hours.toLocaleString()} hrs
+                        </div>
+                        <div className="text-[10px] text-farm-muted">Engine Hours</div>
+                      </div>
+                    )}
+                    
+                    {/* Serial & Updated - compact footer */}
+                    <div className="text-[10px] text-farm-muted space-y-0.5">
+                      {equip.serial_number && (
+                        <div>S/N: <span className="font-mono">{equip.serial_number}</span></div>
+                      )}
+                      {equip.hours_updated_at && (
+                        <div>Updated: {new Date(equip.hours_updated_at).toLocaleDateString()}</div>
+                      )}
+                    </div>
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
+
           {/* Render NDVI layer - only when marker is placed */}
           {showNDVI && markerPosition && (() => {
             const { startDate, endDate } = getNDVIDateRange();
@@ -968,6 +1123,58 @@ const FieldsMap = () => {
                     </div>
                   </div>
                 )}
+              </div>
+              
+              {/* Equipment Toggle */}
+              <div className="pt-1.5 border-t">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-1.5">
+                    {equipmentSyncing ? (
+                      <Loader2 className="h-3 w-3 text-farm-accent animate-spin" />
+                    ) : (
+                      <Tractor className="h-3 w-3 text-farm-accent" />
+                    )}
+                    <span className="text-xs">Equipment</span>
+                  </div>
+                  <Switch
+                    checked={showEquipment}
+                    onCheckedChange={setShowEquipment}
+                    disabled={equipmentSyncing}
+                    className="scale-75"
+                  />
+                </div>
+                
+                {equipmentSyncing ? (
+                  <div className="text-[10px] text-farm-muted mt-1 pl-0.5 flex items-center gap-1">
+                    <span>Syncing with John Deere...</span>
+                  </div>
+                ) : equipmentSyncError ? (
+                  <div className="text-[10px] text-red-400 mt-1 pl-0.5">
+                    {equipmentSyncError}
+                  </div>
+                ) : showEquipment && equipment.length > 0 ? (
+                  <div className="space-y-0.5 mt-1.5 pl-0.5">
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#367C2B" }} />
+                      <span className="text-farm-muted text-[10px]">Tractors</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#F97316" }} />
+                      <span className="text-farm-muted text-[10px]">Combines</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#3B82F6" }} />
+                      <span className="text-farm-muted text-[10px]">Sprayers</span>
+                    </div>
+                    <div className="text-[10px] text-farm-muted mt-1">
+                      {equipment.length} machines ✓
+                    </div>
+                  </div>
+                ) : showEquipment && equipment.length === 0 ? (
+                  <div className="text-[10px] text-farm-muted mt-1 pl-0.5">
+                    No equipment with location
+                  </div>
+                ) : null}
               </div>
 
 

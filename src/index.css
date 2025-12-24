@@ -265,6 +265,31 @@ All colors MUST be HSL.
   display: none;  /* Chrome, Safari, and Opera */
 }
 
+/* Dark themed thin scrollbar */
+.scrollbar-dark {
+  scrollbar-width: thin;  /* Firefox */
+  scrollbar-color: rgba(74, 222, 128, 0.3) rgba(30, 30, 30, 0.5);  /* Firefox: thumb track */
+}
+
+.scrollbar-dark::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-dark::-webkit-scrollbar-track {
+  background: rgba(30, 30, 30, 0.5);
+  border-radius: 3px;
+}
+
+.scrollbar-dark::-webkit-scrollbar-thumb {
+  background: rgba(74, 222, 128, 0.4);
+  border-radius: 3px;
+}
+
+.scrollbar-dark::-webkit-scrollbar-thumb:hover {
+  background: rgba(74, 222, 128, 0.6);
+}
+
 /* Custom Leaflet Popup Styling */
 .leaflet-popup-content-wrapper {
   background: hsl(var(--card)) !important;

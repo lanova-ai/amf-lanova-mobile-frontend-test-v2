@@ -67,7 +67,33 @@ export default function ConnectionDetails() {
           if (johnDeere.sync_status === 'completed') {
             clearInterval(pollInterval);
             setSyncing(false);
-            toast.success("Sync complete! Your fields are up to date.");
+            
+            // Check sync results and show appropriate message
+            // Use unique toast IDs to prevent duplicate toasts from multiple pages
+            const hasFields = (johnDeere.fields_synced || 0) > 0;
+            const hasEquipmentIssue = johnDeere.error_message === 'NO_EQUIPMENT_ACCESS';
+            
+            if (!hasFields && hasEquipmentIssue) {
+              // No fields AND no equipment access = likely not authorized at all
+              toast.error(
+                "Sync completed but no data imported. Please visit JD Operations Center → Connections → AskMyFarm → Edit to grant access permissions.",
+                { duration: 15000, id: 'jd-sync-result' }
+              );
+            } else if (!hasFields) {
+              // No fields but no equipment error - might be new account with no data
+              toast.warning(
+                "Sync completed but no fields found. Make sure your farms and fields are set up in JD Operations Center.",
+                { duration: 10000, id: 'jd-sync-result' }
+              );
+            } else if (hasEquipmentIssue) {
+              // Fields OK but equipment access denied
+              toast.warning(
+                "Fields synced, but Equipment access not granted. Visit JD Operations Center → Connections → AskMyFarm → Edit to enable Equipment tracking.",
+                { duration: 12000, id: 'jd-sync-result' }
+              );
+            } else {
+              toast.success("Sync complete! Your fields are up to date.", { id: 'jd-sync-result' });
+            }
           } else if (johnDeere.sync_status === 'failed') {
             clearInterval(pollInterval);
             setSyncing(false);
@@ -98,28 +124,19 @@ export default function ConnectionDetails() {
       // Call the sync API endpoint
       const result = await connectionAPI.syncJohnDeereFields();
       
-      toast.success("Field sync started! Importing data in the background...");
+      toast.success("Field sync started! Importing data in the background...", { id: 'jd-sync-started' });
       console.log("Sync result:", result);
       
-      // Wait for background job to complete (syncs typically take 30-60 seconds)
-      await new Promise(resolve => setTimeout(resolve, 35000));
+      // Start polling for sync completion instead of waiting a fixed time
+      // This handles both fast and slow syncs correctly
+      startSyncPolling();
       
-      // Reload connection data without showing full page loading
-      try {
-        const data = await userAPI.getConnections();
-        const johnDeere = data.connections.find(c => c.provider === 'johndeere' || c.provider === 'john_deere');
-        setJdConnection(johnDeere || null);
-        toast.success("Sync complete! Your fields are up to date.");
-      } catch (error) {
-        console.error("Failed to reload connection data:", error);
-        // Still show success for the sync itself
-      }
     } catch (error: any) {
       console.error("Sync failed:", error);
       toast.error(error.message || "Failed to sync fields");
-    } finally {
       setSyncing(false);
     }
+    // Note: setSyncing(false) is handled by startSyncPolling when sync completes
   };
 
   const handleDisconnect = async () => {

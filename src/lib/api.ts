@@ -711,9 +711,18 @@ export const jdOnboardingAPI = {
 // ================================
 
 export const connectionAPI = {
-  // Get OAuth connection URL (backend will redirect)
+  // Get OAuth connection URL (backend will redirect) - DEPRECATED: use initiateJohnDeereAuth
   initiateJohnDeere: (userId: string): string => {
     return `${env.API_BASE_URL}/api/v1/connections/johndeere/connect?user_id=${userId}`;
+  },
+
+  // Get OAuth authorization URL via authenticated API call
+  initiateJohnDeereAuth: async () => {
+    return apiFetch<{
+      auth_url: string;
+      provider: string;
+      message: string;
+    }>('/api/v1/connections/johndeere/connect');
   },
 
   // Check connection status
@@ -2781,6 +2790,34 @@ export interface FieldOperationYearlySummary {
   last_computed_at: string;
 }
 
+export interface MonthlyEquipmentHours {
+  month_key: string;  // "2025-04"
+  month_num: number;
+  total_hours: number;
+  equipment_count: number;
+  top_machine: string | null;
+  top_machine_hours: number;
+}
+
+export interface MachineUsage {
+  equipment_id: string;
+  name: string;
+  display_name: string;  // "2016 John Deere 8270R"
+  machine_type: string | null;
+  icon_color: string;  // Hex color from API based on machine type
+  total_hours: number;
+  session_count: number;
+}
+
+export interface EquipmentHoursStats {
+  year: number;
+  total_year_hours: number;
+  machine_count: number;
+  machines: MachineUsage[];  // Usage by machine, sorted by hours
+  months: Record<string, MonthlyEquipmentHours>;
+  source?: string;  // 'hours_of_operation' or 'engine_hours'
+}
+
 export interface OperationTimelineSummary {
   operation_id: string;
   crop_season: number;
@@ -2791,6 +2828,7 @@ export interface OperationTimelineSummary {
   last_computed_at: string;
   generation_status?: 'not_found' | 'pending' | 'generating' | 'completed' | 'failed';  // Track generation progress
   message?: string;  // Status message for generating/failed/not_found/pending states
+  equipment_hours?: EquipmentHoursStats;  // Monthly equipment usage
 }
 
 export interface SyncOperationsResponse {
@@ -2872,6 +2910,7 @@ export const fieldOperationsAPI = {
     year: number;
     failed_fields?: number;  // Number of fields that failed to sync (JD API errors)
     timeline_generated?: boolean;
+    error_type?: string;  // 'JD_PERMISSION_DENIED' if most failures are permission-related
   }> => {
     return apiFetch(`/api/v1/operations/${operationId}/sync-status?year=${year}`);
   },
@@ -3602,6 +3641,72 @@ export const fieldReportsAPI = {
     return apiFetch('/api/v1/field-reports/send-share-message', {
       method: 'POST',
       body: JSON.stringify(params),
+    });
+  },
+};
+
+// Equipment API for managing farm equipment/machinery
+export interface Equipment {
+  id: string;
+  jd_machine_id: string;
+  name: string;
+  machine_type: string | null;
+  category: string | null;
+  model: string | null;
+  make: string | null;
+  model_year: string | null;
+  serial_number: string | null;
+  current_engine_hours: number | null;
+  hours_updated_at: string | null;
+  telematics_capable: boolean;
+  icon_name: string | null;
+  icon_color: string | null;
+  last_known_lat: number | null;
+  last_known_lon: number | null;
+  is_archived: boolean;
+  last_synced_at: string | null;
+}
+
+export const equipmentAPI = {
+  // Get all equipment for the user
+  getEquipment: async (options?: { machine_type?: string; include_archived?: boolean }) => {
+    const params = new URLSearchParams();
+    if (options?.machine_type) {
+      params.append('machine_type', options.machine_type);
+    }
+    if (options?.include_archived) {
+      params.append('include_archived', 'true');
+    }
+    const queryString = params.toString();
+    return apiFetch<{
+      success: boolean;
+      equipment: Equipment[];
+      total: number;
+    }>(`/api/v1/equipment/${queryString ? `?${queryString}` : ''}`);
+  },
+
+  // Get equipment summary
+  getSummary: async () => {
+    return apiFetch<{
+      success: boolean;
+      total_equipment: number;
+      total_engine_hours: number;
+      by_category: Record<string, number>;
+      with_location: number;
+      telematics_enabled: number;
+    }>('/api/v1/equipment/summary');
+  },
+
+  // Sync equipment from John Deere
+  syncEquipment: async () => {
+    return apiFetch<{
+      success: boolean;
+      message: string;
+      equipment_imported: number;
+      equipment_updated: number;
+      warning?: string; // 'no_equipment_access' if all orgs returned 403
+    }>('/api/v1/equipment/sync', {
+      method: 'POST',
     });
   },
 };

@@ -76,6 +76,9 @@ export default function FarmReports() {
   // Ref to track syncing state across org switches (avoids stale closure in useEffect)
   // This persists across organization changes so we can show "still running in background" warnings
   const syncingRef = useRef<{ operationId: string | null; operationName: string | null }>({ operationId: null, operationName: null });
+  
+  // Ref to track current timeline polling context (prevents stale polling from updating wrong state)
+  const timelinePollingRef = useRef<{ operationId: string; year: number } | null>(null);
 
   // Load JD connection status on mount
   useEffect(() => {
@@ -90,6 +93,14 @@ export default function FarmReports() {
   // Clear timeline and check sync status when organization or year changes
   useEffect(() => {
     if (selectedOperationId && timelineYear) {
+      // ✅ IMMEDIATELY clear any stale polling from previous context
+      // This prevents old polling callbacks from updating state with wrong context
+      if (pollIntervalId) {
+        console.log("Clearing stale poll interval on context change");
+        clearInterval(pollIntervalId);
+        setPollIntervalId(null);
+      }
+      
       // First, check if sync is in progress (this will set the sync state if needed)
       // Do this BEFORE clearing, so we don't show "No Timeline" flash
       const checkAndClear = async () => {
@@ -109,7 +120,7 @@ export default function FarmReports() {
         
         setCheckingSyncStatus(true);
         
-        // Check sync status first
+        // Check sync status first - this will start NEW polling if sync is in progress for THIS context
         const syncDetected = await checkAndResumeSyncIfNeeded();
         
         setCheckingSyncStatus(false);
@@ -117,12 +128,6 @@ export default function FarmReports() {
         // Only reset sync state if no sync is in progress for this org/year
         // If sync IS in progress, checkAndResumeSyncIfNeeded already set the state
         if (!syncDetected) {
-          // Stop any existing sync polling when switching org/year
-          if (pollIntervalId) {
-            clearInterval(pollIntervalId);
-            setPollIntervalId(null);
-          }
-          
           // Reset sync state (but keep syncingRef for background warning)
           setSyncingAllFields(false);
           setSyncProgress(null);
@@ -200,12 +205,24 @@ export default function FarmReports() {
         setSyncProgress(null);
         syncingRef.current = { operationId: null, operationName: null };
         
-        // Check for partial failures
+        // Check for failures and error types
         const failedCount = status.failed_fields || (status.total - status.current);
-        if (failedCount > 0) {
-          toast.warning(`⚠️ Sync completed: ${status.current}/${status.total} fields (${failedCount} failed)`, { duration: 6000 });
+        if (status.error_type === 'JD_PERMISSION_DENIED') {
+          // All/most failures are permission-related
+          toast.error(
+            "Sync failed: Permission denied. Please visit JD Operations Center → Connections → AskMyFarm → Edit → ensure 'Work' is set to Level 2.",
+            { duration: 15000, id: 'timeline-sync-error' }
+          );
+        } else if (failedCount > 0 && status.current === 0) {
+          // All fields failed
+          toast.error(
+            `Sync failed: 0/${status.total} fields synced. Check your John Deere connection permissions.`,
+            { duration: 10000, id: 'timeline-sync-error' }
+          );
+        } else if (failedCount > 0) {
+          toast.warning(`⚠️ Sync completed: ${status.current}/${status.total} fields (${failedCount} failed)`, { duration: 6000, id: 'timeline-sync-result' });
         } else {
-          toast.success('✅ Sync completed!', { duration: 4000 });
+          toast.success('✅ Sync completed!', { duration: 4000, id: 'timeline-sync-result' });
         }
       }
     } catch (error) {
@@ -278,18 +295,17 @@ export default function FarmReports() {
     }
   }, [shouldAutoLoad, selectedFieldId, selectedOperationId, selectedYear]);
 
-  // Clear yearly summary when field or year changes
+  // Auto-load report when field or year changes (if report exists)
   useEffect(() => {
-    // Clear the old report when user changes field or year
-    setYearlySummary(null);
-  }, [selectedFieldId, selectedYear]);
-
-  // Don't auto-load - user must click Generate button
-  // useEffect(() => {
-  //   if (selectedFieldId && activeTab === "field") {
-  //     loadYearlySummary();
-  //   }
-  // }, [selectedFieldId, selectedYear, activeTab]);
+    if (selectedFieldId && activeTab === "field") {
+      // Clear old report first, then try to load new one
+      setYearlySummary(null);
+      loadYearlySummary();
+    } else {
+      // Just clear if switching away from field tab
+      setYearlySummary(null);
+    }
+  }, [selectedFieldId, selectedYear, activeTab]);
 
   // Don't auto-load - user must click Generate button
   // useEffect(() => {
@@ -532,12 +548,30 @@ export default function FarmReports() {
   const pollForTimeline = async () => {
     const maxPolls = 60; // 10 minutes with 10s intervals (regeneration takes 5-10 min)
     
+    // Capture current context for stale check
+    const pollingContext = { operationId: selectedOperationId!, year: timelineYear };
+    timelinePollingRef.current = pollingContext;
+    
     for (let poll = 0; poll < maxPolls; poll++) {
       await new Promise(resolve => setTimeout(resolve, 10000)); // 10s interval
       
+      // ✅ Check if context changed (user switched org/year) - abort if stale
+      if (timelinePollingRef.current?.operationId !== pollingContext.operationId ||
+          timelinePollingRef.current?.year !== pollingContext.year) {
+        console.log("Timeline polling aborted - user changed context");
+        return; // Don't update state for stale poll
+      }
+      
       try {
         // Poll WITHOUT triggering (trigger=false)
-        const pollResult = await fieldOperationsAPI.getOperationTimeline(selectedOperationId!, timelineYear, false);
+        const pollResult = await fieldOperationsAPI.getOperationTimeline(pollingContext.operationId, pollingContext.year, false);
+        
+        // Double-check context hasn't changed during the API call
+        if (timelinePollingRef.current?.operationId !== pollingContext.operationId ||
+            timelinePollingRef.current?.year !== pollingContext.year) {
+          console.log("Timeline polling aborted after API call - context changed");
+          return;
+        }
         
         if (pollResult.generation_status === 'completed') {
           setTimelineSummary(pollResult);
@@ -560,11 +594,14 @@ export default function FarmReports() {
       }
     }
     
-    // Timeout after max polls
-    toast.info("Timeline is still generating. Please refresh in a moment.");
-    setTimelineSummary(null);
-    setTimelineLoading(false);
-    setTimelineGenerating(false);
+    // Timeout after max polls - only update if context still matches
+    if (timelinePollingRef.current?.operationId === pollingContext.operationId &&
+        timelinePollingRef.current?.year === pollingContext.year) {
+      toast.info("Timeline is still generating. Please refresh in a moment.");
+      setTimelineSummary(null);
+      setTimelineLoading(false);
+      setTimelineGenerating(false);
+    }
   };
 
   const checkAndResumeSyncIfNeeded = async (): Promise<boolean> => {
@@ -682,17 +719,32 @@ export default function FarmReports() {
             setPollIntervalId(null);
           }
           
-          // Check for partial failures
+          // Check for failures and error types
           const failedCount = (status as any).failed_fields || (status.total - status.current);
+          const errorType = (status as any).error_type;
           
-          if (failedCount > 0) {
-            // Partial success - some fields failed (likely JD API errors)
+          if (errorType === 'JD_PERMISSION_DENIED') {
+            // All/most failures are permission-related
+            toast.error(
+              "Sync failed: Permission denied.\n\n" +
+              "Please visit JD Operations Center → Connections → AskMyFarm → Edit → ensure 'Work' is set to Level 2 (View, Manage).",
+              { duration: 15000, id: 'timeline-sync-error' }
+            );
+          } else if (failedCount > 0 && status.current === 0) {
+            // All fields failed
+            toast.error(
+              `Sync failed: 0/${status.total} fields synced.\n\n` +
+              `Check your John Deere connection permissions.`,
+              { duration: 10000, id: 'timeline-sync-error' }
+            );
+          } else if (failedCount > 0) {
+            // Partial success - some fields failed
             toast.warning(
               `⚠️ Sync completed with issues\n\n` +
               `${status.current}/${status.total} fields synced.\n` +
-              `${failedCount} field(s) failed (likely JD API errors).\n\n` +
+              `${failedCount} field(s) failed.\n\n` +
               `Timeline will be generated with available data.`,
-              { duration: 8000 }
+              { duration: 8000, id: 'timeline-sync-result' }
             );
           } else {
             // Full success
@@ -700,7 +752,7 @@ export default function FarmReports() {
               `✅ Sync complete!\n\n` +
               `${status.current}/${status.total} fields synced successfully.\n\n` +
               `Loading timeline...`,
-              { duration: 5000 }
+              { duration: 5000, id: 'timeline-sync-result' }
             );
           }
           
@@ -1232,10 +1284,10 @@ export default function FarmReports() {
         {/* Season Timeline */}
         {timeline.length > 0 && (
           <div>
-            <h4 className="text-sm font-semibold text-farm-accent mb-2 flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
+            <h3 className="text-base font-semibold text-farm-accent mb-3 flex items-center gap-2">
+              <Calendar className="w-5 h-5" />
               Season Timeline
-            </h4>
+            </h3>
             <div className="space-y-1.5">
               {timeline.map((event, i) => {
                 const colorClass = getCategoryColor(event.category);
@@ -1731,6 +1783,50 @@ export default function FarmReports() {
                           <span className="text-farm-muted">{count} field{count !== 1 ? "s" : ""}</span>
                         </div>
                       ))}
+                    </div>
+                  )}
+                  
+                  {/* Equipment Usage - By Machine */}
+                  {timelineSummary.equipment_hours && timelineSummary.equipment_hours.machines && timelineSummary.equipment_hours.machines.length > 0 && (
+                    <div className="space-y-3 pt-4 border-t border-farm-accent/20">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-base font-semibold text-farm-accent flex items-center gap-2">
+                          <Tractor className="h-5 w-5" />
+                          Equipment Usage ({timelineYear})
+                        </h3>
+                        <p className="text-lg font-bold text-farm-accent">
+                          {timelineSummary.equipment_hours.total_year_hours.toLocaleString(undefined, { maximumFractionDigits: 0 })} hrs
+                        </p>
+                      </div>
+                      <p className="text-xs text-farm-muted">
+                        Last updated: {timelineSummary.last_computed_at ? new Date(timelineSummary.last_computed_at).toLocaleDateString() : 'N/A'}
+                      </p>
+                      <div className="space-y-1.5 max-h-72 overflow-y-auto scrollbar-dark">
+                        {timelineSummary.equipment_hours.machines.map((machine) => (
+                          <div key={machine.equipment_id} className="flex items-center gap-3 py-1.5 px-2 bg-farm-bg/30 rounded border border-farm-accent/5">
+                            <div 
+                              className="flex items-center justify-center w-7 h-7 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: machine.icon_color || '#6B7280' }}
+                            >
+                              <Tractor className="h-4 w-4 text-white" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-farm-text truncate">{machine.display_name}</p>
+                              {machine.machine_type && (
+                                <p className="text-xs text-farm-muted capitalize">{machine.machine_type.toLowerCase()}</p>
+                              )}
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm font-semibold text-farm-accent">
+                                {machine.total_hours.toLocaleString(undefined, { maximumFractionDigits: 1 })} hrs
+                              </p>
+                              {machine.session_count > 0 && (
+                                <p className="text-xs text-farm-muted">{machine.session_count} sessions</p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
