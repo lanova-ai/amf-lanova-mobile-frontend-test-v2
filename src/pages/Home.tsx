@@ -465,10 +465,11 @@ const Home = () => {
     
     try {
       toast.info("Connecting to John Deere...", { duration: 5000 });
-      console.log("[Equipment] Calling initiateJohnDeereAuth...");
+      console.log("[Equipment] Calling initiateJohnDeereAuth with force_reconsent=true...");
       
-      // Call API to get OAuth URL (this triggers re-authorization with new scopes including eq1)
-      const response = await connectionAPI.initiateJohnDeereAuth();
+      // Call API with force_reconsent=true to delete existing connection first
+      // This makes JD show the full consent screen with all scopes including eq1
+      const response = await connectionAPI.initiateJohnDeereAuth(true);
       console.log("[Equipment] Response:", response);
       
       if (response?.auth_url) {

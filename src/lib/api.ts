@@ -717,12 +717,16 @@ export const connectionAPI = {
   },
 
   // Get OAuth authorization URL via authenticated API call
-  initiateJohnDeereAuth: async () => {
+  // Use forceReconsent=true when adding new scopes (like eq1 for equipment)
+  initiateJohnDeereAuth: async (forceReconsent: boolean = false) => {
+    const url = forceReconsent 
+      ? '/api/v1/connections/johndeere/connect?force_reconsent=true'
+      : '/api/v1/connections/johndeere/connect';
     return apiFetch<{
       auth_url: string;
       provider: string;
       message: string;
-    }>('/api/v1/connections/johndeere/connect');
+    }>(url);
   },
 
   // Check connection status
