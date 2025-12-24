@@ -104,24 +104,19 @@ const Home = () => {
         }
         
         // Check for sync issues (shown when sync is complete but had problems)
-        // Use same toast ID as ConnectionDetails to prevent duplicate toasts
+        // Note: Equipment access issues are now handled by "New Feature Update" button
         if (jdConnection?.sync_status === 'completed') {
           const hasFields = (jdConnection?.fields_synced || 0) > 0;
           const hasEquipmentIssue = jdConnection?.error_message === 'NO_EQUIPMENT_ACCESS';
           
           if (!hasFields && hasEquipmentIssue) {
-            // No fields AND no equipment access = likely not authorized
+            // No fields AND no equipment access = likely not authorized at all
             toast.error(
               "Sync completed but no data imported. Please visit JD Operations Center → Connections → AskMyFarm → Edit to grant access permissions.",
               { duration: 15000, id: 'jd-sync-result' }
             );
-          } else if (hasEquipmentIssue) {
-            // Fields OK but equipment access denied
-            toast.warning(
-              'Equipment access not granted. Visit JD Operations Center → Connections → AskMyFarm → Edit to enable Equipment tracking.',
-              { duration: 12000, id: 'jd-sync-result' }
-            );
           }
+          // Equipment-only issues are handled by the "New Feature Update" button
         }
         
         // Update sync status and trigger polling if syncing
@@ -276,22 +271,19 @@ const Home = () => {
       }
       
       // Check for sync issues and show appropriate warning (shown once after sync completes)
-      // Use same toast ID to prevent duplicates from multiple pages/functions
+      // Note: Equipment access issues are now handled by "New Feature Update" button
       if (johnDeere?.sync_status === 'completed') {
         const hasFields = (johnDeere?.fields_synced || 0) > 0;
         const hasEquipmentIssue = johnDeere?.error_message === 'NO_EQUIPMENT_ACCESS';
         
         if (!hasFields && hasEquipmentIssue) {
+          // No fields AND no equipment access = likely not authorized at all
           toast.error(
             "Sync completed but no data imported. Please visit JD Operations Center → Connections → AskMyFarm → Edit to grant access permissions.",
             { duration: 15000, id: 'jd-sync-result' }
           );
-        } else if (hasEquipmentIssue) {
-          toast.warning(
-            'Equipment access not granted. Visit JD Operations Center → Connections → AskMyFarm → Edit to enable Equipment tracking.',
-            { duration: 12000, id: 'jd-sync-result' }
-          );
         }
+        // Equipment-only issues are handled by the "New Feature Update" button
       }
       
       // Update sync status

@@ -69,7 +69,7 @@ export default function ConnectionDetails() {
             setSyncing(false);
             
             // Check sync results and show appropriate message
-            // Use unique toast IDs to prevent duplicate toasts from multiple pages
+            // Note: Equipment access issues are handled by "New Feature Update" button on Home page
             const hasFields = (johnDeere.fields_synced || 0) > 0;
             const hasEquipmentIssue = johnDeere.error_message === 'NO_EQUIPMENT_ACCESS';
             
@@ -85,13 +85,8 @@ export default function ConnectionDetails() {
                 "Sync completed but no fields found. Make sure your farms and fields are set up in JD Operations Center.",
                 { duration: 10000, id: 'jd-sync-result' }
               );
-            } else if (hasEquipmentIssue) {
-              // Fields OK but equipment access denied
-              toast.warning(
-                "Fields synced, but Equipment access not granted. Visit JD Operations Center → Connections → AskMyFarm → Edit to enable Equipment tracking.",
-                { duration: 12000, id: 'jd-sync-result' }
-              );
             } else {
+              // Fields synced successfully - equipment issues handled separately via UI
               toast.success("Sync complete! Your fields are up to date.", { id: 'jd-sync-result' });
             }
           } else if (johnDeere.sync_status === 'failed') {
