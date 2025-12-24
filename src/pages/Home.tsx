@@ -464,20 +464,25 @@ const Home = () => {
     setShowEquipmentDialog(false);
     
     try {
-      toast.info("Connecting to John Deere...", { duration: 3000 });
+      toast.info("Connecting to John Deere...", { duration: 5000 });
+      console.log("[Equipment] Calling initiateJohnDeereAuth...");
       
       // Call API to get OAuth URL (this triggers re-authorization with new scopes including eq1)
       const response = await connectionAPI.initiateJohnDeereAuth();
+      console.log("[Equipment] Response:", response);
       
-      if (response.auth_url) {
+      if (response?.auth_url) {
+        console.log("[Equipment] Redirecting to:", response.auth_url);
         // Redirect directly to John Deere OAuth - new tokens will include eq1 scope
         window.location.href = response.auth_url;
       } else {
-        throw new Error('No auth URL returned');
+        console.error("[Equipment] No auth_url in response:", response);
+        throw new Error('No auth URL returned from server');
       }
-    } catch (error) {
-      console.error("Failed to initiate JD connection:", error);
-      toast.error("Failed to connect. Please try again from Settings.");
+    } catch (error: any) {
+      console.error("[Equipment] Failed to initiate JD connection:", error);
+      console.error("[Equipment] Error details:", error?.message, error?.response);
+      toast.error(`Failed to connect: ${error?.message || 'Unknown error'}. Please try again.`);
       // Fallback to settings page
       navigate('/settings/connections/johndeere');
     }
