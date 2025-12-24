@@ -341,12 +341,10 @@ const FieldsMap = () => {
           return null; // Don't throw - we'll still try to fetch cached data
         });
         
-        // Check for "no access" warning from backend
+        // Note: Equipment access issues are handled by "New Feature Update" button on Home page
+        // Just log it here for debugging
         if (syncResult?.warning === 'no_equipment_access') {
-          toast.warning(
-            'Equipment access not granted. Visit JD Operations Center → Connections → AskMyFarm → Edit to enable Equipment access.',
-            { duration: 10000 }
-          );
+          console.log('Equipment access not granted - user should see "New Feature Update" on Home page');
         }
         
         // Then fetch the equipment (fresh or cached)
