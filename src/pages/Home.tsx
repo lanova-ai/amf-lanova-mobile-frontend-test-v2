@@ -4,8 +4,14 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { fieldsAPI, tasksAPI, fieldPlansAPI, observationsAPI, userAPI, fieldOperationsAPI, scoutingNotesAPI, equipmentAPI, connectionAPI, handlePageError } from "@/lib/api";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-import { ChevronDown, ChevronUp, Mic, UserPlus, FileText, Image as ImageIcon, BarChart3, Brain, Search, Tractor, Sprout, Loader2, Leaf, Plus, X, MapPin, Clock, CheckCircle2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Mic, UserPlus, Image as ImageIcon, BarChart3, Brain, Tractor, Sprout, Loader2, Leaf, Plus, MapPin, Clock, Sparkles } from "lucide-react";
 import DocumentUploadModal from "@/components/DocumentUploadModal";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -27,9 +33,9 @@ const Home = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSyncing, setIsSyncing] = useState(false);
   
-  // Equipment tracking announcement state
-  const [showEquipmentAnnouncement, setShowEquipmentAnnouncement] = useState(false);
-  const [equipmentCheckDone, setEquipmentCheckDone] = useState(false);
+  // Equipment tracking dialog state
+  const [showEquipmentDialog, setShowEquipmentDialog] = useState(false);
+  const [needsEquipmentAccess, setNeedsEquipmentAccess] = useState(false);
   
   // Use ref to prevent multiple simultaneous fetches
   const isFetchingRef = useRef(false);
@@ -42,9 +48,8 @@ const Home = () => {
       searchParams.delete('connection_success');
       setSearchParams(searchParams, { replace: true });
       
-      // Clear the dismissed flag so we don't show announcement anymore
-      localStorage.removeItem('equipment_announcement_dismissed');
-      setShowEquipmentAnnouncement(false);
+      // User just connected - they now have equipment access
+      setNeedsEquipmentAccess(false);
       
       // Show success toast
       toast.success("🚜 John Deere connected!", {
@@ -429,55 +434,42 @@ const Home = () => {
     };
   }, []);
 
-  // Check if we should show the equipment tracking announcement
+  // Check if user needs to enable equipment access (for "New Feature Update" button)
   useEffect(() => {
-    const checkEquipmentStatus = async () => {
-      // Don't show if user dismissed it
-      const dismissed = localStorage.getItem('equipment_announcement_dismissed');
-      if (dismissed === 'true') {
-        setEquipmentCheckDone(true);
-        return;
-      }
-
-      // Only show if user has JD connection
+    const checkEquipmentAccess = async () => {
+      // Only relevant if user has JD connection
       if (!user?.jd_connected && !jdConnected) {
-        setEquipmentCheckDone(true);
+        setNeedsEquipmentAccess(false);
         return;
       }
 
-      // Check if user already has equipment
       try {
-        const summary = await equipmentAPI.getSummary();
-        if (summary.total_equipment > 0) {
-          // User already has equipment, don't show announcement
-          setShowEquipmentAnnouncement(false);
-        } else {
-          // User has JD connection but no equipment - show announcement
-          setShowEquipmentAnnouncement(true);
+        // Check backend for equipment access status
+        const status = await connectionAPI.getJohnDeereStatus();
+        
+        // Backend sets error_message = 'NO_EQUIPMENT_ACCESS' when eq1 scope is missing
+        if (status.error_message === 'NO_EQUIPMENT_ACCESS') {
+          setNeedsEquipmentAccess(true);
+          return;
         }
+        
+        // Check if user has any equipment
+        const summary = await equipmentAPI.getSummary();
+        setNeedsEquipmentAccess(summary.total_equipment === 0);
       } catch (error) {
-        // If equipment API fails (likely no eq1 scope), show announcement
-        console.log("Equipment check failed - likely needs reconnect for eq1 scope");
-        setShowEquipmentAnnouncement(true);
+        // If APIs fail, assume needs access
+        console.log("Equipment check failed:", error);
+        setNeedsEquipmentAccess(true);
       }
-      setEquipmentCheckDone(true);
     };
 
-    // Only run after initial data load
     if (!loading && user) {
-      checkEquipmentStatus();
+      checkEquipmentAccess();
     }
   }, [loading, user, jdConnected]);
 
-  const handleDismissEquipmentAnnouncement = () => {
-    localStorage.setItem('equipment_announcement_dismissed', 'true');
-    setShowEquipmentAnnouncement(false);
-  };
-
   const handleEnableEquipmentTracking = async () => {
-    // Mark as dismissed immediately
-    localStorage.setItem('equipment_announcement_dismissed', 'true');
-    setShowEquipmentAnnouncement(false);
+    setShowEquipmentDialog(false);
     
     try {
       toast.info("Connecting to John Deere...", { duration: 3000 });
@@ -604,37 +596,40 @@ const Home = () => {
         {/* Main Content */}
         <div className="flex-1 px-6 pt-4 pb-6 space-y-5">
         
-        {/* Equipment Tracking Announcement */}
-        {showEquipmentAnnouncement && equipmentCheckDone && (
-          <div className="relative bg-gradient-to-br from-farm-card to-farm-accent/5 border border-farm-accent/30 rounded-xl p-4 shadow-lg">
-            {/* Dismiss button */}
-            <button
-              onClick={handleDismissEquipmentAnnouncement}
-              className="absolute top-3 right-3 p-1 rounded-full hover:bg-farm-accent/20 transition-colors"
-              aria-label="Dismiss"
-            >
-              <X className="h-4 w-4 text-farm-muted" />
-            </button>
-            
-            {/* Header */}
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 bg-farm-accent/20 rounded-lg">
-                <Tractor className="h-6 w-6 text-farm-accent" />
+        {/* New Feature Update Button - shows when user needs equipment access */}
+        {needsEquipmentAccess && (user?.jd_connected || jdConnected) && (
+          <button
+            onClick={() => setShowEquipmentDialog(true)}
+            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-gradient-to-r from-amber-500/20 to-farm-accent/20 border border-amber-500/40 rounded-lg hover:from-amber-500/30 hover:to-farm-accent/30 transition-all"
+          >
+            <Sparkles className="h-4 w-4 text-amber-400" />
+            <span className="text-sm font-medium text-amber-400">New Feature Update</span>
+          </button>
+        )}
+
+        {/* Equipment Tracking Dialog */}
+        <Dialog open={showEquipmentDialog} onOpenChange={setShowEquipmentDialog}>
+          <DialogContent className="bg-farm-dark border-farm-accent/30 max-w-sm">
+            <DialogHeader>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-farm-accent/20 rounded-lg">
+                  <Tractor className="h-6 w-6 text-farm-accent" />
+                </div>
+                <div>
+                  <DialogTitle className="text-farm-text text-lg">Equipment Tracking is Here!</DialogTitle>
+                  <span className="inline-block text-xs font-medium px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 mt-1">New Feature</span>
+                </div>
               </div>
-              <div>
-                <h3 className="font-semibold text-farm-text text-base">Equipment Tracking is Here!</h3>
-                <span className="inline-block text-xs font-medium px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400">New Feature Update</span>
-              </div>
-            </div>
+            </DialogHeader>
             
             {/* Features list */}
-            <div className="space-y-2 mb-4">
-              <div className="flex items-center gap-2 text-sm text-farm-text">
-                <MapPin className="h-4 w-4 text-farm-accent flex-shrink-0" />
+            <div className="space-y-3 my-4">
+              <div className="flex items-center gap-3 text-sm text-farm-text">
+                <MapPin className="h-5 w-5 text-farm-accent flex-shrink-0" />
                 <span>See equipment locations on the map</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-farm-text">
-                <Clock className="h-4 w-4 text-farm-accent flex-shrink-0" />
+              <div className="flex items-center gap-3 text-sm text-farm-text">
+                <Clock className="h-5 w-5 text-farm-accent flex-shrink-0" />
                 <span>Track engine hours per machine</span>
               </div>
             </div>
@@ -651,8 +646,8 @@ const Home = () => {
             <p className="text-[11px] text-farm-muted text-center mt-2">
               Takes ~30 seconds. Your existing data stays intact.
             </p>
-          </div>
-        )}
+          </DialogContent>
+        </Dialog>
 
         {/* Farm Memory Search Input - Enhanced Visibility */}
         <div className="bg-farm-card border border-farm-accent/20 rounded-lg p-3 hover:bg-farm-accent/5 transition-all">

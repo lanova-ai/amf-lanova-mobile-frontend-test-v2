@@ -733,6 +733,7 @@ export const connectionAPI = {
       created_at?: string;
       last_sync_at?: string;
       sync_status?: string;
+      error_message?: string;  // 'NO_EQUIPMENT_ACCESS' if eq1 scope missing
     }>('/api/v1/connections/johndeere/status');
   },
 
