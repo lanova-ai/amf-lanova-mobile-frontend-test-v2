@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { fieldsAPI, tasksAPI, fieldPlansAPI, observationsAPI, userAPI, fieldOperationsAPI, scoutingNotesAPI, equipmentAPI, connectionAPI, handlePageError } from "@/lib/api";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-import { ChevronDown, ChevronUp, Mic, UserPlus, Image as ImageIcon, BarChart3, Brain, Tractor, Sprout, Loader2, Leaf, Plus, MapPin, Clock, Sparkles } from "lucide-react";
+import { ChevronDown, ChevronUp, Mic, UserPlus, Image as ImageIcon, BarChart3, Brain, Tractor, Sprout, Loader2, Leaf, Plus, MapPin, Clock, Sparkles, ExternalLink, RefreshCw } from "lucide-react";
 import DocumentUploadModal from "@/components/DocumentUploadModal";
 import {
   Dialog,
@@ -460,51 +460,6 @@ const Home = () => {
     }
   }, [loading, user, jdConnected]);
 
-  const handleEnableEquipmentTracking = async () => {
-    console.log("[Equipment] ========== ENABLE EQUIPMENT TRACKING START ==========");
-    console.log("[Equipment] Step 1: Closing dialog...");
-    setShowEquipmentDialog(false);
-    
-    try {
-      console.log("[Equipment] Step 2: Showing toast...");
-      toast.info("Connecting to John Deere...", { duration: 5000 });
-      
-      console.log("[Equipment] Step 3: Calling API with force_reconsent=true...");
-      console.log("[Equipment] API URL: /api/v1/connections/johndeere/connect?force_reconsent=true");
-      
-      // Call API with force_reconsent=true to delete existing connection first
-      // This makes JD show the full consent screen with all scopes including eq1
-      const response = await connectionAPI.initiateJohnDeereAuth(true);
-      
-      console.log("[Equipment] Step 4: Got API response:", JSON.stringify(response, null, 2));
-      
-      if (response?.auth_url) {
-        console.log("[Equipment] Step 5: auth_url received, checking scopes...");
-        console.log("[Equipment] Full auth_url:", response.auth_url);
-        
-        // Check if eq1 scope is in the URL
-        if (response.auth_url.includes('eq1')) {
-          console.log("[Equipment] ✅ eq1 scope IS in the auth_url");
-        } else {
-          console.log("[Equipment] ⚠️ eq1 scope NOT found in auth_url!");
-        }
-        
-        console.log("[Equipment] Step 6: Redirecting to JD OAuth...");
-        window.location.href = response.auth_url;
-      } else {
-        console.error("[Equipment] ❌ No auth_url in response:", response);
-        throw new Error('No auth URL returned from server');
-      }
-    } catch (error: any) {
-      console.error("[Equipment] ❌ FAILED:", error);
-      console.error("[Equipment] Error message:", error?.message);
-      console.error("[Equipment] Error response:", error?.response);
-      toast.error(`Failed to connect: ${error?.message || 'Unknown error'}. Please try again.`);
-      navigate('/settings/connections/johndeere');
-    }
-    console.log("[Equipment] ========== ENABLE EQUIPMENT TRACKING END ==========");
-  };
-
   // Format time ago helper
   const formatTimeAgo = (dateString: string) => {
     const date = new Date(dateString);
@@ -630,35 +585,73 @@ const Home = () => {
                   <Tractor className="h-6 w-6 text-farm-accent" />
                 </div>
                 <div>
-                  <DialogTitle className="text-farm-text text-lg">Equipment Tracking is Here!</DialogTitle>
+                  <DialogTitle className="text-farm-text text-lg">Equipment Tracking</DialogTitle>
                   <span className="inline-block text-xs font-medium px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 mt-1">New Feature</span>
                 </div>
               </div>
             </DialogHeader>
             
             {/* Features list */}
-            <div className="space-y-3 my-4">
+            <div className="space-y-2 my-3">
               <div className="flex items-center gap-3 text-sm text-farm-text">
-                <MapPin className="h-5 w-5 text-farm-accent flex-shrink-0" />
+                <MapPin className="h-4 w-4 text-farm-accent flex-shrink-0" />
                 <span>See equipment locations on the map</span>
               </div>
               <div className="flex items-center gap-3 text-sm text-farm-text">
-                <Clock className="h-5 w-5 text-farm-accent flex-shrink-0" />
+                <Clock className="h-4 w-4 text-farm-accent flex-shrink-0" />
                 <span>Track engine hours per machine</span>
               </div>
             </div>
+
+            {/* Instructions */}
+            <div className="bg-farm-card-alt border border-amber-500/30 rounded-lg p-3 text-sm space-y-2">
+              <p className="text-farm-text font-medium">To enable, grant Equipment access in JD:</p>
+              <ol className="list-decimal list-inside space-y-1 text-farm-muted text-xs">
+                <li>Click "Manage in JD" below</li>
+                <li>Select your organization(s)</li>
+                <li>Check the <span className="text-amber-400 font-medium">Equipment</span> box</li>
+                <li>Click Save, then return here</li>
+              </ol>
+            </div>
             
-            {/* Action button */}
-            <Button
-              onClick={handleEnableEquipmentTracking}
-              className="w-full bg-farm-accent hover:bg-farm-accent/90 text-farm-dark font-semibold shadow-md hover:shadow-lg transition-all"
-            >
-              <Tractor className="h-4 w-4 mr-2" />
-              Enable Equipment Tracking
-            </Button>
+            {/* Action buttons */}
+            <div className="space-y-2 mt-3">
+              <Button
+                onClick={() => {
+                  window.open('https://connections.deere.com/connections/0oaqyaxtyhUjkNhmU5d7/select-organizations', '_blank');
+                }}
+                className="w-full bg-farm-accent hover:bg-farm-accent/90 text-farm-dark font-semibold shadow-md hover:shadow-lg transition-all"
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Manage in JD
+              </Button>
+              
+              <Button
+                onClick={async () => {
+                  setShowEquipmentDialog(false);
+                  toast.info("Syncing equipment...", { duration: 3000 });
+                  try {
+                    const result = await equipmentAPI.syncEquipment();
+                    if (result.equipment_imported > 0) {
+                      toast.success(`${result.equipment_imported} machines synced!`);
+                      setNeedsEquipmentAccess(false);
+                    } else {
+                      toast.warning("No equipment found. Please ensure Equipment access is enabled in JD.");
+                    }
+                  } catch (error: any) {
+                    toast.error("Sync failed. Please check JD permissions.");
+                  }
+                }}
+                variant="outline"
+                className="w-full border-farm-accent/20 text-farm-accent hover:bg-farm-accent/10"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Sync Equipment
+              </Button>
+            </div>
             
             <p className="text-[11px] text-farm-muted text-center mt-2">
-              Takes ~30 seconds. Your existing data stays intact.
+              After enabling in JD, click "Sync Equipment" to import your machines.
             </p>
           </DialogContent>
         </Dialog>
