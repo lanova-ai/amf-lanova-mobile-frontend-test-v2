@@ -461,32 +461,48 @@ const Home = () => {
   }, [loading, user, jdConnected]);
 
   const handleEnableEquipmentTracking = async () => {
+    console.log("[Equipment] ========== ENABLE EQUIPMENT TRACKING START ==========");
+    console.log("[Equipment] Step 1: Closing dialog...");
     setShowEquipmentDialog(false);
     
     try {
+      console.log("[Equipment] Step 2: Showing toast...");
       toast.info("Connecting to John Deere...", { duration: 5000 });
-      console.log("[Equipment] Calling initiateJohnDeereAuth with force_reconsent=true...");
+      
+      console.log("[Equipment] Step 3: Calling API with force_reconsent=true...");
+      console.log("[Equipment] API URL: /api/v1/connections/johndeere/connect?force_reconsent=true");
       
       // Call API with force_reconsent=true to delete existing connection first
       // This makes JD show the full consent screen with all scopes including eq1
       const response = await connectionAPI.initiateJohnDeereAuth(true);
-      console.log("[Equipment] Response:", response);
+      
+      console.log("[Equipment] Step 4: Got API response:", JSON.stringify(response, null, 2));
       
       if (response?.auth_url) {
-        console.log("[Equipment] Redirecting to:", response.auth_url);
-        // Redirect directly to John Deere OAuth - new tokens will include eq1 scope
+        console.log("[Equipment] Step 5: auth_url received, checking scopes...");
+        console.log("[Equipment] Full auth_url:", response.auth_url);
+        
+        // Check if eq1 scope is in the URL
+        if (response.auth_url.includes('eq1')) {
+          console.log("[Equipment] ✅ eq1 scope IS in the auth_url");
+        } else {
+          console.log("[Equipment] ⚠️ eq1 scope NOT found in auth_url!");
+        }
+        
+        console.log("[Equipment] Step 6: Redirecting to JD OAuth...");
         window.location.href = response.auth_url;
       } else {
-        console.error("[Equipment] No auth_url in response:", response);
+        console.error("[Equipment] ❌ No auth_url in response:", response);
         throw new Error('No auth URL returned from server');
       }
     } catch (error: any) {
-      console.error("[Equipment] Failed to initiate JD connection:", error);
-      console.error("[Equipment] Error details:", error?.message, error?.response);
+      console.error("[Equipment] ❌ FAILED:", error);
+      console.error("[Equipment] Error message:", error?.message);
+      console.error("[Equipment] Error response:", error?.response);
       toast.error(`Failed to connect: ${error?.message || 'Unknown error'}. Please try again.`);
-      // Fallback to settings page
       navigate('/settings/connections/johndeere');
     }
+    console.log("[Equipment] ========== ENABLE EQUIPMENT TRACKING END ==========");
   };
 
   // Format time ago helper
