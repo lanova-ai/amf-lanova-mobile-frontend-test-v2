@@ -2812,6 +2812,11 @@ export interface MachineUsage {
   icon_color: string;  // Hex color from API based on machine type
   total_hours: number;
   session_count: number;
+  // Next service info (from maintenance table)
+  next_service_type: string | null;
+  next_service_hours: number | null;
+  hours_until_service: number | null;
+  current_engine_hours: number | null;
 }
 
 export interface EquipmentHoursStats {
@@ -3670,6 +3675,10 @@ export interface Equipment {
   last_known_lon: number | null;
   is_archived: boolean;
   last_synced_at: string | null;
+  // Next service info
+  next_service_type: string | null;
+  next_service_hours: number | null;
+  hours_until_service: number | null;
 }
 
 export const equipmentAPI = {
@@ -3713,6 +3722,45 @@ export const equipmentAPI = {
     }>('/api/v1/equipment/sync', {
       method: 'POST',
     });
+  },
+
+  // Log a service for equipment
+  logService: async (equipmentId: string, serviceType: string, notes?: string, serviceHours?: number) => {
+    return apiFetch<{
+      success: boolean;
+      message: string;
+      equipment_id: string;
+      equipment_name: string;
+      service_type: string;
+      service_hours: number;
+      next_service_hours: number;
+      interval_hours: number;
+    }>(`/api/v1/equipment/${equipmentId}/log-service`, {
+      method: 'POST',
+      body: JSON.stringify({
+        service_type: serviceType,
+        notes: notes || null,
+        service_hours: serviceHours || null,
+      }),
+    });
+  },
+
+  // Get maintenance status for equipment
+  getMaintenance: async (equipmentId: string) => {
+    return apiFetch<{
+      equipment_id: string;
+      equipment_name: string;
+      current_engine_hours: number | null;
+      maintenance: Array<{
+        service_type: string;
+        interval_hours: number;
+        last_service_hours: number | null;
+        last_service_date: string | null;
+        current_hours: number | null;
+        hours_remaining: number | null;
+        status: 'ok' | 'warning' | 'overdue' | 'unknown';
+      }>;
+    }>(`/api/v1/equipment/${equipmentId}/maintenance`);
   },
 };
 

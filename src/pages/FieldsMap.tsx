@@ -1,6 +1,14 @@
 import { useState, useEffect, useMemo } from "react";
 import { MapContainer, TileLayer, Polygon, Marker, Popup, useMap, Circle } from "react-leaflet";
-import { Loader2, ChevronDown, ChevronUp, Camera, Mic, FileText, Trash2, Layers, Navigation, Tractor } from "lucide-react";
+import { Loader2, ChevronDown, ChevronUp, Camera, Mic, FileText, Trash2, Layers, Navigation, Tractor, Wrench } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { fieldsAPI, fieldNotesAPI, FieldNote, voiceAPI, documentsAPI, equipmentAPI, Equipment, handlePageError } from "@/lib/api";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -198,6 +206,13 @@ const FieldsMap = () => {
   const [showEquipment, setShowEquipment] = useState(true);
   const [equipmentSyncing, setEquipmentSyncing] = useState(false);
   const [equipmentSyncError, setEquipmentSyncError] = useState<string | null>(null);
+  
+  // Service logging state
+  const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
+  const [selectedEquipmentForService, setSelectedEquipmentForService] = useState<Equipment | null>(null);
+  const [selectedServiceType, setSelectedServiceType] = useState<string>('oil_change');
+  const [serviceHoursInput, setServiceHoursInput] = useState<string>('');
+  const [serviceLogging, setServiceLogging] = useState(false);
   
   // Map zoom state
   const [currentZoom, setCurrentZoom] = useState(10);
@@ -952,14 +967,10 @@ const FieldsMap = () => {
                 zIndexOffset={500}
               >
                 <Popup className="custom-popup" minWidth={220}>
-                  <div className="p-2">
-                    {/* Equipment Name - Build clean display name */}
-                    <h3 className="text-sm font-semibold text-foreground mb-0.5">
-                      {equip.model_year && equip.make && equip.model 
-                        ? `${equip.model_year} ${equip.make} ${equip.model}`
-                        : equip.model && equip.make
-                        ? `${equip.make} ${equip.model}`
-                        : equip.model || equip.name}
+                  <div className="p-2 pt-4">
+                    {/* Equipment Name - Use JD name (familiar to farmer) */}
+                    <h3 className="text-sm font-semibold text-foreground mb-0.5 pr-4">
+                      {equip.name}
                     </h3>
                     
                     {/* Category / Type */}
@@ -977,8 +988,48 @@ const FieldsMap = () => {
                       </div>
                     )}
                     
+                    {/* Next Service Due */}
+                    <div className="mt-2 py-1.5 px-2 rounded bg-farm-card-alt border border-farm-accent/10">
+                      {equip.next_service_type ? (
+                        <div className="flex items-center justify-between">
+                          <div className="text-[10px]">
+                            <span className="text-farm-muted">Next: </span>
+                            <span className={`font-medium ${
+                              equip.hours_until_service !== null && equip.hours_until_service <= 0 
+                                ? 'text-red-400' 
+                                : equip.hours_until_service !== null && equip.hours_until_service <= 50 
+                                  ? 'text-amber-400' 
+                                  : 'text-farm-text'
+                            }`}>
+                              {equip.next_service_type}
+                            </span>
+                          </div>
+                          <div className="text-[10px]">
+                            {equip.hours_until_service !== null && (
+                              <span className={`font-medium ${
+                                equip.hours_until_service <= 0 
+                                  ? 'text-red-400' 
+                                  : equip.hours_until_service <= 50 
+                                    ? 'text-amber-400' 
+                                    : 'text-farm-accent'
+                              }`}>
+                                {equip.hours_until_service <= 0 
+                                  ? `${Math.abs(equip.hours_until_service).toFixed(0)} hrs overdue`
+                                  : `in ${equip.hours_until_service.toFixed(0)} hrs`
+                                }
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-[10px] text-farm-muted text-center">
+                          No service log yet
+                        </div>
+                      )}
+                    </div>
+                    
                     {/* Serial & Updated - compact footer */}
-                    <div className="text-[10px] text-farm-muted space-y-0.5">
+                    <div className="text-[10px] text-farm-muted space-y-0.5 mt-1">
                       {equip.serial_number && (
                         <div>S/N: <span className="font-mono">{equip.serial_number}</span></div>
                       )}
@@ -986,6 +1037,22 @@ const FieldsMap = () => {
                         <div>Updated: {new Date(equip.hours_updated_at).toLocaleDateString()}</div>
                       )}
                     </div>
+                    
+                    {/* Log Service Button */}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full mt-2 text-xs border-farm-accent/30 text-farm-accent hover:bg-farm-accent/10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedEquipmentForService(equip);
+                        setServiceHoursInput(equip.current_engine_hours?.toString() || '');
+                        setServiceDialogOpen(true);
+                      }}
+                    >
+                      <Wrench className="h-3 w-3 mr-1" />
+                      Log Service
+                    </Button>
                   </div>
                 </Popup>
               </Marker>
@@ -1322,6 +1389,114 @@ const FieldsMap = () => {
                 </>
               ) : (
                 'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Log Service Dialog */}
+      <AlertDialog open={serviceDialogOpen} onOpenChange={setServiceDialogOpen}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Wrench className="h-5 w-5 text-farm-accent" />
+              Log Service
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {selectedEquipmentForService && (
+                <>
+                  Log a service for <strong>{selectedEquipmentForService.name}</strong>
+                  {selectedEquipmentForService.current_engine_hours && (
+                    <span className="block mt-1 text-farm-accent font-medium">
+                      Current: {selectedEquipmentForService.current_engine_hours.toLocaleString()} hours
+                    </span>
+                  )}
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          
+          <div className="py-4 space-y-4">
+            <div>
+              <label className="text-sm font-medium text-farm-text mb-2 block">
+                Service Type
+              </label>
+              <Select value={selectedServiceType} onValueChange={setSelectedServiceType}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select service type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="oil_change">Oil Change</SelectItem>
+                  <SelectItem value="hydraulic_filter">Hydraulic Filter</SelectItem>
+                  <SelectItem value="air_filter">Air Filter</SelectItem>
+                  <SelectItem value="fuel_filter">Fuel Filter</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium text-farm-text mb-2 block">
+                Service Hours <span className="text-farm-muted font-normal">(when service was done)</span>
+              </label>
+              <input
+                type="number"
+                value={serviceHoursInput}
+                onChange={(e) => setServiceHoursInput(e.target.value)}
+                placeholder="e.g., 3500"
+                className="w-full h-10 px-3 py-2 text-sm rounded-md border border-farm-accent/20 bg-farm-card text-farm-text placeholder:text-farm-muted focus:outline-none focus:ring-2 focus:ring-farm-accent"
+              />
+              <p className="text-[10px] text-farm-muted mt-1">
+                Enter past hours if logging a previous service
+              </p>
+            </div>
+          </div>
+          
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={serviceLogging}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async (e) => {
+                e.preventDefault();
+                if (!selectedEquipmentForService) return;
+                
+                setServiceLogging(true);
+                try {
+                  const serviceHours = serviceHoursInput ? parseFloat(serviceHoursInput) : undefined;
+                  const result = await equipmentAPI.logService(
+                    selectedEquipmentForService.id,
+                    selectedServiceType,
+                    undefined,  // notes
+                    serviceHours
+                  );
+                  
+                  toast.success(
+                    `${selectedServiceType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} logged at ${result.service_hours.toLocaleString()} hrs! Next service at ${result.next_service_hours.toLocaleString()} hrs.`,
+                    { duration: 5000 }
+                  );
+                  setServiceDialogOpen(false);
+                  
+                  // Refresh equipment data to update the popup with new next service info
+                  const equipmentData = await equipmentAPI.getEquipment();
+                  const withLocations = equipmentData.equipment.filter(
+                    (e) => e.last_known_lat && e.last_known_lon
+                  );
+                  setEquipment(withLocations);
+                } catch (error: any) {
+                  toast.error(error?.message || 'Failed to log service');
+                } finally {
+                  setServiceLogging(false);
+                }
+              }}
+              disabled={serviceLogging}
+              className="bg-farm-accent hover:bg-farm-accent/90 text-farm-dark"
+            >
+              {serviceLogging ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Logging...
+                </>
+              ) : (
+                'Log Service'
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

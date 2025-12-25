@@ -11,6 +11,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 
 const Home = () => {
@@ -589,6 +590,9 @@ const Home = () => {
                   <span className="inline-block text-xs font-medium px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 mt-1">New Feature</span>
                 </div>
               </div>
+              <DialogDescription className="sr-only">
+                Enable equipment tracking to see machine locations and engine hours
+              </DialogDescription>
             </DialogHeader>
             
             {/* Features list */}

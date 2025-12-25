@@ -29,6 +29,9 @@ import {
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
   LoadingSpinner,
 } from "@/components/ui";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -1812,9 +1815,28 @@ export default function FarmReports() {
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm text-farm-text truncate">{machine.display_name}</p>
-                              {machine.machine_type && (
-                                <p className="text-xs text-farm-muted capitalize">{machine.machine_type.toLowerCase()}</p>
-                              )}
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {machine.machine_type && (
+                                  <span className="text-xs text-farm-muted capitalize">{machine.machine_type.toLowerCase()}</span>
+                                )}
+                                {machine.next_service_type && (
+                                  <>
+                                    <span className="text-farm-muted">•</span>
+                                    <span className={`text-xs ${
+                                      machine.hours_until_service !== null && machine.hours_until_service <= 0 
+                                        ? 'text-red-400' 
+                                        : machine.hours_until_service !== null && machine.hours_until_service <= 50 
+                                          ? 'text-amber-400' 
+                                          : 'text-farm-muted'
+                                    }`}>
+                                      {machine.hours_until_service !== null && machine.hours_until_service <= 0 
+                                        ? `${machine.next_service_type} overdue`
+                                        : `${machine.next_service_type} in ${machine.hours_until_service?.toFixed(0)} hrs`
+                                      }
+                                    </span>
+                                  </>
+                                )}
+                              </div>
                             </div>
                             <div className="text-right">
                               <p className="text-sm font-semibold text-farm-accent">
@@ -1858,20 +1880,23 @@ export default function FarmReports() {
         {/* Regenerate Timeline Confirmation Modal */}
         <AlertDialog open={showRegenerateConfirmation} onOpenChange={setShowRegenerateConfirmation}>
           <AlertDialogContent className="max-w-md">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <RefreshCw className="h-5 w-5 text-farm-accent" />
-                  Regenerate Timeline for {timelineYear}?
-                </h3>
-                <p className="text-sm text-farm-muted">
-                  This will regenerate the annual timeline summary for{" "}
-                  <strong>{organizations.find(org => org.id === selectedOperationId)?.name || 'this organization'}</strong>.
-                </p>
-                <p className="text-sm text-farm-muted">
-                  For large operations, this may take <strong>5-10 minutes</strong>.
-                </p>
-              </div>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <RefreshCw className="h-5 w-5 text-farm-accent" />
+                Regenerate Timeline for {timelineYear}?
+              </AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="space-y-2">
+                  <p className="text-sm text-farm-muted">
+                    This will regenerate the annual timeline summary for{" "}
+                    <strong>{organizations.find(org => org.id === selectedOperationId)?.name || 'this organization'}</strong>.
+                  </p>
+                  <p className="text-sm text-farm-muted">
+                    For large operations, this may take <strong>5-10 minutes</strong>.
+                  </p>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
 
               <AlertDialogFooter className="mt-4">
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -1913,24 +1938,22 @@ export default function FarmReports() {
                   Regenerate
                 </AlertDialogAction>
               </AlertDialogFooter>
-            </div>
           </AlertDialogContent>
         </AlertDialog>
 
         {/* Sync All Fields Confirmation Modal */}
         <AlertDialog open={showSyncConfirmation} onOpenChange={setShowSyncConfirmation}>
           <AlertDialogContent className="max-w-md">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <AlertTriangle className="h-5 w-5 text-farm-gold" />
-                  Force Refresh All Fields for {timelineYear}?
-                </h3>
-                <p className="text-sm text-farm-muted">
-                  This will sync operations data from John Deere for <strong>all {fieldsInOrganization.length} fields</strong> in{" "}
-                  <strong>{organizations.find(org => org.id === selectedOperationId)?.name || 'this organization'}</strong>.
-                </p>
-              </div>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-farm-gold" />
+                Force Refresh All Fields for {timelineYear}?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                This will sync operations data from John Deere for all {fieldsInOrganization.length} fields in{" "}
+                {organizations.find(org => org.id === selectedOperationId)?.name || 'this organization'}.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
 
               <div className="bg-farm-gold/10 border border-farm-gold/20 rounded-lg p-3 space-y-2">
                 <div className="flex items-start gap-2">
@@ -1966,7 +1989,6 @@ export default function FarmReports() {
                   Force Refresh & Sync
                 </AlertDialogAction>
               </AlertDialogFooter>
-            </div>
           </AlertDialogContent>
         </AlertDialog>
       </PageContent>
