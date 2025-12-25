@@ -605,12 +605,12 @@ const Home = () => {
 
             {/* Instructions */}
             <div className="bg-farm-card-alt border border-amber-500/30 rounded-lg p-3 text-sm space-y-2">
-              <p className="text-farm-text font-medium">To enable, grant Equipment access in JD:</p>
+              <p className="text-farm-text font-medium">To enable Equipment access:</p>
               <ol className="list-decimal list-inside space-y-1 text-farm-muted text-xs">
-                <li>Click "Manage in JD" below</li>
-                <li>Select your organization(s)</li>
-                <li>Check the <span className="text-amber-400 font-medium">Equipment</span> box</li>
-                <li>Click Save, then return here</li>
+                <li>Click "Open JD Connections" below</li>
+                <li>Find <span className="text-farm-text">AskMyFarm</span> → click <span className="text-amber-400 font-medium">Manage</span></li>
+                <li>For each org, enable <span className="text-amber-400 font-medium">Equipment</span> access</li>
+                <li>Save changes, then return here to sync</li>
               </ol>
             </div>
             
@@ -618,12 +618,12 @@ const Home = () => {
             <div className="space-y-2 mt-3">
               <Button
                 onClick={() => {
-                  window.open('https://connections.deere.com/connections/0oaqyaxtyhUjkNhmU5d7/select-organizations', '_blank');
+                  window.open('https://connections.deere.com/', '_blank');
                 }}
                 className="w-full bg-farm-accent hover:bg-farm-accent/90 text-farm-dark font-semibold shadow-md hover:shadow-lg transition-all"
               >
                 <ExternalLink className="h-4 w-4 mr-2" />
-                Manage in JD
+                Open JD Connections
               </Button>
               
               <Button
