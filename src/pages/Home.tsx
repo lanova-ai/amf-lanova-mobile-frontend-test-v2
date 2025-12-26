@@ -37,6 +37,7 @@ const Home = () => {
   // Equipment tracking dialog state
   const [showEquipmentDialog, setShowEquipmentDialog] = useState(false);
   const [needsEquipmentAccess, setNeedsEquipmentAccess] = useState(false);
+  const [equipmentCount, setEquipmentCount] = useState<number>(0);
   
   // Use ref to prevent multiple simultaneous fetches
   const isFetchingRef = useRef(false);
@@ -446,8 +447,9 @@ const Home = () => {
           return;
         }
         
-        // Check if user has any equipment
+        // Check if user has any equipment (with valid location = synced successfully)
         const summary = await equipmentAPI.getSummary();
+        setEquipmentCount(summary.with_location || 0);
         setNeedsEquipmentAccess(summary.total_equipment === 0);
       } catch (error) {
         // If APIs fail, assume needs access
@@ -532,6 +534,7 @@ const Home = () => {
               {fieldsData && fieldsData.total_fields > 0 ? (
                 <p className="body-text text-farm-muted">
                   {fieldsData.total_fields} fields • {Math.round(fieldsData.total_acres).toLocaleString()} acres
+                  {equipmentCount > 0 && ` • ${equipmentCount} ${equipmentCount === 1 ? 'equipment' : 'equipments'}`}
                 </p>
               ) : isSyncing ? (
                 <div className="flex items-center gap-2 body-text text-farm-muted">
@@ -637,8 +640,11 @@ const Home = () => {
                   try {
                     const result = await equipmentAPI.syncEquipment();
                     if (result.equipment_imported > 0) {
-                      toast.success(`${result.equipment_imported} machines synced!`);
+                      toast.success(`${result.equipment_imported} equipment synced!`);
                       setNeedsEquipmentAccess(false);
+                      // Refresh equipment count (with_location = synced successfully)
+                      const summary = await equipmentAPI.getSummary();
+                      setEquipmentCount(summary.with_location || 0);
                     } else {
                       toast.warning("No equipment found. Please ensure Equipment access is enabled in JD.");
                     }
