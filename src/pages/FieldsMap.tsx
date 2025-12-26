@@ -605,7 +605,15 @@ const FieldsMap = () => {
 
           {/* Render marker at clicked location (always visible if exists) */}
           {markerPosition && selectedField && currentZoom >= MIN_ZOOM_FOR_MARKERS && (
-            <Marker position={markerPosition}>
+            <Marker 
+              position={markerPosition}
+              eventHandlers={{
+                add: (e) => {
+                  // Auto-open popup when marker is added to map
+                  e.target.openPopup();
+                },
+              }}
+            >
               <Popup 
                 className="custom-popup" 
                 minWidth={280}
@@ -864,7 +872,7 @@ const FieldsMap = () => {
                 key={note.id} 
                 position={notePosition}
                 eventHandlers={{
-                  click: () => {
+                  click: (e) => {
                     // Set this field note as selected
                     setMarkerPosition(notePosition);
                     setSelectedField({
@@ -873,6 +881,8 @@ const FieldsMap = () => {
                       farm_name: note.farm_name || field?.farm_name || 'Unknown Farm',
                     });
                     setFieldNoteId(note.id);
+                    // Auto-open popup on first click
+                    e.target.openPopup();
                   },
                 }}
               >
