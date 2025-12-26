@@ -134,6 +134,8 @@ const FarmMemory = () => {
         return <Tractor className="h-4 w-4 text-primary" />;
       case 'field_report':
         return <FileText className="h-4 w-4 text-farm-accent" />;
+      case 'equipment':
+        return <Tractor className="h-4 w-4 text-amber-500" />;
       default:
         return <FileText className="h-4 w-4" />;
     }
@@ -166,6 +168,8 @@ const FarmMemory = () => {
         return 'Field Operations';
       case 'field_operations_alltime':
         return 'Field History';
+      case 'equipment':
+        return 'Equipment';
       default:
         return sourceType;
     }
@@ -376,6 +380,16 @@ const FarmMemory = () => {
                         const fieldId = result.field_id || result.source_id;
                         const year = result.metadata?.year || result.year || new Date().getFullYear();
                         navigate(`/amf-reports?field=${fieldId}&year=${year}&tab=summary&view=detail`);
+                      } else if (result.source_type === 'equipment') {
+                        // 🚜 Equipment: Navigate to Map, centered on equipment with popup open
+                        navigate('/map', { 
+                          state: { 
+                            equipmentId: result.source_id,
+                            lat: result.metadata?.lat,
+                            lon: result.metadata?.lon,
+                            equipmentName: result.title
+                          } 
+                        });
                       } else if (result.url && result.url !== '#') {
                         // 📝 Go to original source (skip placeholder URLs like "#")
                         navigate(result.url);

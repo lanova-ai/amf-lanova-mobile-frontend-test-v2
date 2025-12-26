@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import { fieldsAPI, fieldNotesAPI, FieldNote, voiceAPI, documentsAPI, equipmentAPI, Equipment, handlePageError } from "@/lib/api";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import L from "leaflet";
 import DocumentUploadModal from "@/components/DocumentUploadModal";
 import { ManagementZonesLayer } from "@/components/ManagementZonesLayer";
@@ -175,10 +175,14 @@ function getPrecipDateRange(): { startDate: string; endDate: string } {
 }
 
 const FieldsMap = () => {
+  const location = useLocation();
   const [fields, setFields] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [mapBounds, setMapBounds] = useState<L.LatLngBoundsExpression | null>(null);
   const [showLegend, setShowLegend] = useState(false);
+  
+  // Equipment highlight state (from Farm Memory search navigation)
+  const [highlightedEquipmentId, setHighlightedEquipmentId] = useState<string | null>(null);
   
   // Field boundaries state
   const [showFieldBoundaries, setShowFieldBoundaries] = useState(true);
@@ -343,47 +347,93 @@ const FieldsMap = () => {
     fetchFieldsAndNotes();
   }, []);
 
-  // Sync equipment from John Deere (runs after map loads)
+  // Load cached equipment immediately, then sync in background
   useEffect(() => {
-    const syncEquipment = async () => {
+    // Step 1: Load cached equipment from DB immediately (instant)
+    const loadCachedEquipment = async () => {
       try {
-        setEquipmentSyncing(true);
-        setEquipmentSyncError(null);
-        
-        // First, sync with John Deere to get fresh data
-        const syncResult = await equipmentAPI.syncEquipment().catch((err) => {
-          console.warn('Equipment sync failed, will show cached data:', err);
-          return null; // Don't throw - we'll still try to fetch cached data
-        });
-        
-        // Note: Equipment access issues are handled by "New Feature Update" button on Home page
-        // Just log it here for debugging
-        if (syncResult?.warning === 'no_equipment_access') {
-          console.log('Equipment access not granted - user should see "New Feature Update" on Home page');
-        }
-        
-        // Then fetch the equipment (fresh or cached)
         const equipmentData = await equipmentAPI.getEquipment();
-        
-        // Filter to only those with locations
         const equipmentWithLocation = (equipmentData.equipment || []).filter(
           (e: Equipment) => e.last_known_lat && e.last_known_lon
         );
         setEquipment(equipmentWithLocation);
         
-        if (equipmentWithLocation.length > 0 && !syncResult?.warning) {
-          toast.success(`${equipmentWithLocation.length} equipment synced`);
+        if (equipmentWithLocation.length > 0) {
+          console.log(`Loaded ${equipmentWithLocation.length} cached equipment`);
+        }
+      } catch (err) {
+        console.warn('Failed to load cached equipment:', err);
+      }
+    };
+    
+    // Step 2: Sync with John Deere in background (non-blocking)
+    const syncInBackground = async () => {
+      try {
+        setEquipmentSyncing(true);
+        setEquipmentSyncError(null);
+        
+        const syncResult = await equipmentAPI.syncEquipment().catch((err) => {
+          console.warn('Equipment sync failed:', err);
+          return null;
+        });
+        
+        // Note: Equipment access issues handled by "New Feature Update" on Home page
+        if (syncResult?.warning === 'no_equipment_access') {
+          console.log('Equipment access not granted - user should see prompt on Home page');
+        }
+        
+        // Step 3: Refresh equipment list with fresh data from sync
+        const equipmentData = await equipmentAPI.getEquipment();
+        const equipmentWithLocation = (equipmentData.equipment || []).filter(
+          (e: Equipment) => e.last_known_lat && e.last_known_lon
+        );
+        setEquipment(equipmentWithLocation);
+        
+        // Only show toast if we got new/updated equipment (silent refresh)
+        if (syncResult && syncResult.equipment_imported > 0) {
+          toast.success(`${syncResult.equipment_imported} new equipment synced`);
         }
       } catch (err: any) {
-        console.error('Equipment fetch error:', err);
-        setEquipmentSyncError('Failed to load equipment');
+        console.error('Equipment sync error:', err);
+        setEquipmentSyncError('Sync failed');
       } finally {
         setEquipmentSyncing(false);
       }
     };
 
-    syncEquipment();
+    // Execute: Load cached first (fast), then sync in background
+    loadCachedEquipment();
+    syncInBackground();
   }, []);
+
+  // Handle navigation state from Farm Memory search (center on equipment)
+  useEffect(() => {
+    if (location.state) {
+      const { equipmentId, lat, lon, equipmentName } = location.state as any;
+      
+      if (equipmentId) {
+        setHighlightedEquipmentId(equipmentId);
+        
+        // If we have coordinates, we'll use them to center the map
+        // The MapCenterController component will handle actual centering
+        if (lat && lon) {
+          // Store target location for MapCenterController
+          setMapBounds(L.latLngBounds([
+            [lat - 0.01, lon - 0.01],
+            [lat + 0.01, lon + 0.01]
+          ]));
+        }
+        
+        // Show toast with equipment name
+        if (equipmentName) {
+          toast.info(`Locating: ${equipmentName}`, { duration: 3000 });
+        }
+        
+        // Clear the navigation state after handling
+        window.history.replaceState({}, document.title);
+      }
+    }
+  }, [location.state, equipment]);
 
   // Track user's current location
   useEffect(() => {
@@ -968,13 +1018,26 @@ const FieldsMap = () => {
             
             const position = L.latLng(equip.last_known_lat, equip.last_known_lon);
             const icon = createEquipmentIcon(equip.icon_color || '#367C2B');
+            const isHighlighted = highlightedEquipmentId === equip.id;
             
             return (
               <Marker
                 key={equip.id}
                 position={position}
                 icon={icon}
-                zIndexOffset={500}
+                zIndexOffset={isHighlighted ? 1000 : 500}
+                eventHandlers={{
+                  add: (e) => {
+                    // Auto-open popup if this is the highlighted equipment (from Farm Memory search)
+                    if (isHighlighted) {
+                      setTimeout(() => {
+                        e.target.openPopup();
+                        // Clear highlight after opening
+                        setHighlightedEquipmentId(null);
+                      }, 500);
+                    }
+                  }
+                }}
               >
                 <Popup className="custom-popup" minWidth={220}>
                   <div className="p-2 pt-4">
